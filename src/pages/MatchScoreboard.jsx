@@ -132,8 +132,8 @@ export default function MatchScoreboard() {
           
           {/* COLONNA TEAM A */}
           <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3">
-              {teamA.name}
+            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3 tracking-[4px]">
+            {teamA.name}
             </h2>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 blur-3xl rounded-full"></div>
@@ -145,15 +145,15 @@ export default function MatchScoreboard() {
 
           {/* CRONOMETRO CENTRALE */}
           <div className="w-[420px] flex justify-center items-center mt-16">
-            <span className={`text-[160px] font-black tabular-nums leading-none tracking-tight ${time <= 60 ? (time <= 10 && isRunning ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]') : 'text-white drop-shadow-2xl'}`}>
+            <span className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 && isRunning ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]') : 'text-white drop-shadow-2xl'}`}>
               {formatTime(time)}
             </span>
           </div>
 
           {/* COLONNA TEAM B */}
           <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3">
-              {teamB.name}
+            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3 tracking-[4px]">
+                {teamB.name}
             </h2>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
