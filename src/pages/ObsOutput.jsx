@@ -1304,15 +1304,15 @@ function DraftRoundRevealGraphic({ picks, round }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           Draft Board
         </h2>
       </div>
 
-      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10 mb-12 text-center mt-[200px]">
-        <h2 className="text-2xl font-black uppercase text-pink-500 tracking-[0.5em] mb-2 animate-pulse">Generazione Ordine</h2>
-        <h1 className="text-[80px] font-black uppercase tracking-tighter text-white drop-shadow-2xl leading-none">
+      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10 mb-12 text-center mt-[100px]">
+        <h2 className="text-2xl font-black uppercase text-pink-500 tracking-[0.08em] mb-2 animate-pulse">SORTEGGIO COMPLETATO</h2>
+        <h1 className="text-[80px] font-black uppercase tracking-[0.08em] text-white drop-shadow-2xl leading-none">
           DRAFT ROUND <span className="text-pink-500">{round}</span>
         </h1>
       </motion.div>
@@ -1390,7 +1390,7 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
         {/* "h-5" (20px) è l'altezza fissa. Se aumenti il "text-[9px]" del giocatore a 11px o 12px, aumenta h-5 in h-6 o h-7! */}
         <div className="w-full text-center h-5 flex items-center justify-center">
           {isFilled ? (
-             <span className="text-[20px] font-bold text-neutral-400 uppercase leading-none block truncate px-1">
+             <span className="text-[20px] font-bold text-neutral-400 uppercase leading-none block truncate px-1 tracking-wider">
                {pick.players?.last_name} {pick.players?.first_name?.charAt(0)}.
              </span>
           ) : null}
@@ -1405,8 +1405,8 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
 
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           Draft Board
         </h2>
       </div>
@@ -1425,7 +1425,7 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
               
               {/* === MODIFICA: TITOLO ROUND ("ROUND 1", "ROUND 2") === */}
               {/* "text-[14px]" regola la grandezza. */}
-              <div className="text-center font-black uppercase text-pink-500 tracking-[0.2em] mb-2 border-b border-pink-500/30 pb-1.5 text-[20px] drop-shadow-md">
+              <div className="text-center font-black uppercase text-pink-500 tracking-[0.08em] mb-2 border-b border-pink-500/30 pb-1.5 text-[20px] drop-shadow-md">
                 ROUND {roundNum}
               </div>
               
@@ -1469,51 +1469,69 @@ function DraftRostersGraphic({ picks, teams }) {
       </div>
 
       {/* Aumentata l'altezza a h-[980px] per dare più respiro al fondo del box grigio */}
-      <motion.div variants={containerVars} className="flex gap-5 w-full max-w-[1880px] mx-auto z-10 justify-center h-[980px] pt-[200px] pb-4 px-6">
+      <motion.div variants={containerVars} className="flex gap-5 w-full max-w-[1880px] mx-auto z-10 justify-center h-[981px] pt-[250px] pb-4 px-6">
         {teams.map(team => {
           const teamPicks = picks.filter(p => p.team_edition_event_id === team.id).sort((a,b) => a.pick_number - b.pick_number);
 
           return (
-            <motion.div key={team.id} variants={itemVars} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl p-5 shadow-2xl flex flex-col">
+            <motion.div key={team.id} variants={itemVars} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl px-3 pb-3 pt-3 shadow-2xl flex flex-col min-w-0">
               
-              <h3 className="text-center text-2xl font-black uppercase text-white tracking-[0.1em] mb-4 border-b border-neutral-700 pb-3 shrink-0 truncate drop-shadow-lg">
+              <h3 className="text-center text-[28px] font-black uppercase text-white tracking-widest mb-2 border-b border-neutral-700 pb-1 truncate drop-shadow-md">
                 {team.teams?.name}
               </h3>
 
-              {/* BOX STAFF IN ALTO */}
-              <div className="mb-4 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-2 shrink-0">
+              {/* BOX STAFF IN ALTO E OTTIMIZZATO */}
+              <div className="mb-2 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-1.5 shrink-0">
                  {team.coach ? (
-                   <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
+                   <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
                      Coach: <span className="text-white">{team.coach}</span>
                    </div>
                  ) : (
-                   <div className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
+                   <div className="text-[18px] leading-none font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
                  )}
                  {team.assistant_coach && (
-                   <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-1">
+                   <div className="text-[18px] leading-none font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-0.5">
                      Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
                    </div>
                  )}
               </div>
               
-              {/* LISTA GIOCATORI */}
-              <div className="flex flex-col gap-2.5 flex-1">
+              {/* LISTA GIOCATORI COMPATTATA */}
+              <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {Array.from({ length: 10 }).map((_, i) => {
                   const pick = teamPicks[i];
                   const isFilled = pick && pick.player_id;
+
+                  // ==========================================
+                  // LOGICA TAGLIO NOME INTELLIGENTE
+                  // ==========================================
+                  let displayLast = '';
+                  let displayFirst = '';
+                  
+                  if (isFilled) {
+                    displayLast = pick.players?.last_name || '';
+                    const rawFirst = pick.players?.first_name || '';
+                    
+                    if ((displayLast.length + rawFirst.length) > 20) {
+                      displayFirst = rawFirst.charAt(0) + '.';
+                    } else {
+                      displayFirst = rawFirst;
+                    }
+                  }
                   
                   return (
-                    <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${isFilled ? 'bg-neutral-900 border-neutral-700' : 'bg-black border-neutral-800'}`}>
-                      <span className="text-lg font-black text-neutral-500 w-8 text-right shrink-0">
-                        {pick ? `#${pick.pick_number}` : '-'}
-                      </span>
+                    <div key={i} className={`flex items-center gap-3 px-3 py-[10.5px] rounded-xl border ${isFilled ? 'bg-neutral-900 border-neutral-700' : 'bg-black border-neutral-800'}`}>
+                      <div className="w-6 shrink-0 text-left">
+                        <span className="text-[18px] font-black text-neutral-500">#{pick ? pick.pick_number : '-'}</span>
+                      </div>
+                      
                       <div className="flex-1 min-w-0">
                         {isFilled ? (
-                          <span className="font-bold text-white uppercase text-lg truncate block">
-                            {pick.players?.last_name} <span className="font-normal text-sm text-pink-500 ml-1">{pick.players?.first_name}</span>
+                          <span className="font-bold text-white uppercase text-[24px] truncate block leading-tight">
+                            {displayLast} <span className="font-normal text-[18px] text-pink-500 ml-1">{displayFirst}</span>
                           </span>
                         ) : (
-                          <span className="text-sm font-bold text-neutral-600 uppercase">Vuoto</span>
+                          <span className="font-bold text-neutral-600 uppercase text-[24px] block leading-tight">-</span>
                         )}
                       </div>
                     </div>
@@ -1545,8 +1563,8 @@ function DraftMistaGraphic({ picks, teams }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           Live Draft
         </h2>
       </div>
@@ -1596,7 +1614,7 @@ function DraftMistaGraphic({ picks, teams }) {
                     
                     // Se la somma dei caratteri supera 13, taglia al primo carattere + "."
                     // Puoi aumentare o diminuire il 13 a tuo piacimento!
-                    if ((displayLast.length + rawFirst.length) > 13) {
+                    if ((displayLast.length + rawFirst.length) > 20) {
                       displayFirst = rawFirst.charAt(0) + '.';
                     } else {
                       displayFirst = rawFirst;
@@ -1652,13 +1670,14 @@ function DraftMistaGraphic({ picks, teams }) {
         })}
       </div>
 
-      {/* --- BANNER INFERIORE (ON THE CLOCK) --- */}
+      {/* --- BANNER INFERIORE (ON THE CLOCK E NEXT PICK) --- */}
       <div className="shrink-0 w-full px-6 pb-6 z-10 h-[140px] mb-4 mt-2">
         <div className="w-full h-full bg-black/60 backdrop-blur-2xl border border-neutral-800 rounded-3xl shadow-2xl flex overflow-hidden">
           
+          {/* LATO SINISTRO: ON THE CLOCK */}
           {onTheClock ? (
-            <div className="w-1/3 bg-pink-500/10 border-r-2 border-pink-500/50 flex flex-col justify-center items-center relative shadow-[5px_0_30px_rgba(236,72,153,0.1)]">
-              <div className="absolute top-0 w-full bg-pink-500 text-white text-[15px] font-black uppercase tracking-[0.2em] py-1 text-center animate-pulse">
+            <div className="w-1/3 bg-pink-500/10 flex flex-col justify-center items-center relative shadow-[5px_0_30px_rgba(236,72,153,0.1)]">
+              <div className="absolute top-0 w-full bg-pink-500 text-white text-[15px] font-black uppercase tracking-[0.08em] py-1 text-center animate-pulse">
                 On The Clock
               </div>
               <div className="flex items-center gap-5 mt-8">
@@ -1676,9 +1695,15 @@ function DraftMistaGraphic({ picks, teams }) {
             </div>
           )}
 
+          {/* LATO DESTRO: NEXT PICK */}
           <div className="w-2/3 flex flex-col justify-center px-6 relative">
-            <span className="absolute top-[5px] left-6 text-[15px] font-bold text-neutral-500 uppercase tracking-[0.2em]">Next Pick</span>
-            <div className="flex items-center justify-between w-full mt-5 gap-3">
+            
+            {/* STRISCIA SUPERIORE NEXT PICK (Grigio chiaro) */}
+            <div className="absolute top-0 left-0 w-full bg-black-900 border-b border-neutral-800 text-neutral-400 text-[15px] font-black uppercase tracking-[0.08em] py-1 pl-[42px] text-left">
+              Next Pick
+            </div>
+            
+            <div className="flex items-center justify-between w-full mt-8 gap-3">
               {upNext.length > 0 ? (
                 upNext.map((p, index) => (
                   <div key={p.id} className="flex-1 flex items-center gap-2 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 min-w-0 shadow-inner">
@@ -1695,6 +1720,7 @@ function DraftMistaGraphic({ picks, teams }) {
               )}
             </div>
           </div>
+          
         </div>
       </div>
 
@@ -1705,91 +1731,119 @@ function DraftMistaGraphic({ picks, teams }) {
 function DraftAnnuncioGraphic({ picks }) {
   const latestPick = [...picks].filter(p => p.player_id).sort((a,b) => b.pick_number - a.pick_number)[0];
 
-  const teamEvent = latestPick?.teams_edition_events;
-  const teamName = teamEvent?.teams?.name;
-  const coach = teamEvent?.coach;
-  const vice = teamEvent?.assistant_coach;
-  const firstName = latestPick?.players?.first_name;
-  const lastName = latestPick?.players?.last_name;
+  const firstName = latestPick?.players?.first_name || "";
+  const lastName = latestPick?.players?.last_name || "";
   const pickNum = latestPick?.pick_number;
+
+  // 1. Uniamo il nome in un'unica stringa per l'effetto Typewriter
+  const fullName = `${firstName} ${lastName}`.trim();
+  // 2. Lo dividiamo in un array di singole lettere
+  const letters = fullName.split("");
+
+  // =========================================
+  // REGOLE ANIMAZIONE MACCHINA DA SCRIVERE
+  // =========================================
+  const containerVars = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08, // Velocità di battitura (0.08s tra una lettera e l'altra)
+        delayChildren: 0.8,    // Aspetta quasi un secondo prima di iniziare a scrivere
+      }
+    }
+  };
+
+  const letterVars = {
+    hidden: { opacity: 0, scale: 0.8, filter: "blur(4px)" }, // Parte sfocato e invisibile
+    visible: { 
+      opacity: 1, 
+      scale: 1, 
+      filter: "blur(0px)",
+      transition: { type: "spring", stiffness: 200, damping: 15 } 
+    }
+  };
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }} 
+      initial={{ opacity: 0, scale: 0.95 }} 
       animate={{ opacity: 1, scale: 1 }} 
-      exit={{ opacity: 0, scale: 0.7 }} 
+      exit={{ opacity: 0, scale: 0.95 }} 
       transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-900 via-neutral-950 to-black overflow-hidden z-0 origin-center"
+      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black overflow-hidden z-0 origin-center"
     >
-      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none mix-blend-screen"></div>
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen pointer-events-none"></div>
       
-      {/* TITOLO IDENTIFICATIVO IN ALTO A DESTRA */}
-      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
-          Basketville Draft
-        </h2>
-      </div>
       
       {latestPick ? (
-        <div className="flex flex-col items-center text-center z-10 mt-[120px]">
+        <div className="flex flex-col items-center justify-center text-center z-10 w-full h-full relative -translate-y-[40px]">
           
+          {/* BADGE PICK */}
           <motion.div 
             initial={{ y: 30, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
-            transition={{ duration: 1, delay: 0.5, ease: "easeOut" }} 
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }} 
             className="mb-8"
           >
-            <span className="inline-block bg-black/50 border border-pink-500/50 text-pink-400 px-8 py-3 rounded-full text-2xl font-bold uppercase tracking-[0.4em] shadow-[0_0_30px_rgba(235,109,165,0.4)]">
-              Con la Pick #{pickNum}
-            </span>
+            <motion.div 
+              animate={{ scale: [1, 1.02, 1] }} 
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="flex flex-col items-center justify-center"
+            >
+              <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-10 py-3 rounded-full text-4xl font-black uppercase tracking-[0.08em] shadow-[0_0_30px_rgba(235,109,165,0.4)]">
+                Pick #{pickNum}
+              </span>
+            </motion.div>
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 1.5, delay: 2 }} 
-            className="flex flex-col items-center"
-          >
-            <h2 className="text-5xl font-black text-white uppercase tracking-[0.2em] drop-shadow-lg mb-3">
-              {teamName}
-            </h2>
-            
-            {(coach || vice) && (
-              <div className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] flex items-center gap-4 bg-black/30 px-6 py-2 rounded-xl border border-neutral-800">
-                {coach && (
-                  <span>Coach: <span className="text-pink-500">{coach}</span></span>
-                )}
-                {(coach && vice) && <span className="text-neutral-600">|</span>}
-                {vice && (
-                  <span>Vice: <span className="text-neutral-300">{vice}</span></span>
-                )}
+          <div className="relative">
+            {/* EFFETTO MACCHINA DA SCRIVERE SUL NOME GIOCATORE */}
+            <motion.h1 
+              variants={containerVars}
+              initial="hidden"
+              animate="visible"
+              className="text-[170px] leading-none font-black text-white uppercase tracking-[0.08em] drop-shadow-2xl text-balance px-10 relative z-10 whitespace-pre-wrap"
+            >
+              {letters.map((char, index) => (
+                <motion.span key={index} variants={letterVars} className="inline-block">
+                  {/* Se è uno spazio vuoto, mettiamo il codice dello spazio per non far collassare l'HTML */}
+                  {char === " " ? "\u00A0" : char}
+                </motion.span>
+              ))}
+            </motion.h1>
+
+            {/* TIMBRO "SCELTO" RITARDATO PER FAR FINIRE LA BATTITURA */}
+            <motion.div
+              initial={{ scale: 4, opacity: 0, rotate: -30 }}
+              animate={{ scale: 1, opacity: 0.9, rotate: -15 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 1000, 
+                damping: 30, 
+                delay: 2.8, // Ritardato per aspettare il Typewriter
+                opacity: { duration: 0.1, delay: 2.8 } 
+              }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
+            >
+              <div 
+                className="font-sans border-[16px] border-pink-500 text-pink-500 px-10 py-3 rounded-[30px] font-black uppercase tracking-[0.08em] text-[110px] leading-none drop-shadow-[0_0_20px_rgba(236,72,153,0.7)]"
+                style={{ 
+                  textTransform: 'uppercase',
+                  maskImage: 'radial-gradient(#000 60%, transparent 100%)',
+                  WebkitMaskImage: 'radial-gradient(#000 60%, transparent 100%)',
+                }}
+              >
+                Scelto
               </div>
-            )}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 3.5 }}
-            className="mt-6 mb-10 text-3xl font-black text-neutral-500 uppercase tracking-[0.5em]"
-          >
-            Sceglie
-          </motion.div>
-
-          <motion.h1 
-            initial={{ scale: 0.2, opacity: 0, y: 50 }} 
-            animate={{ scale: 1, opacity: 1, y: 0 }} 
-            transition={{ type: "spring", stiffness: 40, damping: 12, delay: 4.5 }} 
-            className="text-[140px] leading-none font-black uppercase text-transparent bg-clip-text bg-gradient-to-b from-white via-neutral-200 to-neutral-400 drop-shadow-[0_10px_40px_rgba(235,109,165,0.3)] text-center max-w-[1600px] flex flex-col"
-          >
-            <span className="text-pink-400 text-[80px] drop-shadow-none mb-[-10px] tracking-widest">{firstName}</span>
-            <span className="text-[180px] text-white tracking-wide">{lastName}</span>
-          </motion.h1>
+            </motion.div>
+          </div>
 
         </div>
       ) : (
-        <div className="text-center z-10 text-white text-4xl font-black uppercase tracking-widest opacity-50 pt-[200px]">
-          In Attesa della Prima Scelta...
+        <div className="flex flex-col items-center justify-center w-full h-full z-10">
+          <div className="text-white text-4xl font-black uppercase tracking-widest opacity-50">
+            In Attesa della Prima Scelta...
+          </div>
         </div>
       )}
     </motion.div>
@@ -1798,12 +1852,29 @@ function DraftAnnuncioGraphic({ picks }) {
 
 function DraftAttesaGraphic({ activePayload }) {
   const [lockedPayload, setLockedPayload] = useState(activePayload);
+  
+  // STATO DEL CRONOMETRO (Parte da 60)
+  const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     if (activePayload && activePayload.team_name) {
       setLockedPayload(activePayload);
+      // Quando arriva una nuova squadra al draft, resetto il timer a 60!
+      setTimeLeft(60);
     }
   }, [activePayload]);
+
+  // MOTORE DEL CRONOMETRO
+  useEffect(() => {
+    if (timeLeft <= 0) return; // Si ferma a 0
+    
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    
+    // Pulizia del timer per evitare accavallamenti
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
   const pickNum = lockedPayload?.pick_number || "-";
   const teamName = lockedPayload?.team_name || "SQUADRA AL DRAFT";
@@ -1819,38 +1890,61 @@ function DraftAttesaGraphic({ activePayload }) {
       className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black overflow-hidden z-0"
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen"></div>
-      
-      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
-      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
-          Live Draft
-        </h2>
-      </div>
 
-      <div className="flex flex-col items-center text-center z-10 pt-[150px]">
+      {/* CONTENITORE PRINCIPALE CENTRATO ASSOLUTO */}
+      {/* === MODIFICA: CENTRATURA GLOBALE === */}
+      {/* Usa "-mt-[30px]" (o cambialo a tuo piacimento, es: "-mt-[60px]" o "mt-[20px]") per alzare o abbassare tutto il blocco in una volta sola */}
+      <div className="flex flex-col items-center justify-center text-center z-10 w-full h-full pt-[90px]">
         
-        <div className="mb-8">
-          <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-8 py-3 rounded-full text-2xl font-bold uppercase tracking-[0.4em] shadow-[0_0_30px_rgba(235,109,165,0.4)]">
-            On the Clock: Pick #{pickNum}
-          </span>
-        </div>
+        {/* BADGE PICK RIDIMENSIONATO E PULITO */}
+        <motion.div 
+          animate={{ scale: [1, 1.02, 1] }} 
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          className="mb-8"
+        >
+          <div className="flex flex-col items-center justify-center">
+            <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-10 py-3 rounded-full text-4xl font-black uppercase tracking-[0.08em] shadow-[0_0_30px_rgba(235,109,165,0.4)]">
+              Pick #{pickNum}
+            </span>
+          </div>
+        </motion.div>
 
-        <div className="flex flex-col items-center mb-10 mt-6">
-          <h2 className="text-6xl font-black text-white uppercase tracking-[0.2em] drop-shadow-lg mb-6">
-            {teamName}
-          </h2>
-          
-          {(coach || vice) && (
-            <div className="text-2xl font-bold text-neutral-400 uppercase tracking-[0.3em] flex items-center gap-5 bg-black/40 px-8 py-4 rounded-xl border border-neutral-800">
-              {coach && <span>Coach: <span className="text-pink-500">{coach}</span></span>}
-              {(coach && vice) && <span className="text-neutral-600">|</span>}
-              {vice && <span>Vice: <span className="text-neutral-300">{vice}</span></span>}
-            </div>
-          )}
-        </div>
+        {/* NOME SQUADRA (Libertà totale per voi) */}
+        <h2 className="text-[170px] leading-none font-black text-white uppercase tracking-[0.08em] drop-shadow-2xl mb-10 text-balance px-10">
+          {teamName}
+        </h2>
+        
+        {/* ALLENATORI: DESIGN ELEGANTE TESTUALE (Senza Box) */}
+        {(coach || vice) && (
+          <div className="flex flex-col items-center justify-center gap-3 mb-12">
+            {coach && (
+              <div className="text-4xl font-bold uppercase tracking-[0.08em] text-white drop-shadow-lg flex items-center">
+                <span className="text-neutral-500 text-2xl tracking-[0.08em] mr-4">COACH</span> 
+                {coach}
+              </div>
+            )}
+            {vice && (
+              <div className="text-3xl font-bold uppercase tracking-[0.08em] text-white drop-shadow-lg flex items-center">
+                <span className="text-neutral-500 text-xl tracking-[0.08em] mr-4">VICE</span> 
+                {vice}
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="mt-8 text-3xl font-black text-neutral-600 uppercase tracking-[0.5em] animate-pulse">
-          In fase di decisione...
+        {/* CRONOMETRO */}
+        {/* === MODIFICA: ALZARE SOLO IL CRONOMETRO === */}
+        {/* Ho inserito "-mt-4" (margin-top negativo) per tirarlo più su avvicinandolo agli allenatori. Puoi usare "-mt-8" o "-mt-[40px]" per alzarlo ancora di più! */}
+        <div className="flex flex-col items-center -mt-2">
+          <div 
+            className={`text-[160px] font-black leading-none uppercase tracking-widest ${
+              timeLeft <= 10 
+                ? 'text-red-500 drop-shadow-[0_0_50px_rgba(239,68,68,0.8)] animate-pulse' 
+                : 'text-pink-500 drop-shadow-[0_0_40px_rgba(236,72,153,0.6)]'
+            }`}
+          >
+            00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+          </div>
         </div>
 
       </div>
@@ -1873,15 +1967,8 @@ function DraftRoundAttesaGraphic({ payload }) {
       className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black overflow-hidden z-0"
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen"></div>
-      
-      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
-      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
-          Live Draft
-        </h2>
-      </div>
 
-      <div className="flex flex-col items-center text-center z-10 pt-[150px]">
+      <div className="flex flex-col items-center justify-center text-center z-10 w-full h-full">
         
         <motion.div 
           animate={{ scale: [1, 1.03, 1] }} 
@@ -1889,14 +1976,14 @@ function DraftRoundAttesaGraphic({ payload }) {
           className="mb-8 flex flex-col items-center"
         >
           {/* Cerchio di caricamento figo rotante */}
-          <div className="w-20 h-20 border-8 border-neutral-800 border-t-pink-500 rounded-full animate-spin mb-8 shadow-[0_0_20px_rgba(236,72,153,0.3)]"></div>
+          <div className="w-20 h-20 border-8 border-neutral-800 border-t-pink-500 rounded-full animate-spin mb-16 shadow-[0_0_20px_rgba(236,72,153,0.3)]"></div>
           
-          <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-12 py-5 rounded-full text-4xl font-black uppercase tracking-[0.5em] shadow-[0_0_40px_rgba(235,109,165,0.4)]">
+          <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-12 py-5 rounded-full text-8xl font-black uppercase tracking-[0.08em] shadow-[0_0_40px_rgba(235,109,165,0.4)]">
             Sorteggio Round {round}
           </span>
         </motion.div>
 
-        <div className="mt-8 text-3xl font-black text-neutral-600 uppercase tracking-[0.8em] animate-pulse">
+        <div className="mt-8 text-3xl font-black text-neutral-600 uppercase tracking-[0.08em] animate-pulse">
           Elaborazione Dati in Corso...
         </div>
 
@@ -1920,8 +2007,8 @@ function DraftPoolGraphic({ players, picks }) {
   // Ordine fisso dei ruoli nel basket
   const roleOrder = ['PLAYMAKER', 'GUARDIA', 'ALA PICCOLA', 'ALA GRANDE', 'CENTRO'];
   
-  // Filtra solo i ruoli che effettivamente hanno giocatori e mantieni l'ordine stabilito
-  const roles = roleOrder.filter(role => groupedPlayers[role] && groupedPlayers[role].length > 0);
+  // Assicuriamoci che i 5 ruoli principali siano sempre mostrati, per mantenere le 5 colonne intatte
+  const roles = roleOrder;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 origin-top-left">
@@ -1935,35 +2022,66 @@ function DraftPoolGraphic({ players, picks }) {
         </h2>
       </div>
 
-      <div className="flex-1 flex gap-8 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-8 pb-8 pt-[200px] justify-center">
+      <div className="flex-1 flex gap-6 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-6 pb-16 pt-[250px] justify-center">
         {roles.map((role) => {
           const playersInRole = groupedPlayers[role] || [];
+          
           return (
-            <div key={role} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl p-6 shadow-2xl flex flex-col max-w-[400px]">
-              <h3 className="text-center text-xl font-black uppercase text-pink-500 tracking-[0.2em] mb-4 border-b border-pink-500/30 pb-3 shrink-0 drop-shadow-lg">
+            <div key={role} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl px-5 pt-4 pb-4 shadow-2xl flex flex-col min-w-0">
+              
+              {/* TITOLO RUOLO CON FONT INGRANDITO E PADDING AGGIUSTATI */}
+              <h3 className="text-center text-[28px] font-black uppercase text-white tracking-widest mb-3 border-b border-neutral-700 pb-2.5 shrink-0 truncate drop-shadow-md">
                 {role}
               </h3>
               
-              <div className="flex flex-col gap-2.5 overflow-y-auto pr-2 custom-scrollbar">
-                {playersInRole.map(p => {
-                  const isPicked = picks.some(pick => pick.player_id === p.id);
+              {/* LISTA GIOCATORI: FISSATA A 12 ELEMENTI */}
+              <div className="flex flex-col gap-1.5 flex-1 min-h-0">
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const p = playersInRole[i];
+                  const isFilled = !!p;
+                  const isPicked = isFilled ? picks.some(pick => pick.player_id === p.id) : false;
+
+                  // LOGICA TAGLIO NOME INTELLIGENTE
+                  let displayLast = '';
+                  let displayFirst = '';
+                  
+                  if (isFilled) {
+                    displayLast = p.last_name || '';
+                    const rawFirst = p.first_name || '';
+                    
+                    if ((displayLast.length + rawFirst.length) > 13) {
+                      displayFirst = rawFirst.charAt(0) + '.';
+                    } else {
+                      displayFirst = rawFirst;
+                    }
+                  }
+
                   return (
-                    <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl border ${isPicked ? 'bg-red-900/20 border-red-500/30 opacity-50' : 'bg-black/50 border-neutral-700'}`}>
-                      <span className={`font-bold uppercase text-base ${isPicked ? 'text-red-400 line-through' : 'text-white'}`}>
-                        {p.last_name} {p.first_name}
-                      </span>
+                    <div 
+                      key={isFilled ? p.id : `empty-${i}`} 
+                      className={`flex items-center justify-between px-3 py-[9px] rounded-xl border ${!isFilled ? 'bg-black border-neutral-800' : isPicked ? 'bg-neutral-900 border-neutral-700 opacity-30' : 'bg-neutral-900 border-neutral-700'}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        {isFilled ? (
+                          // === MODIFICA: TOLTO "line-through" DA QUI SOTTO ===
+                          <span className={`font-bold uppercase text-[24px] block leading-tight truncate ${isPicked ? 'text-white' : 'text-white'}`}>
+                            {displayLast} <span className={`font-normal text-[18px] ml-1 ${isPicked ? 'text-pink-500' : 'text-pink-500'}`}>{displayFirst}</span>
+                          </span>
+                        ) : (
+                          <span className="font-bold text-neutral-600 uppercase text-[24px] block leading-tight">-</span>
+                        )}
+                      </div>
+                      
                       {isPicked && (
-                        <span className="text-[9px] bg-red-500 text-white font-black px-2 py-1 rounded tracking-widest uppercase">
+                        <span className="shrink-0 text-[11px] bg-pink-500 text-white font-black px-2 py-1 rounded tracking-widest uppercase ml-2">
                           Scelto
                         </span>
                       )}
                     </div>
                   );
                 })}
-                {playersInRole.length === 0 && (
-                  <div className="text-center text-neutral-600 italic text-sm mt-4">Nessun giocatore</div>
-                )}
               </div>
+
             </div>
           );
         })}
@@ -1992,30 +2110,17 @@ function GenericTitleGraphic({ payload }) {
       {/* Bagliore Rosa Morbido al centro */}
       <div className="absolute w-[1000px] h-[1000px] bg-pink-500/10 blur-[180px] rounded-full pointer-events-none mix-blend-screen"></div>
 
-      {/* Contenitore con larghezza massima aumentata per scritte giganti */}
-      <div className="flex flex-col items-center text-center w-full max-w-[1800px] px-12 z-10 pt-[150px]">
-        
-        {/* Barrette decorative in alto (più staccate) */}
-        <div className="flex items-center gap-6 mb-16 opacity-70">
-          <div className="w-24 h-1.5 bg-gradient-to-r from-transparent to-pink-500 rounded-full"></div>
-          <div className="w-4 h-4 bg-pink-500 rotate-45"></div>
-          <div className="w-24 h-1.5 bg-gradient-to-l from-transparent to-pink-500 rounded-full"></div>
-        </div>
+      {/* Contenitore: rimosso pt-[40px] per un centro assoluto e perfetto */}
+      <div className="flex flex-col items-center text-center w-full max-w-[1800px] px-12 z-10">
 
-        {/* IL TESTO GIGANTE ( text-[220px] e leading-none ) */}
+        {/* === MODIFICA KERNING (SPAZIATURA LETTERE) === */}
+        {/* Sostituisci "tracking-widest" con "tracking-[0.1em]" o un'altra misura per avere il pieno controllo */}
         <h1 
-          className="text-[220px] leading-none font-black uppercase tracking-widest text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
+          className="text-[240px] leading-none font-black uppercase tracking-[0.08em] text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
           style={{ textWrap: 'balance' }} 
         >
           {text}
         </h1>
-        
-        {/* Barrette decorative in basso (più staccate) */}
-        <div className="flex items-center gap-6 mt-16 opacity-70">
-          <div className="w-24 h-1.5 bg-gradient-to-r from-transparent to-neutral-500 rounded-full"></div>
-          <div className="w-4 h-4 bg-neutral-500 rotate-45"></div>
-          <div className="w-24 h-1.5 bg-gradient-to-l from-transparent to-neutral-500 rounded-full"></div>
-        </div>
 
       </div>
     </motion.div>
