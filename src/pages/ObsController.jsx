@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Target, XCircle, ListOrdered, Flame, Trophy, CalendarDays } from 'lucide-react';
+import { Target, XCircle, ListOrdered, Trophy, Type, Tv } from 'lucide-react';
 
 export default function ObsController() {
   const [currentGraphic, setCurrentGraphic] = useState('none');
+  const [genericTitleText, setGenericTitleText] = useState(''); // NUOVO STATO PER IL TESTO
 
-  // Ascoltiamo in tempo reale cosa c'è in onda, così la plancia si illumina!
+  // Ascoltiamo in tempo reale cosa c'è in onda
   useEffect(() => {
     async function fetchState() {
       const { data } = await supabase.from('broadcast_state').select('*').eq('id', 1).single();
@@ -30,6 +31,12 @@ export default function ObsController() {
 
     if (error) alert("Errore di connessione con OBS: " + error.message);
   }
+
+  // Funzione dedicata per il Titolo Generico
+  const sendGenericTitle = () => {
+    if (!genericTitleText.trim()) return alert('Inserisci un testo prima di mandarlo in onda!');
+    triggerOBS('generic_title', { text: genericTitleText.trim() });
+  };
 
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in pb-20 space-y-8">
@@ -70,7 +77,6 @@ export default function ObsController() {
               <ListOrdered size={16} /> Mostra Classifica Top 12
             </button>
             
-            {/* TASTO TABELLONE PLAYOFF */}
             <button 
               onClick={() => triggerOBS('3point_bracket')}
               className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === '3point_bracket' ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
@@ -80,19 +86,32 @@ export default function ObsController() {
           </div>
         </div>
 
-        {/* Esempio inattivo (Placeholder) */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200 opacity-60">
+        {/* ========================================== */}
+        {/* NUOVA CARD: TITOLO GENERICO (JOLLY)        */}
+        {/* ========================================== */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
-            <div className="p-3 bg-neutral-100 text-neutral-500 rounded-xl"><Trophy size={24}/></div>
+            <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><Type size={24}/></div>
             <div>
-              <h3 className="text-lg font-semibold text-neutral-800">Torneo Vero Cup</h3>
-              <p className="text-xs text-neutral-500">Grafiche in arrivo...</p>
+              <h3 className="text-lg font-semibold text-neutral-800">Messaggio Jolly</h3>
+              <p className="text-xs text-neutral-500">Scrivi e manda a schermo intero</p>
             </div>
           </div>
-          <div className="space-y-3">
-             <button className="w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs bg-neutral-100 text-neutral-400 cursor-not-allowed">
-               Mostra Classifica Gironi
-             </button>
+          
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              placeholder="Es: PAUSA PRANZO - RIPRENDIAMO ALLE 15:00"
+              value={genericTitleText}
+              onChange={(e) => setGenericTitleText(e.target.value)}
+              className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all uppercase tracking-wider"
+            />
+            <button 
+              onClick={sendGenericTitle}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'generic_title' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Tv size={16} /> Manda In Onda Testo
+            </button>
           </div>
         </div>
 

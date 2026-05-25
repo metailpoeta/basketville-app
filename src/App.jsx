@@ -15,6 +15,9 @@ import ObsController from './pages/ObsController';
 import BTOverlayGraphic from './pages/BTOverlayGraphic';
 import DraftAdmin from './pages/DraftAdmin';
 import MatchScoreboard from './pages/MatchScoreboard';
+import SponsorCarousel from './pages/SponsorCarousel';
+import SponsorOutput from './pages/SponsorOutput';
+import SponsorManager from './pages/SponsorManager';
 
 // Importiamo il nuovo canale OBS (che creeremo tra un attimo)
 import ObsOutput from './pages/ObsOutput';
@@ -58,7 +61,8 @@ function App() {
       case 'live-score': return <LiveScoreCenter />;
       case 'controller-obs': return <ObsController />;
       case 'draft': return <DraftAdmin />; // <--- AGGIUNTO QUI!
-      default: return <TeamsManager />;
+      case 'sponsor-manager': return <SponsorManager />;
+      default: return <TeamsManager />;      
     }
   };
 
@@ -88,6 +92,8 @@ function App() {
         <Route path="/obs" element={<ObsOutput />} />
         <Route path="/bt-overlay" element={<BTOverlayGraphic />} />
         <Route path="/match-scoreboard" element={<MatchScoreboard />} />
+        <Route path="/sponsor-carousel" element={<SponsorCarousel />} />
+        <Route path="/sponsor-output" element={<SponsorOutput />} />
       </Routes>
     </Router>
   );

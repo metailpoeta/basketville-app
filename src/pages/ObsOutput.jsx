@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,25 +17,37 @@ const getEventStyles = (tagName) => {
 export default function ObsOutput() {
   const [broadcastState, setBroadcastState] = useState({ active_graphic: 'none', payload: {} });
   const [localGraphic, setLocalGraphic] = useState('none');
-  const [highlightRound, setHighlightRound] = useState(null); // NUOVO STATO PER EVIDENZIARE I ROUND
+  const [highlightRound, setHighlightRound] = useState(null);
   
-  // Stati 3-Point
+  const transitionTimer = useRef(null);
+
   const [threePointData, setThreePointData] = useState([]);
   const [highlightedPlayerId, setHighlightedPlayerId] = useState(null);
-
-  // Stati Calendario
   const [dailyScheduleData, setDailyScheduleData] = useState([]);
   const [dailyScheduleDate, setDailyScheduleDate] = useState('');
-
-  // Stati Match
   const [matchData, setMatchData] = useState(null);
-
-  // Stati Draft e Pool
   const [draftPicks, setDraftPicks] = useState([]);
   const [draftTeams, setDraftTeams] = useState([]);
-  const [eligiblePlayers, setEligiblePlayers] = useState([]); // NUOVO STATO PER LA DRAFT POOL
+  const [eligiblePlayers, setEligiblePlayers] = useState([]);
 
-  // Fetch Base per Edition
+  // ==========================================
+  // WATCHDOG ANTI-CRASH PER OBS (COSTO ZERO)
+  // ==========================================
+  useEffect(() => {
+    let lastTick = Date.now();
+    
+    const watchdog = setInterval(() => {
+      const now = Date.now();
+      if (now - lastTick > 30000) {
+        console.warn("Rilevata ibernazione OBS. Riavvio forzato della pagina...");
+        window.location.reload();
+      }
+      lastTick = now;
+    }, 5000);
+
+    return () => clearInterval(watchdog);
+  }, []);
+
   const getActiveEditionId = async () => {
     const { data } = await supabase.from('editions').select('id').eq('is_active', true).single();
     return data ? data.id : null;
@@ -69,10 +81,7 @@ export default function ObsOutput() {
       .eq('date', targetDate)
       .order('time', { ascending: true });
 
-    if (error || !cals) {
-      console.error("Errore fetch calendario:", error);
-      return;
-    }
+    if (error || !cals) return;
 
     const enrichedData = cals.map((item) => {
       let matchDetails = null;
@@ -149,13 +158,8 @@ export default function ObsOutput() {
         const totalPoints = points
           ?.filter(p => p.player_id === r.player_id)
           .reduce((sum, p) => sum + p.points, 0) || 0;
-        return {
-          ...r,
-          match_points: totalPoints
-        };
-      })
-      .sort((a, b) => (a.jersey_number || 99) - (b.jersey_number || 99))
-      .slice(0, 10); 
+        return { ...r, match_points: totalPoints };
+      }).sort((a, b) => (a.jersey_number || 99) - (b.jersey_number || 99)).slice(0, 10); 
     };
 
     setMatchData({
@@ -203,19 +207,13 @@ export default function ObsOutput() {
     fetchEligiblePlayers();
 
     const tpChannel = supabase.channel('threepoint-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'three_point' }, () => {
-        fetchThreePointData(); 
-      }).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'three_point' }, () => { fetchThreePointData(); }).subscribe();
 
     const draftChannel = supabase.channel('draft-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'draft' }, () => {
-        fetchDraftData(); 
-      }).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'draft' }, () => { fetchDraftData(); }).subscribe();
 
     const playersChannel = supabase.channel('players-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
-        fetchEligiblePlayers(); 
-      }).subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => { fetchEligiblePlayers(); }).subscribe();
 
     const cmdChannel = supabase.channel('obs-director')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'broadcast_state', filter: 'id=eq.1' }, (payload) => {
@@ -235,39 +233,26 @@ export default function ObsOutput() {
 
     if (broadcastState.active_graphic === 'daily_schedule' && broadcastState.payload.date) {
       liveChannel = supabase.channel('schedule-live')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, () => {
-          fetchDailySchedule(broadcastState.payload.date);
-        })
-        .subscribe();
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, () => { fetchDailySchedule(broadcastState.payload.date); }).subscribe();
     } 
     else if ((broadcastState.active_graphic === 'match_full' || broadcastState.active_graphic === 'match_lite') && broadcastState.payload.match_id) {
       const currentMatchId = broadcastState.payload.match_id;
       liveChannel = supabase.channel(`match-${currentMatchId}-live`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${currentMatchId}` }, () => {
-          fetchMatchData(currentMatchId);
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'match_points', filter: `match_id=eq.${currentMatchId}` }, () => {
-          fetchMatchData(currentMatchId);
-        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${currentMatchId}` }, () => { fetchMatchData(currentMatchId); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'match_points', filter: `match_id=eq.${currentMatchId}` }, () => { fetchMatchData(currentMatchId); })
         .subscribe();
     }
 
     return () => {
-      if (liveChannel) {
-        supabase.removeChannel(liveChannel);
-      }
+      if (liveChannel) supabase.removeChannel(liveChannel);
     };
   }, [broadcastState.active_graphic, broadcastState.payload.match_id, broadcastState.payload.date]);
 
   useEffect(() => {
-    let timer;
-
     const prepareTransition = async () => {
       const nextGraphic = broadcastState.active_graphic;
 
-      if (nextGraphic !== 'draft_round_reveal' && nextGraphic !== 'draft_cronologica') {
-         setHighlightRound(null);
-      }
+      if (nextGraphic !== 'draft_round_reveal' && nextGraphic !== 'draft_cronologica') setHighlightRound(null);
 
       if ((nextGraphic === 'match_full' || nextGraphic === 'match_lite') && broadcastState.payload.match_id) {
         await fetchMatchData(broadcastState.payload.match_id);
@@ -277,7 +262,6 @@ export default function ObsOutput() {
       } 
       else if (nextGraphic === '3point_leaderboard' || nextGraphic === '3point_bracket') {
         await fetchThreePointData();
-        // CATTURARE L'ID PER LAMPEGGIARE
         setHighlightedPlayerId(broadcastState.payload?.id || null);
       }
       else if (nextGraphic === '3point_winner') {
@@ -285,23 +269,19 @@ export default function ObsOutput() {
       }
       else if (nextGraphic.startsWith('draft_')) {
         await fetchDraftData();
-        if (nextGraphic === 'draft_pool_status') {
-          await fetchEligiblePlayers();
-        }
+        if (nextGraphic === 'draft_pool_status') await fetchEligiblePlayers();
       }
 
-      // === LOGICA 3-POINT LIVE ===
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+
       if (nextGraphic === '3point_single') {
         setHighlightedPlayerId(broadcastState.payload.id);
         setLocalGraphic('3point_single'); 
 
-        // FIX: Se NON c'è il "command", significa che hai premuto "In Onda" (non è il Live).
-        // Quindi riattiviamo il timer che la chiude da sola dopo 8 secondi!
         if (!broadcastState.payload.command) {
           const roundDelGiocatore = broadcastState.payload.round || 'Qualificazione';
           const isPlayoff = ['Quarti di finale', 'Semifinale', 'Finale'].includes(roundDelGiocatore);
-          
-          timer = setTimeout(async () => {
+          transitionTimer.current = setTimeout(async () => {
             await fetchThreePointData();
             setLocalGraphic(isPlayoff ? '3point_bracket' : '3point_leaderboard');
             setTimeout(() => setHighlightedPlayerId(null), 5000);
@@ -310,7 +290,6 @@ export default function ObsOutput() {
         return; 
       }
 
-      // === NUOVA SCHERMATA INTERMEDIA RISULTATO ===
       if (nextGraphic === '3point_result') {
         setLocalGraphic('3point_result');
         return;
@@ -318,38 +297,27 @@ export default function ObsOutput() {
 
       if (nextGraphic === '3point_winner') {
         setLocalGraphic('3point_winner');
-        timer = setTimeout(() => setLocalGraphic('3point_bracket'), 12000);
+        transitionTimer.current = setTimeout(() => setLocalGraphic('3point_bracket'), 12000);
         return; 
       }
 
-      // === LOGICA DRAFT ===
       if (nextGraphic === 'draft_annuncio') {
         await fetchDraftData(); 
         setLocalGraphic('draft_annuncio'); 
-        
-        timer = setTimeout(() => {
-          setLocalGraphic('draft_mista');
-        }, 8000);
+        transitionTimer.current = setTimeout(() => setLocalGraphic('draft_mista'), 8000);
         return;
       }
 
-      if (nextGraphic === 'draft_attesa') {
-        setLocalGraphic('draft_attesa');
-        return;
-      }
-
-      if (nextGraphic === 'draft_round_attesa') {
-        setLocalGraphic('draft_round_attesa');
+      if (nextGraphic === 'draft_attesa' || nextGraphic === 'draft_round_attesa') {
+        setLocalGraphic(nextGraphic);
         return;
       }
 
       if (nextGraphic === 'draft_round_reveal') {
         await fetchDraftData();
         setLocalGraphic('draft_round_reveal');
-        
         setHighlightRound(broadcastState.payload.round);
-
-        timer = setTimeout(() => {
+        transitionTimer.current = setTimeout(() => {
           setLocalGraphic('draft_cronologica');
           setTimeout(() => setHighlightRound(null), 10000);
         }, 12000);
@@ -362,7 +330,7 @@ export default function ObsOutput() {
     prepareTransition();
 
     return () => {
-      if (timer) clearTimeout(timer);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
     };
   }, [broadcastState]);
 
@@ -371,22 +339,13 @@ export default function ObsOutput() {
     <div className="w-[1920px] h-[1080px] overflow-hidden bg-neutral-950 relative font-dimbo text-white origin-top-left">
       
       {/* ========================================= */}
-      {/* OVERLAY LOGHI (Fissi sopra a tutto, Z-50) */}
+      {/* OVERLAY LOGO CENTRALE UNICO (Z-50) */}
       {/* ========================================= */}
-      
-      <div className="absolute top-0 left-8 z-50">
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50">
         <img 
-          src="/Basketville_logo25.png" 
+          src="Basketville_logo26_vero.png" 
           alt="Basketville 2026" 
-          className="h-40 w-auto drop-shadow-2xl" 
-        />
-      </div>
-
-      <div className="absolute top-0 right-8 z-50">
-        <img 
-          src="/Basketville_logo25.png" 
-          alt="Logo BV Ridotto" 
-          className="h-40 w-auto drop-shadow-2xl" 
+          className="h-[140px] w-auto drop-shadow-2xl" 
         />
       </div>
 
@@ -404,6 +363,7 @@ export default function ObsOutput() {
         {localGraphic === 'daily_schedule' && <DailyScheduleGraphic key="schedule" dateStr={dailyScheduleDate} data={dailyScheduleData} />}
         {localGraphic === 'match_full' && matchData && <MatchFullGraphic key="match_full" match={matchData} />}
         {localGraphic === 'match_lite' && matchData && <MatchLiteGraphic key="match_lite" match={matchData} />}
+        {localGraphic === 'generic_title' && <GenericTitleGraphic key="generic_title" payload={broadcastState.payload} />}
 
         {localGraphic === 'draft_cronologica' && (
           <DraftCronologicaGraphic key="draft_crono" picks={draftPicks} highlightRound={highlightRound} />
@@ -414,15 +374,12 @@ export default function ObsOutput() {
         {localGraphic === 'draft_mista' && (
           <DraftMistaGraphic key="draft_mista" picks={draftPicks} teams={draftTeams} />
         )}
-        
         {localGraphic === 'draft_attesa' && (
           <DraftAttesaGraphic key="draft_attesa" activePayload={broadcastState.payload} />
         )}
-
         {localGraphic === 'draft_round_attesa' && (
           <DraftRoundAttesaGraphic key="draft_round_attesa" payload={broadcastState.payload} />
         )}
-
         {localGraphic === 'draft_annuncio' && (
           <DraftAnnuncioGraphic key="draft_annuncio" picks={draftPicks} />
         )}
@@ -457,21 +414,22 @@ function MatchLiteGraphic({ match }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-12"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-12 pt-[200px]"
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
+          {match.event_name}
+        </span>
+        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.4em] drop-shadow-lg">
+          {subtitle}
+        </span>
+      </div>
+
       <div className="z-10 w-full max-w-[1300px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-16 shadow-2xl flex flex-col items-center">
         
-        <div className="flex flex-col items-center mb-12 gap-4">
-          <span className={`inline-block border px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-[0.3em] ${styles.tag}`}>
-            {match.event_name}
-          </span>
-          <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.5em]">
-            {subtitle}
-          </span>
-        </div>
-
         <div className="flex items-center justify-between w-full">
           <div className="flex flex-col items-center flex-1">
             <span className="text-[40px] font-black uppercase text-white whitespace-nowrap mb-2">
@@ -555,22 +513,23 @@ function MatchFullGraphic({ match }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-8"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-8 pt-[200px]"
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
+          {match.event_name}
+        </span>
+        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.4em] drop-shadow-lg">
+          {subtitle}
+        </span>
+      </div>
 
       <div className="z-10 w-[95%] max-w-[1500px] flex flex-col items-center gap-5">
         
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-2xl flex flex-col items-center w-full shrink-0">
-           <div className="flex flex-col items-center mb-4 gap-2">
-             <span className={`inline-block border px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${styles.tag}`}>
-                {match.event_name}
-             </span>
-             <span className="text-sm font-bold text-neutral-400 uppercase tracking-[0.3em]">
-               {subtitle}
-             </span>
-           </div>
-           
            <div className="flex items-center justify-between w-full gap-8">
              <div className="flex-1 text-right">
                <h2 className="text-[50px] leading-tight font-black uppercase text-white whitespace-nowrap overflow-visible">
@@ -777,25 +736,21 @@ function DailyScheduleGraphic({ dateStr, data }) {
       initial="hidden" 
       animate="visible" 
       exit="exit" 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-12" 
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-12 pt-[200px]" 
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      <div className="z-10 w-full max-w-5xl flex flex-col items-center">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          transition={{ duration: 0.5, ease: "easeOut" }} 
-          className="mb-12 flex flex-col items-center"
-        >
-          <span className="text-xl font-bold uppercase tracking-[0.5em] text-pink-500 mb-2 drop-shadow-md">
-            Il Programma
-          </span>
-          <h1 className="text-[65px] font-black uppercase tracking-tighter text-white leading-none drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] capitalize">
-            {formatDate(dateStr)}
-          </h1>
-        </motion.div>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-xl font-bold uppercase tracking-[0.5em] text-pink-500 mb-1 drop-shadow-md">
+          Il Programma
+        </span>
+        <h1 className="text-5xl font-black uppercase tracking-tighter text-white drop-shadow-lg capitalize">
+          {formatDate(dateStr)}
+        </h1>
+      </div>
 
+      <div className="z-10 w-full max-w-5xl flex flex-col items-center">
         <motion.div variants={containerVariants} className="w-full flex flex-col gap-4">
           {data.length === 0 ? (
             <div className="text-center text-neutral-500 text-2xl font-bold uppercase tracking-widest mt-10">
@@ -875,7 +830,6 @@ function ThreePointSingle({ payload }) {
       setIsRunning(false);
       setLocalTime(60.0);
     } else if (!payload.command) {
-      // Se hai cliccato "In Onda", ferma il timer e imposta il tempo ufficiale salvato
       setIsRunning(false);
       setLocalTime(parseFloat(payload.time) || 0.0);
     }
@@ -897,8 +851,6 @@ function ThreePointSingle({ payload }) {
   }, [isRunning, localTime]);
 
   const hasPrev = payload.prev_score !== null && payload.prev_score !== undefined;
-  
-  // CAPPIAMO SE È UN COMPORTAMENTO LIVE O UNA CARD DI RIEPILOGO STATICA
   const isLive = !!payload.command; 
 
   return (
@@ -909,19 +861,23 @@ function ThreePointSingle({ payload }) {
       transition={{ type: "spring", stiffness: 100, damping: 20 }} 
       className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black"
     >
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative">
-        <div className="flex items-center gap-4 mb-6">
-          <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse' : 'bg-neutral-500'}`}></div>
-          <h2 className="text-3xl font-bold uppercase tracking-[0.5em] text-pink-500">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <div className="flex items-center gap-3">
+          {isRunning && <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>}
+          <h2 className="text-4xl font-black uppercase tracking-[0.3em] text-pink-500 drop-shadow-md">
             {isLive ? "3-Point Contest" : "3-Point Contest"}
           </h2>
         </div>
+      </div>
+
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[200px]">
         
-        <h1 className="text-[85px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl">
+        <h1 className="text-[100px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl text-white">
           {payload.player_name || 'Tiratore'}
         </h1>
         
-        <div className="mb-10 h-10">
+        <div className="mb-12 h-10">
           {isLive && hasPrev && (
             <div className="inline-flex items-center gap-4 px-6 py-2 rounded-full border bg-white/5 border-white/10 text-neutral-400">
               <span className="text-[10px] font-bold uppercase tracking-widest">Miglior Prestazione</span>
@@ -940,11 +896,9 @@ function ThreePointSingle({ payload }) {
           </div>
           
           <div className="bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] shadow-2xl">
-            {/* IL TITOLO CAMBIA DINAMICAMENTE SE SIAMO LIVE O NO */}
             <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-3">
               {isLive ? "Tempo Rimasto" : "Tempo Impiegato"}
             </span>
-            {/* IL VALORE FORMULA LA "s" SOLO SE È LA CARD MANUALE DI RIEPILOGO */}
             <span className={`text-[130px] leading-none font-black tabular-nums ${localTime <= 10 && isRunning ? 'text-red-500' : 'text-neutral-200'}`}>
               {isLive ? localTime.toFixed(1) : `${payload.time || '0.0'}s`}
             </span>
@@ -957,13 +911,10 @@ function ThreePointSingle({ payload }) {
 
 // === NUOVA SCHERMATA INTERMEDIA: RISULTATO CONFERMATO ===
 function ThreePointResult({ payload }) {
-  // TRUCCO ANTI-FLASH: Memorizziamo l'ultimo payload valido.
   const [lockedPayload, setLockedPayload] = useState(payload);
 
   useEffect(() => {
-    if (payload && payload.player_name) {
-      setLockedPayload(payload);
-    }
+    if (payload && payload.player_name) setLockedPayload(payload);
   }, [payload]);
 
   const isRecord = lockedPayload.status === 'record';
@@ -978,15 +929,15 @@ function ThreePointResult({ payload }) {
       transition={{ type: "spring", stiffness: 100, damping: 20 }} 
       className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black"
     >
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative">
-        
-        <div className="flex items-center gap-4 mb-4">
-          <h2 className="text-3xl font-bold uppercase tracking-[0.5em] text-neutral-500">
-            Risultato Ufficiale
-          </h2>
-        </div>
-        
-        <h1 className="text-[85px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-4xl font-black uppercase tracking-[0.3em] text-neutral-500 drop-shadow-md">
+          Risultato Ufficiale
+        </h2>
+      </div>
+
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[200px]">
+        <h1 className="text-[100px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl">
           {lockedPayload.player_name || 'Tiratore'}
         </h1>
         
@@ -1003,7 +954,6 @@ function ThreePointResult({ payload }) {
           )}
         </div>
 
-        {/* BOX DEDICATO AI TIMBRI (Previene sovrapposizioni) */}
         <div className="h-[120px] mb-8 flex justify-center items-center w-full">
           <AnimatePresence>
             {isScartato && (
@@ -1031,7 +981,6 @@ function ThreePointResult({ payload }) {
           </AnimatePresence>
         </div>
 
-        {/* BOX PUNTEGGI */}
         <div className="flex items-center gap-12 w-full justify-center relative">
           <div className={`bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] relative overflow-hidden transition-all ${isScartato ? 'opacity-30 blur-sm grayscale' : 'shadow-2xl'}`}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
@@ -1068,12 +1017,15 @@ function ThreePointWinner({ payload }) {
     >
       <div className="absolute top-0 w-full h-full opacity-20 pointer-events-none mix-blend-screen bg-center bg-cover bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
       
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 z-10">
-        <h2 className="text-4xl font-bold uppercase tracking-[0.8em] text-yellow-500 mb-8 drop-shadow-[0_0_20px_rgba(234,179,8,0.8)]">
-          🏆 3-Point Champion 🏆
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
+          3-Point Champion
         </h2>
-        
-        <h1 className="text-[120px] leading-none font-black uppercase tracking-tighter mb-16 text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-2xl">
+      </div>
+      
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 z-10 pt-[200px]">
+        <h1 className="text-[140px] leading-none font-black uppercase tracking-tighter mb-16 text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-2xl">
           {payload.player_name}
         </h1>
         
@@ -1158,24 +1110,21 @@ function ThreePointLeaderboard({ data, highlightedId }) {
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 1.05 }} 
       transition={{ duration: 0.4 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12 pt-[200px]"
     >
-      <div className="mb-8 text-center">
-        <h2 className="text-[50px] font-black uppercase tracking-tighter text-white drop-shadow-2xl">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-4xl font-black uppercase tracking-tighter text-white drop-shadow-lg">
           3-Point Contest <span className="text-pink-500">Top 12</span>
         </h2>
-        <p className="text-lg text-neutral-400 font-bold uppercase tracking-[0.5em] mt-1">
+        <p className="text-sm text-neutral-400 font-bold uppercase tracking-[0.3em] mt-1">
           Leaderboard Qualificazioni
         </p>
       </div>
       
-      <div className="grid grid-cols-2 gap-x-20 w-full max-w-[1500px]">
-        <div>
-          {col1.map((player, idx) => renderRow(player, idx, 0))}
-        </div>
-        <div>
-          {col2.map((player, idx) => renderRow(player, idx, 6))}
-        </div>
+      <div className="grid grid-cols-2 gap-x-20 w-full max-w-[1500px] mt-8">
+        <div>{col1.map((player, idx) => renderRow(player, idx, 0))}</div>
+        <div>{col2.map((player, idx) => renderRow(player, idx, 6))}</div>
       </div>
     </motion.div>
   );
@@ -1227,15 +1176,9 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
 
 function ThreePointBracket({ data, highlightedId }) {
   const getHeatPlayers = (roundName, heatNum) => {
-    return data
-      .filter(p => p.round === roundName && p.heat === `Batteria ${heatNum}`)
-      .sort((a, b) => b.score - a.score);
+    return data.filter(p => p.round === roundName && p.heat === `Batteria ${heatNum}`).sort((a, b) => b.score - a.score);
   };
-  
-  const finalePlayers = data
-    .filter(p => p.round === 'Finale')
-    .sort((a, b) => b.score - a.score);
-    
+  const finalePlayers = data.filter(p => p.round === 'Finale').sort((a, b) => b.score - a.score);
   const winnerPlayer = data.find(p => p.round === 'Vincitore');
   
   return (
@@ -1244,45 +1187,33 @@ function ThreePointBracket({ data, highlightedId }) {
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 1.05 }} 
       transition={{ duration: 0.4 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12 pt-[200px]"
     >
-      <div className="mb-6 text-center">
-        <h2 className="text-[45px] font-black uppercase tracking-tighter text-white drop-shadow-2xl">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-4xl font-black uppercase tracking-tighter text-white drop-shadow-lg">
           3-Point Contest <span className="text-pink-500">Playoff</span>
         </h2>
+        <p className="text-sm text-neutral-400 font-bold uppercase tracking-[0.3em] mt-1">
+          Tabellone Finale
+        </p>
       </div>
       
-      <div className="flex flex-col items-center gap-6 w-full">
+      <div className="flex flex-col items-center gap-6 w-full mt-4">
         <div className="flex justify-center gap-4 w-full">
           {[1, 2, 3, 4, 5, 6].map(num => (
-            <MatchupCard 
-              key={`q${num}`} 
-              title={`Quarto ${num}`} 
-              players={getHeatPlayers('Quarti di finale', num)} 
-              highlightedId={highlightedId} 
-            />
+            <MatchupCard key={`q${num}`} title={`Quarto ${num}`} players={getHeatPlayers('Quarti di finale', num)} highlightedId={highlightedId} />
           ))}
         </div>
         
         <div className="flex justify-center gap-12 w-full mt-2">
           {[1, 2, 3].map(num => (
-            <MatchupCard 
-              key={`s${num}`} 
-              title={`Semifinale ${num}`} 
-              players={getHeatPlayers('Semifinale', num)} 
-              highlightedId={highlightedId} 
-            />
+            <MatchupCard key={`s${num}`} title={`Semifinale ${num}`} players={getHeatPlayers('Semifinale', num)} highlightedId={highlightedId} />
           ))}
         </div>
         
         <div className="flex justify-center w-full mt-2">
-          <MatchupCard 
-            title="La Finale" 
-            players={finalePlayers} 
-            maxPlayers={3} 
-            isFinal={true} 
-            highlightedId={highlightedId} 
-          />
+          <MatchupCard title="La Finale" players={finalePlayers} maxPlayers={3} isFinal={true} highlightedId={highlightedId} />
         </div>
       </div>
       
@@ -1294,35 +1225,20 @@ function ThreePointBracket({ data, highlightedId }) {
           className="absolute bottom-16 right-16 w-[420px] bg-gradient-to-b from-yellow-500/20 to-yellow-900/40 border border-yellow-500/50 rounded-3xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.2)] backdrop-blur-xl flex flex-col items-center border-b-4 border-b-yellow-500"
         >
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-3xl drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
-              👑
-            </span>
-            <span className="text-[13px] font-black uppercase tracking-widest text-yellow-400 drop-shadow-md">
-              Campione Assoluto
-            </span>
+            <span className="text-3xl drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">👑</span>
+            <span className="text-[13px] font-black uppercase tracking-widest text-yellow-400 drop-shadow-md">Campione Assoluto</span>
           </div>
-          
           <h3 className="text-[34px] font-black text-white text-center leading-tight mb-6 drop-shadow-lg uppercase">
             {winnerPlayer.player_name}
           </h3>
-          
           <div className="flex items-center justify-center gap-4 w-full">
              <div className="flex flex-col items-center bg-black/50 px-6 py-4 rounded-2xl border border-yellow-500/30 flex-1 shadow-inner">
-               <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1">
-                 Final Score
-               </span>
-               <span className="text-5xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]">
-                 {winnerPlayer.score || 0}
-               </span>
+               <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Final Score</span>
+               <span className="text-5xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]">{winnerPlayer.score || 0}</span>
              </div>
-             
              <div className="flex flex-col items-center bg-black/50 px-6 py-4 rounded-2xl border border-white/10 flex-1 shadow-inner">
-               <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1">
-                 Final Time
-               </span>
-               <span className="text-3xl font-bold text-neutral-200 mt-2">
-                 {winnerPlayer.time || '0.0'}s
-               </span>
+               <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Final Time</span>
+               <span className="text-3xl font-bold text-neutral-200 mt-2">{winnerPlayer.time || '0.0'}s</span>
              </div>
           </div>
         </motion.div>
@@ -1344,44 +1260,30 @@ function SlamDunkGraphic({ payload }) {
       transition={{ type: "spring", stiffness: 100, damping: 20 }} 
       className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black"
     >
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
-          <h2 className="text-3xl font-bold uppercase tracking-[0.5em] text-pink-500">
-            Slam Dunk Contest
-          </h2>
-        </div>
-        
-        <h1 className="text-[85px] leading-none font-black uppercase tracking-tighter mb-14 drop-shadow-2xl">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-4xl font-black uppercase tracking-[0.3em] text-pink-500 drop-shadow-md">
+          Slam Dunk Contest
+        </h2>
+      </div>
+
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 pt-[200px]">
+        <h1 className="text-[100px] leading-none font-black uppercase tracking-tighter mb-14 drop-shadow-2xl">
           {payload.player_name}
         </h1>
         
         <div className="flex items-center gap-8 w-full justify-center">
           <div className="bg-white/5 backdrop-blur-xl px-10 py-8 rounded-[2.5rem] border border-white/10 w-[340px] shadow-2xl">
-            <span className="text-lg font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-2">
-              Dunk 1
-            </span>
-            <span className="text-[110px] leading-none font-black text-neutral-200">
-              {dunk1}
-            </span>
+            <span className="text-lg font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-2">Dunk 1</span>
+            <span className="text-[110px] leading-none font-black text-neutral-200">{dunk1}</span>
           </div>
-          
           <div className="bg-white/5 backdrop-blur-xl px-10 py-8 rounded-[2.5rem] border border-white/10 w-[340px] shadow-2xl">
-            <span className="text-lg font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-2">
-              Dunk 2
-            </span>
-            <span className="text-[110px] leading-none font-black text-neutral-200">
-              {dunk2}
-            </span>
+            <span className="text-lg font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-2">Dunk 2</span>
+            <span className="text-[110px] leading-none font-black text-neutral-200">{dunk2}</span>
           </div>
-          
           <div className="bg-pink-500/10 backdrop-blur-xl px-10 py-8 rounded-[2.5rem] border border-pink-500/30 w-[340px] relative overflow-hidden shadow-[0_0_50px_rgba(236,72,153,0.15)]">
-            <span className="text-lg font-bold text-pink-300 uppercase tracking-[0.3em] block mb-2">
-              Totale
-            </span>
-            <span className="text-[110px] leading-none font-black text-white drop-shadow-[0_0_25px_rgba(236,72,153,0.8)]">
-              {total}
-            </span>
+            <span className="text-lg font-bold text-pink-300 uppercase tracking-[0.3em] block mb-2">Totale</span>
+            <span className="text-[110px] leading-none font-black text-white drop-shadow-[0_0_25px_rgba(236,72,153,0.8)]">{total}</span>
           </div>
         </div>
       </div>
@@ -1400,16 +1302,22 @@ function DraftRoundRevealGraphic({ picks, round }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10 mb-12 text-center mt-12">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+          Draft Board
+        </h2>
+      </div>
+
+      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10 mb-12 text-center mt-[200px]">
         <h2 className="text-2xl font-black uppercase text-pink-500 tracking-[0.5em] mb-2 animate-pulse">Generazione Ordine</h2>
-        <h1 className="text-[70px] font-black uppercase tracking-tighter text-white drop-shadow-2xl leading-none">
+        <h1 className="text-[80px] font-black uppercase tracking-tighter text-white drop-shadow-2xl leading-none">
           DRAFT ROUND <span className="text-pink-500">{round}</span>
         </h1>
       </motion.div>
 
-      <div 
-        className="grid grid-rows-6 grid-flow-col gap-x-20 gap-y-6 w-full max-w-[1200px] z-10 px-12 h-[650px]" 
-      >
+      <div className="grid grid-rows-6 grid-flow-col gap-x-20 gap-y-6 w-full max-w-[1200px] z-10 px-12 h-[600px]">
         {roundPicks.map((pick, i) => (
           <motion.div 
             key={pick.id || i} 
@@ -1464,19 +1372,25 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
         style={{ borderColor: defaultBorder }}
         className={`flex-1 flex flex-col rounded-2xl border relative p-1.5 justify-center ${defaultBgClass}`}
       >
-        <span className="absolute top-1.5 left-2 text-sm font-black text-pink-500 opacity-100">
+        {/* === MODIFICA: NUMERO SCELTA === */}
+        {/* Cambia "text-sm" in "text-base" (16px) o "text-[16px]". Usa "top-1.5" e "left-2" per spostarlo */}
+        <span className="absolute top-1.5 left-2 text-[24px] font-black text-pink-500 opacity-100">
           #{pickNum}
         </span>
         
+        {/* === MODIFICA: NOME SQUADRA E DISTANZA DALL'ALTO === */}
+        {/* "mt-2.5" è la distanza dall'alto (puoi usare mt-1, mt-3 ecc). "text-[11px]" è la grandezza testo */}
         <div className="w-full text-center mt-2.5">
-           <span className="text-[11px] font-black text-white uppercase tracking-wider block drop-shadow-md truncate px-1">
+           <span className="text-[30px] font-black text-white uppercase tracking-wider block drop-shadow-md truncate px-1">
              {teamName}
            </span>
         </div>
 
+        {/* === MODIFICA: ALTEZZA SPAZIO GIOCATORE E NOME GIOCATORE === */}
+        {/* "h-5" (20px) è l'altezza fissa. Se aumenti il "text-[9px]" del giocatore a 11px o 12px, aumenta h-5 in h-6 o h-7! */}
         <div className="w-full text-center h-5 flex items-center justify-center">
           {isFilled ? (
-             <span className="text-[9px] font-bold text-neutral-400 uppercase leading-none block truncate px-1">
+             <span className="text-[20px] font-bold text-neutral-400 uppercase leading-none block truncate px-1">
                {pick.players?.last_name} {pick.players?.first_name?.charAt(0)}.
              </span>
           ) : null}
@@ -1489,14 +1403,15 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
     <motion.div initial="hidden" animate="visible" exit="exit" className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 origin-top-left">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-      <div className="shrink-0 w-full flex items-center justify-center z-10 mb-2 pt-6">
-        <h1 className="text-4xl font-black tracking-[0.5em] text-white uppercase drop-shadow-lg flex flex-col items-center gap-2">
-          BASKETVILLE 2026 <span className="text-pink-500 text-2xl tracking-[0.6em]">— DRAFT BOARD —</span>
-        </h1>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+          Draft Board
+        </h2>
       </div>
 
-      <motion.div variants={containerVars} className="flex-1 flex gap-3 w-full max-w-[1880px] mx-auto z-10 overflow-hidden px-4 pb-4 pt-[100px]">
-        {/* Generiamo i 5 Round */}
+      <motion.div variants={containerVars} className="flex-1 flex gap-3 w-full max-w-[1880px] mx-auto z-10 overflow-hidden px-4 pb-4 pt-[200px]">
         {Array.from({ length: 5 }).map((_, roundIndex) => {
           const roundNum = roundIndex + 1;
           const startPickCol1 = (roundIndex * 12) + 1;
@@ -1508,22 +1423,20 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
           return (
             <div key={roundNum} className="flex-1 flex flex-col border-r border-pink-500/20 last:border-r-0 pr-3 last:pr-0">
               
-              {/* Intestazione Unica del Round */}
-              <div className="text-center font-black uppercase text-pink-500 tracking-[0.2em] mb-2 border-b border-pink-500/30 pb-1.5 text-[14px] drop-shadow-md">
+              {/* === MODIFICA: TITOLO ROUND ("ROUND 1", "ROUND 2") === */}
+              {/* "text-[14px]" regola la grandezza. */}
+              <div className="text-center font-black uppercase text-pink-500 tracking-[0.2em] mb-2 border-b border-pink-500/30 pb-1.5 text-[20px] drop-shadow-md">
                 ROUND {roundNum}
               </div>
               
-              {/* Le due colonne di quel Round */}
               <div className="flex-1 flex gap-1.5">
                 <motion.div variants={colVars} className="flex-1 flex flex-col gap-1.5">
                   {col1Picks.map(pickNum => renderPick(pickNum))}
                 </motion.div>
-                
                 <motion.div variants={colVars} className="flex-1 flex flex-col gap-1.5">
                   {col2Picks.map(pickNum => renderPick(pickNum))}
                 </motion.div>
               </div>
-
             </div>
           );
         })}
@@ -1547,13 +1460,16 @@ function DraftRostersGraphic({ picks, teams }) {
     <motion.div initial="hidden" animate="visible" exit="exit" className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black px-6 z-0 origin-top-left">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      <div className="shrink-0 w-full flex items-center justify-center z-10 mb-2 pt-6">
-        <h1 className="text-4xl font-black tracking-[0.5em] text-white uppercase drop-shadow-lg flex flex-col items-center gap-2">
-          BASKETVILLE 2026 <span className="text-pink-500 text-2xl tracking-[0.6em]">— DRAFT ROSTERS —</span>
-        </h1> 
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+          Draft Rosters
+        </h2>
       </div>
 
-      <motion.div variants={containerVars} className="flex gap-5 w-full max-w-[1880px] mx-auto z-10 justify-center h-[860px] pt-[75px] px-6">
+      {/* Aumentata l'altezza a h-[980px] per dare più respiro al fondo del box grigio */}
+      <motion.div variants={containerVars} className="flex gap-5 w-full max-w-[1880px] mx-auto z-10 justify-center h-[980px] pt-[200px] pb-4 px-6">
         {teams.map(team => {
           const teamPicks = picks.filter(p => p.team_edition_event_id === team.id).sort((a,b) => a.pick_number - b.pick_number);
 
@@ -1563,7 +1479,24 @@ function DraftRostersGraphic({ picks, teams }) {
               <h3 className="text-center text-2xl font-black uppercase text-white tracking-[0.1em] mb-4 border-b border-neutral-700 pb-3 shrink-0 truncate drop-shadow-lg">
                 {team.teams?.name}
               </h3>
+
+              {/* BOX STAFF IN ALTO */}
+              <div className="mb-4 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-2 shrink-0">
+                 {team.coach ? (
+                   <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
+                     Coach: <span className="text-white">{team.coach}</span>
+                   </div>
+                 ) : (
+                   <div className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
+                 )}
+                 {team.assistant_coach && (
+                   <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-1">
+                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
+                   </div>
+                 )}
+              </div>
               
+              {/* LISTA GIOCATORI */}
               <div className="flex flex-col gap-2.5 flex-1">
                 {Array.from({ length: 10 }).map((_, i) => {
                   const pick = teamPicks[i];
@@ -1588,20 +1521,6 @@ function DraftRostersGraphic({ picks, teams }) {
                 })}
               </div>
 
-              <div className="mt-3 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-2">
-                 {team.coach ? (
-                   <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
-                     Coach: <span className="text-white">{team.coach}</span>
-                   </div>
-                 ) : (
-                   <div className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
-                 )}
-                 {team.assistant_coach && (
-                   <div className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-1">
-                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
-                   </div>
-                 )}
-              </div>
             </motion.div>
           );
         })}
@@ -1624,26 +1543,65 @@ function DraftMistaGraphic({ picks, teams }) {
     <motion.div initial="hidden" animate="visible" exit="exit" variants={containerVars} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 origin-top-left">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      <div className="shrink-0 w-full flex items-center justify-center z-10 mb-2 pt-6">
-        <h1 className="text-4xl font-black tracking-[0.5em] text-white uppercase drop-shadow-lg flex flex-col items-center gap-2">
-          BASKETVILLE 2026 <span className="text-pink-500 text-2xl tracking-[0.6em]">— LIVE DRAFT —</span>
-        </h1>  
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+          Live Draft
+        </h2>
       </div>
 
-      <div className="flex-1 flex w-full gap-4 px-6 pt-[75px] pb-2 z-10 overflow-hidden items-start">
+      <div className="flex-1 flex w-full gap-4 px-6 pt-[200px] pb-2 z-10 overflow-hidden items-start">
         {teams.map(team => {
           const teamPicks = picks.filter(p => p.team_edition_event_id === team.id).sort((a,b) => a.pick_number - b.pick_number);
           return (
-            <div key={team.id} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl p-5 shadow-xl flex flex-col min-w-0">
-              <h3 className="text-center text-xl font-black uppercase text-white tracking-widest mb-3 border-b border-neutral-700 pb-2 truncate drop-shadow-md">
+            <div key={team.id} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl px-3 pb-3 pt-3 shadow-xl flex flex-col min-w-0">
+              
+              <h3 className="text-center text-[28px] font-black uppercase text-white tracking-widest mb-2 border-b border-neutral-700 pb-1 truncate drop-shadow-md">
                 {team.teams?.name}
               </h3>
               
-              <div className="flex flex-col gap-2 [perspective:1000px]">
+              {/* --- BOX STAFF --- */}
+              <div className="mb-2 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-1.5 shrink-0">
+                 {team.coach ? (
+                   <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
+                     Coach: <span className="text-white">{team.coach}</span>
+                   </div>
+                 ) : (
+                   <div className="text-[18px] leading-none font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
+                 )}
+                 {team.assistant_coach && (
+                   <div className="text-[18px] leading-none font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-0.5">
+                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
+                   </div>
+                 )}
+              </div>
+
+              {/* --- LISTA GIOCATORI --- */}
+              <div className="flex flex-col gap-1 [perspective:1000px] flex-1 min-h-0">
                 {Array.from({ length: 10 }).map((_, i) => {
                   const pick = teamPicks[i];
                   const isFilled = pick && pick.player_id;
                   const isLatest = isFilled && pick.id === latestPickId;
+
+                  // ==========================================
+                  // LOGICA TAGLIO NOME INTELLIGENTE
+                  // ==========================================
+                  let displayLast = '';
+                  let displayFirst = '';
+                  
+                  if (isFilled) {
+                    displayLast = pick.players?.last_name || '';
+                    const rawFirst = pick.players?.first_name || '';
+                    
+                    // Se la somma dei caratteri supera 13, taglia al primo carattere + "."
+                    // Puoi aumentare o diminuire il 13 a tuo piacimento!
+                    if ((displayLast.length + rawFirst.length) > 13) {
+                      displayFirst = rawFirst.charAt(0) + '.';
+                    } else {
+                      displayFirst = rawFirst;
+                    }
+                  }
 
                   return (
                     <motion.div 
@@ -1666,20 +1624,22 @@ function DraftMistaGraphic({ picks, teams }) {
                         times: [0, 0.3, 0.6, 1],
                         delay: 0.1 
                       } : {}}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border relative ${isFilled && !isLatest ? 'bg-neutral-900 border-neutral-700' : !isFilled ? 'bg-black border-neutral-800' : 'border-pink-500'}`}
+                      className={`flex items-center gap-3 px-3 py-[10.5px] rounded-xl border relative ${isFilled && !isLatest ? 'bg-neutral-900 border-neutral-700' : !isFilled ? 'bg-black border-neutral-800' : 'border-pink-500'}`}
                       style={isLatest ? { transformOrigin: 'top center' } : {}}
                     >
                       <div className="w-6 shrink-0 text-left">
-                        <span className="text-sm font-black text-neutral-500">#{pick ? pick.pick_number : '-'}</span>
+                        <span className="text-[18px] font-black text-neutral-500">#{pick ? pick.pick_number : '-'}</span>
                       </div>
 
                       <div className="flex flex-col justify-center min-w-0 flex-1">
                         {isFilled ? (
-                          <span className="font-bold text-white uppercase text-sm truncate block leading-tight">
-                            {pick.players?.last_name} <span className="font-normal text-[10px] text-pink-500 ml-1">{pick.players?.first_name}</span>
+                          // Uso le mie variabili intelligenti "displayLast" e "displayFirst"
+                          <span className="font-bold text-white uppercase text-[24px] truncate block leading-tight">
+                            {displayLast} <span className="font-normal text-[18px] text-pink-500 ml-1">{displayFirst}</span>
                           </span>
                         ) : (
-                          <span className="text-xs font-bold text-neutral-600">-</span>
+                          // IL TRATTINO ORA HA LE STESSE DIMENSIONI DEL NOME GIOCATORE (text-[24px] e leading-tight)
+                          <span className="font-bold text-neutral-600 uppercase text-[24px] block leading-tight">-</span>
                         )}
                       </div>
                     </motion.div>
@@ -1687,39 +1647,24 @@ function DraftMistaGraphic({ picks, teams }) {
                 })}
               </div>
 
-              <div className="mt-3 flex flex-col items-center justify-center min-h-[50px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-1.5">
-                 {team.coach ? (
-                   <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
-                     Coach: <span className="text-white">{team.coach}</span>
-                   </div>
-                 ) : (
-                   <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
-                 )}
-                 {team.assistant_coach && (
-                   <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-1">
-                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
-                   </div>
-                 )}
-              </div>
-
             </div>
           );
         })}
       </div>
 
-      <div className="shrink-0 w-full px-6 pb-6 z-10 h-[150px] mb-4 mt-2">
+      {/* --- BANNER INFERIORE (ON THE CLOCK) --- */}
+      <div className="shrink-0 w-full px-6 pb-6 z-10 h-[140px] mb-4 mt-2">
         <div className="w-full h-full bg-black/60 backdrop-blur-2xl border border-neutral-800 rounded-3xl shadow-2xl flex overflow-hidden">
           
           {onTheClock ? (
             <div className="w-1/3 bg-pink-500/10 border-r-2 border-pink-500/50 flex flex-col justify-center items-center relative shadow-[5px_0_30px_rgba(236,72,153,0.1)]">
-              <div className="absolute top-0 w-full bg-pink-500 text-white text-[11px] font-black uppercase tracking-[0.4em] py-1 text-center animate-pulse">
+              <div className="absolute top-0 w-full bg-pink-500 text-white text-[15px] font-black uppercase tracking-[0.2em] py-1 text-center animate-pulse">
                 On The Clock
               </div>
-              <div className="flex items-center gap-5 mt-4">
-                <span className="text-6xl font-black text-pink-500 drop-shadow-md">#{onTheClock.pick_number}</span>
+              <div className="flex items-center gap-5 mt-8">
+                <span className="text-[50px] font-black text-pink-500 drop-shadow-md">#{onTheClock.pick_number}</span>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Sta scegliendo:</span>
-                  <h2 className="text-3xl font-black uppercase text-white leading-none drop-shadow-md max-w-[260px] truncate">
+                  <h2 className="text-[50px] font-black uppercase text-white leading-none drop-shadow-md max-w-[260px] truncate">
                     {onTheClock.teams_edition_events?.teams?.name}
                   </h2>
                 </div>
@@ -1732,13 +1677,13 @@ function DraftMistaGraphic({ picks, teams }) {
           )}
 
           <div className="w-2/3 flex flex-col justify-center px-6 relative">
-            <span className="absolute top-3 left-6 text-[9px] font-bold text-neutral-500 uppercase tracking-[0.3em]">Prossime Scelte</span>
-            <div className="flex items-center justify-between w-full mt-3 gap-3">
+            <span className="absolute top-[5px] left-6 text-[15px] font-bold text-neutral-500 uppercase tracking-[0.2em]">Next Pick</span>
+            <div className="flex items-center justify-between w-full mt-5 gap-3">
               {upNext.length > 0 ? (
                 upNext.map((p, index) => (
                   <div key={p.id} className="flex-1 flex items-center gap-2 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 min-w-0 shadow-inner">
-                    <span className="text-2xl font-black text-neutral-500">#{p.pick_number}</span>
-                    <span className="text-lg font-bold text-white uppercase truncate">
+                    <span className="text-[24px] font-black text-neutral-500">#{p.pick_number}</span>
+                    <span className="text-[24px] font-bold text-white uppercase truncate">
                       {p.teams_edition_events?.teams?.name}
                     </span>
                   </div>
@@ -1750,7 +1695,6 @@ function DraftMistaGraphic({ picks, teams }) {
               )}
             </div>
           </div>
-
         </div>
       </div>
 
@@ -1779,8 +1723,15 @@ function DraftAnnuncioGraphic({ picks }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none mix-blend-screen"></div>
       
+      {/* TITOLO IDENTIFICATIVO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
+          Basketville Draft
+        </h2>
+      </div>
+      
       {latestPick ? (
-        <div className="flex flex-col items-center text-center z-10 mt-[-50px]">
+        <div className="flex flex-col items-center text-center z-10 mt-[120px]">
           
           <motion.div 
             initial={{ y: 30, opacity: 0 }} 
@@ -1837,7 +1788,7 @@ function DraftAnnuncioGraphic({ picks }) {
 
         </div>
       ) : (
-        <div className="text-center z-10 text-white text-4xl font-black uppercase tracking-widest opacity-50">
+        <div className="text-center z-10 text-white text-4xl font-black uppercase tracking-widest opacity-50 pt-[200px]">
           In Attesa della Prima Scelta...
         </div>
       )}
@@ -1846,19 +1797,14 @@ function DraftAnnuncioGraphic({ picks }) {
 }
 
 function DraftAttesaGraphic({ activePayload }) {
-  // TRUCCO ANTI-FLASH: Memorizziamo l'ultimo payload valido in uno State.
-  // Se il database svuota il payload (perché l'admin ha lanciato l'annuncio), 
-  // la grafica mantiene la memoria per non sfarfallare mentre sfuma via.
   const [lockedPayload, setLockedPayload] = useState(activePayload);
 
   useEffect(() => {
-    // Aggiorniamo la memoria SOLO se arriva un payload che contiene un nome squadra
     if (activePayload && activePayload.team_name) {
       setLockedPayload(activePayload);
     }
   }, [activePayload]);
 
-  // Ora usiamo i dati "congelati" invece di quelli in tempo reale
   const pickNum = lockedPayload?.pick_number || "-";
   const teamName = lockedPayload?.team_name || "SQUADRA AL DRAFT";
   const coach = lockedPayload?.coach;
@@ -1874,7 +1820,14 @@ function DraftAttesaGraphic({ activePayload }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen"></div>
       
-      <div className="flex flex-col items-center text-center z-10">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
+          Live Draft
+        </h2>
+      </div>
+
+      <div className="flex flex-col items-center text-center z-10 pt-[150px]">
         
         <div className="mb-8">
           <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-8 py-3 rounded-full text-2xl font-bold uppercase tracking-[0.4em] shadow-[0_0_30px_rgba(235,109,165,0.4)]">
@@ -1921,7 +1874,14 @@ function DraftRoundAttesaGraphic({ payload }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen"></div>
       
-      <div className="flex flex-col items-center text-center z-10">
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <h2 className="text-3xl font-black uppercase tracking-[0.4em] text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]">
+          Live Draft
+        </h2>
+      </div>
+
+      <div className="flex flex-col items-center text-center z-10 pt-[150px]">
         
         <motion.div 
           animate={{ scale: [1, 1.03, 1] }} 
@@ -1967,13 +1927,15 @@ function DraftPoolGraphic({ players, picks }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 origin-top-left">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-      <div className="shrink-0 w-full flex items-center justify-center z-10 mb-2 pt-6">
-        <h1 className="text-4xl font-black tracking-[0.5em] text-white uppercase drop-shadow-lg flex flex-col items-center gap-2">
-          BASKETVILLE 2026 <span className="text-pink-500 text-2xl tracking-[0.6em]">— DRAFT POOL —</span>
-        </h1>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+          Draft Pool
+        </h2>
       </div>
 
-      <div className="flex-1 flex gap-8 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-8 pb-8 pt-8 justify-center">
+      <div className="flex-1 flex gap-8 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-8 pb-8 pt-[200px] justify-center">
         {roles.map((role) => {
           const playersInRole = groupedPlayers[role] || [];
           return (
@@ -2005,6 +1967,56 @@ function DraftPoolGraphic({ players, picks }) {
             </div>
           );
         })}
+      </div>
+    </motion.div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: TITOLO GENERICO (JOLLY) -> VERSIONE MAXI
+// ==========================================
+function GenericTitleGraphic({ payload }) {
+  const text = payload?.text || 'BASKETVILLE 2026';
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      exit={{ opacity: 0, scale: 1.05 }} 
+      transition={{ type: "spring", stiffness: 100, damping: 20 }} 
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black overflow-hidden"
+    >
+      {/* Sfondo Texture Carbonio */}
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+      
+      {/* Bagliore Rosa Morbido al centro */}
+      <div className="absolute w-[1000px] h-[1000px] bg-pink-500/10 blur-[180px] rounded-full pointer-events-none mix-blend-screen"></div>
+
+      {/* Contenitore con larghezza massima aumentata per scritte giganti */}
+      <div className="flex flex-col items-center text-center w-full max-w-[1800px] px-12 z-10 pt-[150px]">
+        
+        {/* Barrette decorative in alto (più staccate) */}
+        <div className="flex items-center gap-6 mb-16 opacity-70">
+          <div className="w-24 h-1.5 bg-gradient-to-r from-transparent to-pink-500 rounded-full"></div>
+          <div className="w-4 h-4 bg-pink-500 rotate-45"></div>
+          <div className="w-24 h-1.5 bg-gradient-to-l from-transparent to-pink-500 rounded-full"></div>
+        </div>
+
+        {/* IL TESTO GIGANTE ( text-[220px] e leading-none ) */}
+        <h1 
+          className="text-[220px] leading-none font-black uppercase tracking-widest text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
+          style={{ textWrap: 'balance' }} 
+        >
+          {text}
+        </h1>
+        
+        {/* Barrette decorative in basso (più staccate) */}
+        <div className="flex items-center gap-6 mt-16 opacity-70">
+          <div className="w-24 h-1.5 bg-gradient-to-r from-transparent to-neutral-500 rounded-full"></div>
+          <div className="w-4 h-4 bg-neutral-500 rotate-45"></div>
+          <div className="w-24 h-1.5 bg-gradient-to-l from-transparent to-neutral-500 rounded-full"></div>
+        </div>
+
       </div>
     </motion.div>
   );

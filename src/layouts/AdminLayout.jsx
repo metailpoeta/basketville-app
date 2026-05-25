@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Calendar, Trophy, MonitorPlay, Radio, Star, Clock, Tv, ListOrdered } from 'lucide-react';
+import { Users, Calendar, Trophy, MonitorPlay, Radio, Star, Clock, Tv, ListOrdered, Image as ImageIcon } from 'lucide-react';
 
 export default function AdminLayout({ children, activeView, setActiveView }) {
   // Stile dei bottoni unificato
@@ -70,6 +70,14 @@ export default function AdminLayout({ children, activeView, setActiveView }) {
             className={`w-full flex items-center px-4 py-3 rounded-xl text-xs font-medium tracking-widest uppercase transition-all ${activeView === 'live-score' ? 'bg-pink-500 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white mb-2'}`}
           >
             <Tv size={16} className="mr-4" /> Regia Partita
+          </button>
+
+          {/* NUOVO BOTTONE SPONSOR */}
+          <button 
+            onClick={() => setActiveView('sponsor-manager')} 
+            className={`w-full flex items-center px-4 py-3 rounded-xl text-xs font-medium tracking-widest uppercase transition-all ${activeView === 'sponsor-manager' ? 'bg-pink-500 text-white shadow-lg' : 'text-neutral-400 hover:bg-white/5 hover:text-white mb-2'}`}
+          >
+            <ImageIcon size={16} className="mr-4" /> Gestione Sponsor
           </button>
           
           <button 
