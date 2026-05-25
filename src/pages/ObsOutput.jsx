@@ -2094,7 +2094,7 @@ function DraftPoolGraphic({ players, picks }) {
 // COMPONENTE: TITOLO GENERICO (JOLLY) -> VERSIONE MAXI
 // ==========================================
 function GenericTitleGraphic({ payload }) {
-  const text = payload?.text || 'BASKETVILLE 2026';
+  const text = payload?.text || '';
 
   return (
     <motion.div 
