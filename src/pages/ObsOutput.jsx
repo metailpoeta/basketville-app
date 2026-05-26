@@ -423,7 +423,7 @@ function MatchLiteGraphic({ match }) {
         <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
           {match.event_name}
         </span>
-        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.4em] drop-shadow-lg">
+        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.08em] drop-shadow-lg">
           {subtitle}
         </span>
       </div>
@@ -471,7 +471,7 @@ function MatchLiteGraphic({ match }) {
         </div>
 
         {match.status === 'live' && (
-          <div className="mt-14 flex items-center gap-3 text-red-500 font-black tracking-[0.4em] uppercase animate-pulse">
+          <div className="mt-14 flex items-center gap-3 text-red-500 font-black tracking-[0.08em] uppercase animate-pulse">
             <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_15px_red]"></div>
             Match Live
           </div>
@@ -522,7 +522,7 @@ function MatchFullGraphic({ match }) {
         <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
           {match.event_name}
         </span>
-        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.4em] drop-shadow-lg">
+        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.08em] drop-shadow-lg">
           {subtitle}
         </span>
       </div>
@@ -1019,7 +1019,7 @@ function ThreePointWinner({ payload }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-4xl font-black uppercase tracking-[0.4em] text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
+        <h2 className="text-4xl font-black uppercase tracking-[0.08em] text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
           3-Point Champion
         </h2>
       </div>
@@ -1031,7 +1031,7 @@ function ThreePointWinner({ payload }) {
         
         <div className="flex items-center gap-12 w-full justify-center">
           <div className="bg-yellow-500/10 backdrop-blur-xl px-16 py-8 rounded-[3rem] border border-yellow-500/40 w-[500px] shadow-[0_0_80px_rgba(234,179,8,0.2)]">
-            <span className="text-2xl font-bold text-yellow-200 uppercase tracking-[0.4em] block mb-4">
+            <span className="text-2xl font-bold text-yellow-200 uppercase tracking-[0.08em] block mb-4">
               Final Score
             </span>
             <span className="text-[140px] leading-none font-black text-white drop-shadow-[0_0_40px_rgba(234,179,8,0.8)]">
@@ -1353,7 +1353,7 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
     const pick = picks.find(p => p.pick_number === pickNum);
     const isFilled = pick && pick.player_id;
     const isHighlight = highlightRound && pick && pick.round_number === highlightRound;
-    const teamName = pick?.teams_edition_events?.teams?.name || 'TBD';
+    const teamName = pick?.teams_edition_events?.teams?.name || '';
 
     const defaultBorder = isFilled ? '#404040' : '#262626'; 
     const defaultBgClass = isFilled ? 'bg-neutral-900 shadow-sm' : 'bg-black';
@@ -1462,8 +1462,8 @@ function DraftRostersGraphic({ picks, teams }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           Draft Rosters
         </h2>
       </div>
@@ -1490,8 +1490,8 @@ function DraftRostersGraphic({ picks, teams }) {
                    <div className="text-[18px] leading-none font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
                  )}
                  {team.assistant_coach && (
-                   <div className="text-[18px] leading-none font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-0.5">
-                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
+                   <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full mt-0.5">
+                     Vice: <span className="text-white">{team.assistant_coach}</span>
                    </div>
                  )}
               </div>
@@ -1569,7 +1569,7 @@ function DraftMistaGraphic({ picks, teams }) {
         </h2>
       </div>
 
-      <div className="flex-1 flex w-full gap-4 px-6 pt-[200px] pb-2 z-10 overflow-hidden items-start">
+      <div className="flex-1 flex w-full gap-4 px-6 pt-[190px] pb-2 z-10 overflow-hidden items-start">
         {teams.map(team => {
           const teamPicks = picks.filter(p => p.team_edition_event_id === team.id).sort((a,b) => a.pick_number - b.pick_number);
           return (
@@ -1589,8 +1589,8 @@ function DraftMistaGraphic({ picks, teams }) {
                    <div className="text-[18px] leading-none font-bold text-neutral-600 uppercase tracking-widest text-center">Nessun Coach</div>
                  )}
                  {team.assistant_coach && (
-                   <div className="text-[18px] leading-none font-bold text-neutral-500 uppercase tracking-widest text-center truncate w-full mt-0.5">
-                     Vice: <span className="text-neutral-300">{team.assistant_coach}</span>
+                   <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full mt-0.5">
+                     Vice: <span className="text-white">{team.assistant_coach}</span>
                    </div>
                  )}
               </div>
@@ -1683,7 +1683,7 @@ function DraftMistaGraphic({ picks, teams }) {
               <div className="flex items-center gap-5 mt-8">
                 <span className="text-[50px] font-black text-pink-500 drop-shadow-md">#{onTheClock.pick_number}</span>
                 <div className="flex flex-col">
-                  <h2 className="text-[50px] font-black uppercase text-white leading-none drop-shadow-md max-w-[260px] truncate">
+                  <h2 className="text-[50px] tracking-wider font-black uppercase text-white leading-none drop-shadow-md max-w-[260px] truncate">
                     {onTheClock.teams_edition_events?.teams?.name}
                   </h2>
                 </div>
@@ -1691,7 +1691,7 @@ function DraftMistaGraphic({ picks, teams }) {
             </div>
           ) : (
             <div className="w-1/3 border-r-2 border-neutral-800 flex items-center justify-center">
-               <span className="text-xl font-bold uppercase text-neutral-500 tracking-widest">Draft Concluso</span>
+               <span className="text-xl font-bold uppercase text-neutral-500 tracking-wider">Draft Concluso</span>
             </div>
           )}
 
@@ -1699,16 +1699,16 @@ function DraftMistaGraphic({ picks, teams }) {
           <div className="w-2/3 flex flex-col justify-center px-6 relative">
             
             {/* STRISCIA SUPERIORE NEXT PICK (Grigio chiaro) */}
-            <div className="absolute top-0 left-0 w-full bg-black-900 border-b border-neutral-800 text-neutral-400 text-[15px] font-black uppercase tracking-[0.08em] py-1 pl-[42px] text-left">
+            <div className="absolute top-0 left-0 w-full bg-neutral-900 border-b border-neutral-800 text-neutral-400 text-[15px] font-black uppercase tracking-[0.08em] py-1 pl-[42px] text-left">
               Next Pick
             </div>
             
             <div className="flex items-center justify-between w-full mt-8 gap-3">
               {upNext.length > 0 ? (
                 upNext.map((p, index) => (
-                  <div key={p.id} className="flex-1 flex items-center gap-2 bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 min-w-0 shadow-inner">
+                  <div key={p.id} className="flex-1 flex items-center gap-2 bg-black-900 border border-neutral-700 rounded-xl px-4 py-3 min-w-0 shadow-inner">
                     <span className="text-[24px] font-black text-neutral-500">#{p.pick_number}</span>
-                    <span className="text-[24px] font-bold text-white uppercase truncate">
+                    <span className="text-[24px] tracking-wide font-bold text-white uppercase truncate">
                       {p.teams_edition_events?.teams?.name}
                     </span>
                   </div>
@@ -2016,13 +2016,13 @@ function DraftPoolGraphic({ players, picks }) {
 
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-widest">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Basketville 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           Draft Pool
         </h2>
       </div>
 
-      <div className="flex-1 flex gap-6 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-6 pb-16 pt-[250px] justify-center">
+      <div className="flex-1 flex gap-6 w-full max-w-[1850px] mx-auto z-10 overflow-hidden px-6 pb-5 pt-[180px] justify-center">
         {roles.map((role) => {
           const playersInRole = groupedPlayers[role] || [];
           
@@ -2036,7 +2036,7 @@ function DraftPoolGraphic({ players, picks }) {
               
               {/* LISTA GIOCATORI: FISSATA A 12 ELEMENTI */}
               <div className="flex flex-col gap-1.5 flex-1 min-h-0">
-                {Array.from({ length: 12 }).map((_, i) => {
+                {Array.from({ length: 14 }).map((_, i) => {
                   const p = playersInRole[i];
                   const isFilled = !!p;
                   const isPicked = isFilled ? picks.some(pick => pick.player_id === p.id) : false;
@@ -2049,7 +2049,7 @@ function DraftPoolGraphic({ players, picks }) {
                     displayLast = p.last_name || '';
                     const rawFirst = p.first_name || '';
                     
-                    if ((displayLast.length + rawFirst.length) > 13) {
+                    if ((displayLast.length + rawFirst.length) > 25) {
                       displayFirst = rawFirst.charAt(0) + '.';
                     } else {
                       displayFirst = rawFirst;
@@ -2059,7 +2059,7 @@ function DraftPoolGraphic({ players, picks }) {
                   return (
                     <div 
                       key={isFilled ? p.id : `empty-${i}`} 
-                      className={`flex items-center justify-between px-3 py-[9px] rounded-xl border ${!isFilled ? 'bg-black border-neutral-800' : isPicked ? 'bg-neutral-900 border-neutral-700 opacity-30' : 'bg-neutral-900 border-neutral-700'}`}
+                      className={`flex items-center justify-between px-3 py-[9px] rounded-xl border ${!isFilled ? 'bg-neutral-900 border-neutral-700' : isPicked ? 'bg-neutral-900 border-neutral-700 opacity-30' : 'bg-neutral-900 border-neutral-700'}`}
                     >
                       <div className="flex-1 min-w-0">
                         {isFilled ? (
@@ -2116,7 +2116,7 @@ function GenericTitleGraphic({ payload }) {
         {/* === MODIFICA KERNING (SPAZIATURA LETTERE) === */}
         {/* Sostituisci "tracking-widest" con "tracking-[0.1em]" o un'altra misura per avere il pieno controllo */}
         <h1 
-          className="text-[240px] leading-none font-black uppercase tracking-[0.08em] text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
+          className="text-[240px] leading-none font-black uppercase tracking-wider text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
           style={{ textWrap: 'balance' }} 
         >
           {text}
