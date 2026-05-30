@@ -4,7 +4,7 @@ import { Target, XCircle, ListOrdered, Trophy, Type, Tv } from 'lucide-react';
 
 export default function ObsController() {
   const [currentGraphic, setCurrentGraphic] = useState('none');
-  const [genericTitleText, setGenericTitleText] = useState(''); // NUOVO STATO PER IL TESTO
+  const [genericTitleText, setGenericTitleText] = useState(''); // STATO PER IL TESTO
 
   // Ascoltiamo in tempo reale cosa c'è in onda
   useEffect(() => {
@@ -87,9 +87,38 @@ export default function ObsController() {
         </div>
 
         {/* ========================================== */}
-        {/* NUOVA CARD: TITOLO GENERICO (JOLLY)        */}
+        {/* NUOVA CARD: TORNEO E PLAYOFF               */}
         {/* ========================================== */}
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
+          <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
+            <div className="p-3 bg-purple-50 text-purple-500 rounded-xl"><Trophy size={24}/></div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-800">Torneo & Playoff</h3>
+              <p className="text-xs text-neutral-500">Classifiche gironi e tabellone</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <button 
+              onClick={() => triggerOBS('recap_girone')}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'recap_girone' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <ListOrdered size={16} /> Classifica Gironi
+            </button>
+            
+            <button 
+              onClick={() => triggerOBS('playoff_bracket')}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'playoff_bracket' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Trophy size={16} /> Tabellone Playoff
+            </button>
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* CARD: TITOLO GENERICO (JOLLY)              */}
+        {/* ========================================== */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200 md:col-span-2">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
             <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><Type size={24}/></div>
             <div>
