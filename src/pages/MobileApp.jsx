@@ -1215,11 +1215,11 @@ export default function MobileApp() {
     <div className="w-full min-h-screen bg-neutral-950 text-white font-sans flex flex-col relative select-none antialiased">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none mix-blend-overlay z-0"></div>
 
-      {/* HEADER SUPERIORE - SIMMETRIA CON SCRITTA CENTRALE MINIMAL */}
-      <header className="w-full bg-neutral-950/80 border-b border-neutral-800/50 backdrop-blur-xl sticky top-0 z-40 px-5 h-14 flex items-center justify-between shadow-md relative">
+      {/* HEADER SUPERIORE - CORRETTO CON SAFE AREA PER IPHONE/NOTCH */}
+      <header className="w-full bg-neutral-950/80 border-b border-neutral-800/50 backdrop-blur-xl sticky top-0 z-40 px-5 pt-[env(safe-area-inset-top,16px)] pb-3.5 flex items-end justify-between shadow-md relative min-h-[4.5rem]">
         
-        {/* LOGO UFFICIALE A SINISTRA */}
-        <div className="flex items-center shrink-0 z-10">
+        {/* LOGO UFFICIALE A SINISTRA (Allineato in basso) */}
+        <div className="flex items-center shrink-0 z-10 h-7">
           <img 
             src="/Basketville_logo.svg" 
             alt="Basketville" 
@@ -1227,17 +1227,19 @@ export default function MobileApp() {
           />
         </div>
 
-        {/* TESTO AL CENTRO: Iper-minimal in grigio scuro per non appesantire */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {/* TESTO AL CENTRO: Sganciato dal notch e allineato sulla stessa linea degli altri elementi */}
+        <div className="absolute inset-x-0 bottom-3.5 flex items-center justify-center pointer-events-none">
           <span className="text-[8px] font-black uppercase tracking-[0.35em] text-neutral-600 bg-neutral-950 px-2 pointer-events-auto select-none">
             Official App
           </span>
         </div>
 
-        {/* BADGE EDIZIONE A DESTRA */}
-        <span className="text-[8px] font-black bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800 shadow-inner shrink-0 z-10">
-          Ed. {activeEdition ? activeEdition.year : '...'}
-        </span>
+        {/* BADGE EDIZIONE A DESTRA (Allineato in basso) */}
+        <div className="flex items-center shrink-0 z-10 h-7">
+          <span className="text-[8px] font-black bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800 shadow-inner">
+            Ed. {activeEdition ? activeEdition.year : '...'}
+          </span>
+        </div>
 
       </header>
 
