@@ -250,7 +250,7 @@ export default function CalendarManager() {
                   <div className="relative">
                     <select className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 appearance-none outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" value={customEventId} onChange={e => setCustomEventId(e.target.value)}>
                       <option value="">-- Seleziona --</option>
-                      {eventsList.filter(ev => ev.id !== 1).map(ev => (
+                      {eventsList.map(ev => (
                         <option key={ev.id} value={ev.id}>{ev.name}</option>
                       ))}
                     </select>

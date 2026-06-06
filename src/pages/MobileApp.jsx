@@ -23,6 +23,14 @@ export default function MobileApp() {
   const [availableDates, setAvailableDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeContestTab, setActiveContestTab] = useState('3pt'); // '3pt' o 'dunk'
+  const [threePtTab, setThreePtTab] = useState('qualificazioni'); // 'qualificazioni' o 'playoff'
+  const [threePtPlayoffTab, setThreePtPlayoffTab] = useState('batterie'); // 'batterie', 'semifinali', 'finale'
+  const [dunkTab, setDunkTab] = useState('qualificazioni'); // 'qualificazioni' o 'finale'
+  const [threePointData, setThreePointData] = useState([]);
+  const [dunkData, setDunkData] = useState([]); // Assumendo esista una tabella per le schiacciate
+  const [topScorers, setTopScorers] = useState([]);
+  
 
   // ==========================================
   // STATI PER LA MODALE TABELLINO (BOX SCORE)
@@ -33,47 +41,113 @@ export default function MobileApp() {
   const [veroCupTab, setVeroCupTab] = useState('gironi');
   const [activeGroupTab, setActiveGroupTab] = useState(null);
 
-  // ==========================================
-  // FUNZIONE FETCH: Scarica il palinsesto
+// ==========================================
+  // FUNZIONE FETCH: Scarica il palinsesto e i Contest
   // ==========================================
   const loadData = async () => {
     setIsRefreshing(true);
     
-    const { data: ed } = await supabase.from('editions').select('*').eq('is_active', true).single();
-    
-    if (ed) {
-      setActiveEdition(ed);
+    try {
+      const { data: ed } = await supabase.from('editions').select('*').eq('is_active', true).single();
       
-      const { data: cals } = await supabase
-        .from('calendars')
-        .select(`
-          *,
-          events(name),
-          matches (
+      if (ed) {
+        setActiveEdition(ed);
+        
+        // --- 1. PALINSESTO ---
+        const { data: cals } = await supabase
+          .from('calendars')
+          .select(`
             *,
-            match_types(name),
-            team_a:team_a_id(group_name, teams(name, short_name)),
-            team_b:team_b_id(group_name, teams(name, short_name))
-          )
-        `)
-        .eq('edition_id', ed.id)
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
-        
-      if (cals) {
-        setCalendarRaw(cals);
-        const dates = [...new Set(cals.map(c => c.date).filter(Boolean))];
-        setAvailableDates(dates);
-        
-        if (dates.length > 0 && !selectedDate) {
-          const today = new Date();
-          const offset = today.getTimezoneOffset() * 60000;
-          const todayStr = (new Date(today - offset)).toISOString().split('T')[0];
-          setSelectedDate(dates.includes(todayStr) ? todayStr : dates[0]);
+            events(name),
+            matches (
+              *,
+              match_types(name),
+              team_a:team_a_id(group_name, teams(name, short_name)),
+              team_b:team_b_id(group_name, teams(name, short_name))
+            )
+          `)
+          .eq('edition_id', ed.id)
+          .order('date', { ascending: true })
+          .order('time', { ascending: true });
+          
+        if (cals) {
+          setCalendarRaw(cals);
+          const dates = [...new Set(cals.map(c => c.date).filter(Boolean))];
+          setAvailableDates(dates);
+          
+          if (dates.length > 0 && !selectedDate) {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            const todayStr = (new Date(today - offset)).toISOString().split('T')[0];
+            setSelectedDate(dates.includes(todayStr) ? todayStr : dates[0]);
+          }
+        }
+
+        // --- 2. DATI 3-POINT CONTEST ---
+        const { data: tpData, error: tpError } = await supabase.from('three_point').select('*').eq('edition_id', ed.id);
+        if (tpData) setThreePointData(tpData);
+
+        // --- 3. DATI SLAM DUNK CONTEST ---
+        const { data: sdData, error: sdError } = await supabase.from('slam_dunk').select('*').eq('edition_id', ed.id);
+        if (sdData) {
+          setDunkData(sdData);
+        } else if (sdError) {
+          console.warn("Nessun dato Slam Dunk trovato o tabella non esistente:", sdError.message);
+        }
+        // --- 4. CLASSIFICA MARCATORI (VERO CUP) ---
+        try {
+          const { data: ev } = await supabase.from('events').select('id').ilike('name', '%vero cup%').single();
+          if (ev) {
+            const { data: tee } = await supabase.from('teams_edition_events').select('id').eq('edition_id', ed.id).eq('event_id', ev.id);
+            if (tee && tee.length > 0) {
+              const teeIds = tee.map(t => t.id);
+              const { data: mData } = await supabase.from('matches').select('id').in('team_a_id', teeIds);
+              if (mData && mData.length > 0) {
+                const matchIds = mData.map(m => m.id);
+                const { data: points } = await supabase.from('match_points')
+                  .select('player_id, points, match_id, players(first_name, last_name)')
+                  .in('match_id', matchIds);
+
+                if (points) {
+                  const playerStats = {};
+                  points.forEach(p => {
+                    if (!playerStats[p.player_id]) {
+                      playerStats[p.player_id] = {
+                        id: p.player_id,
+                        first_name: p.players?.first_name || '',
+                        last_name: p.players?.last_name || '',
+                        totalPoints: 0,
+                        matchesPlayed: new Set()
+                      };
+                    }
+                    playerStats[p.player_id].totalPoints += p.points;
+                    playerStats[p.player_id].matchesPlayed.add(p.match_id); // Set garantisce l'unicità dei match
+                  });
+
+                  const processedScorers = Object.values(playerStats).map(p => ({
+                    ...p,
+                    games: p.matchesPlayed.size,
+                    avgPoints: (p.totalPoints / p.matchesPlayed.size).toFixed(1)
+                  })).sort((a, b) => {
+                    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+                    return b.avgPoints - a.avgPoints;
+                  }).slice(0, 10);
+
+                  setTopScorers(processedScorers);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Errore fetch marcatori:", err);
         }
       }
+    } catch (error) {
+      console.error("Errore generale durante il caricamento dati:", error);
+    } finally {
+      // Questo viene eseguito SEMPRE, sia che vada bene sia che ci sia un errore!
+      setIsRefreshing(false);
     }
-    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -144,7 +218,7 @@ export default function MobileApp() {
     return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).toUpperCase();
   };
 
-// ==========================================
+  // ==========================================
   // COMPONENTE CARD PARTITA (Compatta, con Data e Ora)
   // ==========================================
   const renderMatchCard = (m, labelContext = null) => {
@@ -294,8 +368,13 @@ export default function MobileApp() {
                        <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-[9px] text-pink-500 font-bold uppercase tracking-widest truncate drop-shadow-sm">
-                              {item.events?.name || 'Evento Basketville'} {m?.team_a?.group_name ? `• Girone ${m.team_a.group_name}` : ''}
-                            </span>
+  {item.events?.name || 'Evento Basketville'} 
+  {/* Mostra il girone solo se è Vero Cup E il tipo match contiene "gironi" o ha ID 1 */}
+  {isMatch && 
+   item.events?.name?.toLowerCase().includes('vero cup') && 
+   (m.match_type_id === 1 || m.match_types?.name?.toLowerCase().includes('giron')) && 
+   m?.team_a?.group_name ? ` • Girone ${m.team_a.group_name}` : ''}
+</span>
                             {isMatch && (
                               <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">
                                 vedi dettagli ➔
@@ -398,7 +477,15 @@ export default function MobileApp() {
 
         return (
           <div className="animate-in fade-in duration-300 flex flex-col h-full">
-            <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider mb-4">VERO Cup 2026</h2>
+            <div className="flex items-center justify-between mb-4">
+               <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">VERO Cup 2026</h2>
+               <button 
+                 onClick={loadData} 
+                 className={`p-2 bg-neutral-900 border border-neutral-800 rounded-full transition-all active:scale-95 ${isRefreshing ? 'animate-spin text-pink-500' : 'text-neutral-400 hover:text-white'}`}
+               >
+                 <RefreshCw size={16} />
+               </button>
+            </div>
             
             {/* SWITCH GIRONI / PLAYOFF */}
             <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mb-2 shadow-inner">
@@ -516,18 +603,384 @@ export default function MobileApp() {
           </div>
         );
       }
-      case 'contest':
+      case 'contest': {
+        // ==========================================
+        // MOTORE DATI 3-POINT CONTEST REALE
+        // ==========================================
+        const real3PtQual = [...threePointData]
+          .filter(p => p.round === 'Qualificazione')
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return (parseFloat(a.time) || 999) - (parseFloat(b.time) || 999);
+          })
+          .slice(0, 12); // <--- Aggiunto il taglio ai primi 12
+        
+        // Helper per accoppiare i giocatori nelle batterie (quarti, semi, finale)
+        // Helper per accoppiare i giocatori nelle batterie (quarti, semi, finale)
+        const getMatchups = (roundName) => {
+          const players = threePointData.filter(p => p.round === roundName);
+          const heats = {};
+          players.forEach(p => {
+             if(!heats[p.heat]) heats[p.heat] = [];
+             heats[p.heat].push(p);
+          });
+          
+          return Object.values(heats).map((heatPlayers, index) => {
+             // Ordiniamo subito: chi ha più punti o, a parità, meno tempo, sta in cima
+             const sortedPlayers = [...heatPlayers].sort((a, b) => {
+                if (b.score !== a.score) return (b.score || 0) - (a.score || 0);
+                return (parseFloat(a.time) || 999) - (parseFloat(b.time) || 999);
+             });
+             
+             return {
+                id: `${roundName}-${index}`,
+                players: sortedPlayers
+             };
+          });
+        };
+
+        const real3PtPlayoff = {
+          batterie: getMatchups('Quarti di finale'),
+          semifinali: getMatchups('Semifinale'),
+          finale: getMatchups('Finale')
+        };
+        
+        // ==========================================
+        // MOTORE DATI SLAM DUNK REALE
+        // ==========================================
+        const processDunks = (roundName) => {
+           return dunkData
+             .filter(d => d.round === roundName)
+             .map(d => ({
+                id: d.id || d.player_name,
+                name: d.player_name,
+                team: d.team || '',
+                dunk_1: d.dunk_1 || 0,
+                dunk_2: d.dunk_2 || 0,
+                score: (d.dunk_1 || 0) + (d.dunk_2 || 0)
+             }))
+             .sort((a, b) => b.score - a.score);
+        };
+
+        const realDunkQual = processDunks('Qualificazione');
+        const realDunkFinale = processDunks('Finale');
+
         return (
-          <div className="animate-in fade-in duration-300 flex items-center justify-center h-40">
-            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest border border-dashed border-neutral-800 rounded-2xl p-6 text-center w-full">Contest in arrivo...</p>
+          <div className="animate-in fade-in duration-300 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-4">
+               <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">All-Star Game</h2>
+               <button onClick={loadData} className={`p-2 bg-neutral-900 border border-neutral-800 rounded-full transition-all active:scale-95 ${isRefreshing ? 'animate-spin text-pink-500' : 'text-neutral-400 hover:text-white'}`}>
+                 <RefreshCw size={16} />
+               </button>
+            </div>
+
+            {/* MAIN SWITCHER CONTEST */}
+            <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mb-4 shadow-inner">
+              <button
+                onClick={() => setActiveContestTab('3pt')}
+                className={`appearance-none outline-none focus:ring-0 flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all border ${
+                  activeContestTab === '3pt' ? 'bg-neutral-800 text-white shadow-sm border-transparent' : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                3-Point Contest
+              </button>
+              <button
+                onClick={() => setActiveContestTab('dunk')}
+                className={`appearance-none outline-none focus:ring-0 flex-1 py-2 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all border ${
+                  activeContestTab === 'dunk' ? 'bg-neutral-800 text-white shadow-sm border-transparent' : 'border-transparent text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                Slam Dunk
+              </button>
+            </div>
+
+            {/* =========================================
+                VISTA 3-POINT CONTEST
+                ========================================= */}
+            {activeContestTab === '3pt' && (
+              <div className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-300 pb-6">
+                
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x [&::-webkit-scrollbar]:hidden">
+                  <button onClick={() => setThreePtTab('qualificazioni')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-5 py-2 rounded-full font-black uppercase tracking-widest text-[11px] border transition-all snap-start ${threePtTab === 'qualificazioni' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
+                    Qualificazioni
+                  </button>
+                  <button onClick={() => setThreePtTab('playoff')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-5 py-2 rounded-full font-black uppercase tracking-widest text-[11px] border transition-all snap-start ${threePtTab === 'playoff' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
+                    Playoff
+                  </button>
+                </div>
+
+                {threePtTab === 'qualificazioni' && (
+                  <div className="flex flex-col gap-3">
+                    {real3PtQual.length === 0 ? (
+                      <div className="p-6 text-center text-[10px] border border-dashed border-neutral-800 rounded-xl text-neutral-500 uppercase tracking-widest font-bold">
+                        Nessun dato disponibile
+                      </div>
+                    ) : (
+                      real3PtQual.map((p, idx) => (
+                        <div key={p.id} className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 rounded-2xl p-4 flex items-center justify-between relative overflow-hidden shadow-sm transition-transform active:scale-[0.98]">
+
+                          {/* Posizione e Anagrafica */}
+                          <div className="flex items-center gap-4 z-10 min-w-0">
+                            <span className="text-xl font-black text-neutral-600 w-5 text-center shrink-0">{idx + 1}</span>
+                            <div className="flex flex-col min-w-0 pr-2">
+                              <span className="text-lg font-black text-white uppercase truncate">{p.player_name}</span>
+                              {p.team && <span className="text-[10px] font-bold text-pink-500 uppercase tracking-widest truncate">{p.team}</span>}
+                            </div>
+                          </div>
+
+                          {/* Dettagli Tecnici: Tempo e Punti */}
+                          <div className="flex items-center gap-5 z-10 shrink-0">
+                            <div className="flex flex-col items-center justify-center">
+                               <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Tempo</span>
+                               <span className="text-[11px] font-mono text-neutral-400 bg-black/60 px-2 py-0.5 rounded border border-neutral-800">{p.time}s</span>
+                            </div>
+                            <div className="flex flex-col items-end justify-center border-l border-neutral-800/80 pl-5">
+                               <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-0.5">Punti</span>
+                               <span className="text-3xl font-black text-pink-400 tabular-nums leading-none drop-shadow-[0_0_8px_rgba(236,72,153,0.3)]">{p.score}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {threePtTab === 'playoff' && (
+                  <div className="flex flex-col mt-2">
+                    
+                    {/* TABS FASI PLAYOFF RITROVATI! */}
+                    <div className="flex bg-neutral-900/50 border border-neutral-800 rounded-lg p-1 mb-4 shadow-inner">
+                      {['batterie', 'semifinali', 'finale'].map((fase) => (
+                        <button
+                          key={fase}
+                          onClick={() => setThreePtPlayoffTab(fase)}
+                          className={`appearance-none outline-none focus:ring-0 flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+                            threePtPlayoffTab === fase 
+                              ? 'bg-neutral-800 text-white shadow-sm' 
+                              : 'text-neutral-500 hover:text-neutral-300'
+                          }`}
+                        >
+                          {fase}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* LISTA MATCH DELLA FASE SELEZIONATA */}
+                    <div className="flex flex-col gap-3">
+                      {real3PtPlayoff[threePtPlayoffTab].length === 0 ? (
+                        <div className="text-center py-6 text-neutral-500 text-xs font-bold uppercase tracking-widest border border-dashed border-neutral-800 rounded-xl">
+                          Nessuna sfida programmata
+                        </div>
+                      ) : (
+                        real3PtPlayoff[threePtPlayoffTab].map(heat => {
+                          const hasPlayed = heat.players.length > 0 && heat.players[0].score > 0;
+                          const tieBreaker = hasPlayed && heat.players.length > 1 && heat.players[0].score === heat.players[1].score;
+                          
+                          // Variabile per capire se siamo nella card della Finalissima
+                          const isFinaleCard = threePtPlayoffTab === 'finale';
+
+                          return (
+                            <div key={heat.id} className={`bg-gradient-to-br from-neutral-900 to-neutral-950 border rounded-2xl p-4 flex flex-col gap-3 shadow-sm transition-transform active:scale-[0.98] ${isFinaleCard && hasPlayed ? 'border-yellow-500/30' : 'border-neutral-800/80'}`}>
+                              
+                              <div className="flex flex-col gap-3 w-full z-10">
+                                {heat.players.map((p, idx) => {
+                                  const isWinner = hasPlayed && idx === 0;
+                                  const isChampion = isFinaleCard && isWinner; // È il campione se vince la finale
+                                  const showGreenTime = isWinner && tieBreaker;
+
+                                  return (
+                                    <React.Fragment key={p.id || idx}>
+                                      {/* Separatore */}
+                                      {idx > 0 && <div className="h-px w-full bg-neutral-800/60 my-0.5"></div>}
+                                      
+                                      {/* w-full aggiunto qui per occupare tutto lo spazio */}
+                                      <div className="flex justify-between items-center w-full">
+                                        
+                                        {/* flex-1 spinge gli elementi successivi verso destra */}
+                                        <div className="flex items-center gap-2 min-w-0 flex-1 pr-4">
+                                          {isChampion && (
+                                            <span className="text-xl drop-shadow-md shrink-0">👑</span>
+                                          )}
+                                          <span className={`text-lg font-black uppercase truncate ${isChampion ? 'text-yellow-400' : isWinner ? 'text-white' : 'text-neutral-500'}`}>
+                                            {p.player_name || 'TBD'}
+                                          </span>
+                                        </div>
+
+                                        {/* justify-end allinea perfettamente al margine destro */}
+                                        <div className="flex items-center justify-end gap-4 shrink-0">
+                                          <span className={`text-[11px] font-mono px-2 py-1 rounded border ${showGreenTime ? 'text-green-400 border-green-500/30 bg-green-500/10 shadow-[0_0_8px_rgba(34,197,94,0.3)]' : 'text-neutral-500 bg-black/60 border-neutral-800'}`}>
+                                            {p.time || '0.0'}s
+                                          </span>
+                                          <span className={`text-3xl w-10 text-right font-black tabular-nums tracking-tighter ${isChampion ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : isWinner ? 'text-pink-400 drop-shadow-[0_0_8px_rgba(236,72,153,0.3)]' : 'text-neutral-600'}`}>
+                                            {p.score || 0}
+                                          </span>
+                                        </div>
+
+                                      </div>
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* =========================================
+                VISTA SLAM DUNK
+                ========================================= */}
+            {activeContestTab === 'dunk' && (
+              <div className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-300 pb-6">
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x [&::-webkit-scrollbar]:hidden">
+                  <button onClick={() => setDunkTab('qualificazioni')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-5 py-2 rounded-full font-black uppercase tracking-widest text-[11px] border transition-all snap-start ${dunkTab === 'qualificazioni' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
+                    Qualificazioni
+                  </button>
+                  <button onClick={() => setDunkTab('finale')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-5 py-2 rounded-full font-black uppercase tracking-widest text-[11px] border transition-all snap-start ${dunkTab === 'finale' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
+                    Finale
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {dunkTab === 'qualificazioni' && realDunkQual.length === 0 && <div className="p-6 text-center text-[10px] border border-dashed border-neutral-800 rounded-xl text-neutral-500 uppercase tracking-widest font-bold">Nessun dato disponibile</div>}
+                  {dunkTab === 'finale' && realDunkFinale.length === 0 && <div className="p-6 text-center text-[10px] border border-dashed border-neutral-800 rounded-xl text-neutral-500 uppercase tracking-widest font-bold">Nessun dato disponibile</div>}
+                  
+                  {(dunkTab === 'qualificazioni' ? realDunkQual : realDunkFinale).map((dunk, idx) => {
+                    // È il campione se siamo in finale, è primo, e ha fatto dei punti
+                    const isChampion = dunkTab === 'finale' && idx === 0 && dunk.score > 0;
+
+                    return (
+                      <div key={dunk.id} className={`bg-gradient-to-br from-neutral-900 to-neutral-950 border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden shadow-sm transition-transform active:scale-[0.98] ${isChampion ? 'border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'border-neutral-800/80'}`}>
+                        
+                        {/* INTESTAZIONE: Nome, Squadra e Totale */}
+                        <div className="flex justify-between items-center z-10 w-full">
+                          
+                          <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+                            {/* Corona per il campione */}
+                            {isChampion && <span className="text-2xl drop-shadow-md">👑</span>}
+                            
+                            <div className="flex flex-col min-w-0">
+                              <div className={`text-lg font-black uppercase truncate ${isChampion ? 'text-yellow-400' : 'text-white'}`}>{dunk.name}</div>
+                              {dunk.team && <div className="text-[10px] font-bold text-pink-500 uppercase tracking-widest truncate">{dunk.team}</div>}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end justify-center shrink-0 border-l border-neutral-800/80 pl-4">
+                             <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-0.5">Totale</span>
+                             <span className={`text-3xl font-black tabular-nums leading-none ${isChampion ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : 'text-pink-400 drop-shadow-[0_0_8px_rgba(236,72,153,0.3)]'}`}>{dunk.score}</span>
+                          </div>
+                        </div>
+
+                        {/* DETTAGLIO SCHIACCIATE (Dunk 1 & Dunk 2) */}
+                        <div className="flex gap-2 w-full z-10 mt-1">
+                          <div className={`flex-1 bg-black/60 border rounded-xl p-2.5 flex justify-between items-center ${isChampion ? 'border-yellow-500/20' : 'border-neutral-800/80'}`}>
+                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Dunk 1</span>
+                            <span className={`text-lg font-black tabular-nums ${isChampion ? 'text-yellow-100' : 'text-white'}`}>{dunk.dunk_1 > 0 ? dunk.dunk_1 : '-'}</span>
+                          </div>
+                          <div className={`flex-1 bg-black/60 border rounded-xl p-2.5 flex justify-between items-center ${isChampion ? 'border-yellow-500/20' : 'border-neutral-800/80'}`}>
+                            <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Dunk 2</span>
+                            <span className={`text-lg font-black tabular-nums ${isChampion ? 'text-yellow-100' : 'text-white'}`}>{dunk.dunk_2 > 0 ? dunk.dunk_2 : '-'}</span>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
-      case 'stats':
+      }
+      case 'stats': {
+        const top1 = topScorers.length > 0 ? topScorers[0] : null;
+        const others = topScorers.length > 1 ? topScorers.slice(1) : [];
+
         return (
-          <div className="animate-in fade-in duration-300 flex items-center justify-center h-40">
-             <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest border border-dashed border-neutral-800 rounded-2xl p-6 text-center w-full">Classifiche marcatori in arrivo...</p>
+          <div className="animate-in fade-in duration-300 flex flex-col h-full pb-6">
+            <div className="flex items-center justify-between mb-4">
+               <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">Top 10 Marcatori</h2>
+               <button onClick={loadData} className={`p-2 bg-neutral-900 border border-neutral-800 rounded-full transition-all active:scale-95 ${isRefreshing ? 'animate-spin text-pink-500' : 'text-neutral-400 hover:text-white'}`}>
+                 <RefreshCw size={16} />
+               </button>
+            </div>
+
+            {topScorers.length === 0 ? (
+               <div className="text-center py-10 text-neutral-500 font-bold uppercase tracking-widest border border-dashed border-neutral-800 rounded-xl">
+                 Nessun dato disponibile
+               </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                
+                {/* RE DEI BOMBER (#1) */}
+                <div className="bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border border-yellow-500/50 rounded-3xl p-5 flex flex-col items-center relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)]">
+                  <div className="absolute -top-8 text-[120px] opacity-[0.05] pointer-events-none">👑</div>
+                  
+                  <span className="text-4xl drop-shadow-md z-10 mb-2">👑</span>
+                  <span className="text-yellow-500 font-black tracking-[0.3em] uppercase text-[10px] mb-4 drop-shadow-md">
+                    Capocannoniere
+                  </span>
+                  
+                  <div className="flex flex-col items-center text-center z-10 w-full mb-6">
+                    <span className="text-3xl font-black text-white uppercase tracking-wider leading-none truncate w-full px-2">
+                      {top1.last_name}
+                    </span>
+                    <span className="text-sm font-bold text-yellow-400 uppercase tracking-widest mt-1">
+                      {top1.first_name}
+                    </span>
+                  </div>
+
+                  <div className="bg-black/60 w-full rounded-2xl py-6 flex flex-col items-center border border-yellow-500/20 shadow-inner">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1">Punti Totali</span>
+                    <span className="text-7xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] leading-none tabular-nums">
+                      {top1.totalPoints}
+                    </span>
+                    
+                    <div className="mt-4 flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full border border-yellow-500/20">
+                      <span className="text-neutral-400 uppercase font-bold tracking-widest text-[9px]">Media:</span>
+                      <span className="text-white font-black text-sm tabular-nums">{top1.avgPoints} <span className="text-[9px] text-neutral-500">pt/gara</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* INSEGUITORI (Dal 2° al 10°) */}
+                <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3 shadow-sm flex flex-col gap-2 mt-1">
+                  
+                  {/* Intestazione Colonne */}
+                  <div className="flex text-neutral-500 font-bold uppercase text-[9px] tracking-widest px-2 pb-2 border-b border-neutral-800/80">
+                    <div className="w-8">Pos</div>
+                    <div className="flex-1">Giocatore</div>
+                    <div className="w-8 text-center" title="Partite Giocate">G</div>
+                    <div className="w-10 text-center" title="Media Punti">Med</div>
+                    <div className="w-10 text-right text-pink-500">PT</div>
+                  </div>
+                  
+                  {/* Righe Giocatori */}
+                  {others.map((p, i) => (
+                    <div key={p.id} className="flex items-center bg-black/40 border border-neutral-800/80 rounded-xl px-3 py-2.5 transition-transform active:scale-[0.98]">
+                      <div className="w-8 text-sm font-black text-neutral-600">#{i + 2}</div>
+                      <div className="flex-1 flex flex-col min-w-0 pr-2">
+                        <span className="text-sm font-black text-white uppercase truncate">{p.last_name}</span>
+                        <span className="text-[10px] font-bold text-neutral-400 uppercase truncate mt-0.5">{p.first_name}</span>
+                      </div>
+                      <div className="w-8 text-center text-[11px] font-bold text-neutral-500 tabular-nums">{p.games}</div>
+                      <div className="w-10 text-center text-[11px] font-black text-neutral-300 tabular-nums">{p.avgPoints}</div>
+                      <div className="w-10 text-right text-lg font-black text-pink-500 tabular-nums">{p.totalPoints}</div>
+                    </div>
+                  ))}
+
+                </div>
+
+              </div>
+            )}
           </div>
         );
+      }
       case 'others':
         return (
           <div className="animate-in fade-in duration-300 flex items-center justify-center h-40">
@@ -607,8 +1060,11 @@ export default function MobileApp() {
                 {/* INTESTAZIONE: SQUADRE E PUNTEGGI */}
                 <div className="text-center pt-2">
                   <span className="text-[10px] bg-pink-500/10 border border-pink-500/30 text-pink-400 px-3 py-1 rounded-full uppercase tracking-widest font-black inline-block mb-4">
-                    {selectedMatch.match_types?.name} {selectedMatch.team_a?.group_name ? `• Girone ${selectedMatch.team_a.group_name}` : ''}
-                  </span>
+  {(selectedMatch.team_a?.event_id === 1 && (selectedMatch.match_type_id === 1 || selectedMatch.match_types?.name?.toLowerCase().includes('giron')) && selectedMatch.team_a?.group_name)
+    ? `Girone ${selectedMatch.team_a.group_name}`
+    : `${selectedMatch.match_types?.name || 'Match'}${selectedMatch.team_a?.group_name ? ` • ${selectedMatch.team_a.group_name}` : ''}`
+  }
+</span>
                   
                   <div className="flex items-center justify-between w-full px-2 gap-2">
                     <div className="flex-1 text-center min-w-0">
@@ -643,24 +1099,24 @@ export default function MobileApp() {
                   </div>
                 </div>
 
-                {/* SELETTORE TAB SQUADRE */}
+                {/* SELETTORE TAB SQUADRE - BORDI REVOLUTION */}
                 <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mt-2 shadow-inner">
                   <button
                     onClick={() => setActiveRosterTab('A')}
-                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all truncate px-2 ${
+                    className={`appearance-none outline-none focus:outline-none focus:ring-0 active:outline-none [-webkit-tap-highlight-color:transparent] flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all truncate px-2 border ${
                       activeRosterTab === 'A' 
-                        ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700' 
-                        : 'text-neutral-500 hover:text-neutral-300'
+                        ? 'bg-neutral-800 text-white shadow-sm border-transparent' 
+                        : 'border-transparent text-neutral-500 hover:text-neutral-300'
                     }`}
                   >
                     {selectedMatch.team_a?.teams?.name || 'Squadra A'}
                   </button>
                   <button
                     onClick={() => setActiveRosterTab('B')}
-                    className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all truncate px-2 ${
+                    className={`appearance-none outline-none focus:outline-none focus:ring-0 active:outline-none [-webkit-tap-highlight-color:transparent] flex-1 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all truncate px-2 border ${
                       activeRosterTab === 'B' 
-                        ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700' 
-                        : 'text-neutral-500 hover:text-neutral-300'
+                        ? 'bg-neutral-800 text-white shadow-sm border-transparent' 
+                        : 'border-transparent text-neutral-500 hover:text-neutral-300'
                     }`}
                   >
                     {selectedMatch.team_b?.teams?.name || 'Squadra B'}
