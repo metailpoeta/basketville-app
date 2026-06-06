@@ -461,17 +461,21 @@ export default function MobileApp() {
           </div>
         );
       case 'verocup': {
-        // 1. Estraiamo tutte le partite dal calendario già scaricato
+        // 1. Estraiamo tutte le partite portandoci dietro il nome dell'evento dal calendario!
         const allMatches = calendarRaw.filter(c => c.matches).map(c => ({
-  ...c.matches,
-  match_date: c.date,
-  match_time: c.time
-}));
+          ...c.matches,
+          match_date: c.date,
+          match_time: c.time,
+          event_name: c.events?.name || '' // <--- IL TRAPIANTO SALVA-VITA È QUI!
+        }));
 
-        // 2. Filtriamo solo i match dei Gironi
-        const groupMatches = allMatches.filter(m => m.match_type_id === 1 || m.match_types?.name?.toLowerCase().includes('giron'));
+        // 2. Filtriamo solo i match dei Gironi ESCLUSIVAMENTE DELLA VERO CUP
+        const groupMatches = allMatches.filter(m => 
+          m.event_name.toLowerCase().includes('vero cup') && 
+          (m.match_type_id === 1 || m.match_types?.name?.toLowerCase().includes('giron'))
+        );
         
-        // 3. Estraiamo le squadre uniche (aggiungiamo pf e ps)
+        // 3. Estraiamo le squadre uniche
         const teamsMap = {};
         groupMatches.forEach(m => {
           if (m.team_a && m.team_a.group_name) {
@@ -482,13 +486,12 @@ export default function MobileApp() {
           }
         });
 
-        // 4. Calcoliamo W, L, PT e i nuovi PF, PS
+        // 4. Calcoliamo W, L, PT, PF, PS
         groupMatches.forEach(m => {
           if (m.status === 'conclusa' || m.status === 'finished') {
             const tA = teamsMap[m.team_a_id];
             const tB = teamsMap[m.team_b_id];
             if (tA && tB) {
-              // Sommiamo i punti fatti e subiti
               tA.pf += (m.score_a || 0);
               tA.ps += (m.score_b || 0);
               tB.pf += (m.score_b || 0);
@@ -500,7 +503,7 @@ export default function MobileApp() {
           }
         });
 
-        // 5. Raggruppiamo e ordiniamo (se Pari Punti -> guarda Differenza Canestri)
+        // 5. Raggruppiamo e ordiniamo i gironi
         const groups = {};
         Object.values(teamsMap).forEach(t => {
           if (!groups[t.group]) groups[t.group] = [];
@@ -509,16 +512,19 @@ export default function MobileApp() {
         const groupNames = Object.keys(groups).sort();
         groupNames.forEach(g => {
           groups[g].sort((a, b) => {
-            if (b.pt !== a.pt) return b.pt - a.pt; // Ordina per punti
-            return (b.pf - b.ps) - (a.pf - a.ps);  // Se pari, ordina per differenza canestri!
+            if (b.pt !== a.pt) return b.pt - a.pt;
+            return (b.pf - b.ps) - (a.pf - a.ps);
           });
         });
 
-        // Determiniamo il girone da mostrare (di default il primo)
         const displayGroup = activeGroupTab && groupNames.includes(activeGroupTab) ? activeGroupTab : groupNames[0];
 
-        // 6. Playoff Matches
-        const playoffMatches = allMatches.filter(m => m.match_type_id > 1 && !m.match_types?.name?.toLowerCase().includes('giron'));
+        // 6. PLAYOFF MATCHES BLINDATI: Solo Vero Cup, niente imbucati!
+        const playoffMatches = allMatches.filter(m => 
+          m.event_name.toLowerCase().includes('vero cup') && 
+          m.match_type_id > 1 && 
+          !m.match_types?.name?.toLowerCase().includes('giron')
+        );
 
         return (
           <div className="animate-in fade-in duration-300 flex flex-col h-full">
@@ -592,7 +598,6 @@ export default function MobileApp() {
                             <span className="font-black text-pink-500 uppercase tracking-widest text-sm">Classifica</span>
                           </div>
                           
-                          {/* Header Colonne - CENTRATO AL MILLIMETRO */}
                           <div className="flex text-[9px] font-bold text-neutral-500 uppercase tracking-widest px-4 py-2 bg-black/60">
                             <div className="w-5 shrink-0"></div> 
                             <div className="flex-1">Squadra</div>
@@ -600,10 +605,9 @@ export default function MobileApp() {
                             <div className="w-8 shrink-0 text-center">L</div>
                             <div className="w-8 shrink-0 text-center">PF</div>
                             <div className="w-8 shrink-0 text-center">PS</div>
-                            <div className="w-8 shrink-0 text-center text-pink-500">PT</div> {/* Centrato con w-8 */}
+                            <div className="w-8 shrink-0 text-center text-pink-500">PT</div>
                           </div>
                           
-                          {/* Righe Squadre - CENTRATO AL MILLIMETRO */}
                           <div className="flex flex-col">
                             {groups[displayGroup].map((team, idx) => (
                               <div key={team.id} className="flex items-center px-4 py-3.5 even:bg-white/[0.02]">
@@ -613,7 +617,7 @@ export default function MobileApp() {
                                 <div className="w-8 shrink-0 text-center text-[11px] font-bold text-neutral-400">{team.l}</div>
                                 <div className="w-8 shrink-0 text-center text-[11px] font-bold text-neutral-400">{team.pf}</div>
                                 <div className="w-8 shrink-0 text-center text-[11px] font-bold text-neutral-400">{team.ps}</div>
-                                <div className="w-8 shrink-0 text-center text-base font-black text-pink-400 self-center leading-none">{team.pt}</div> {/* Centrato con w-8 */}
+                                <div className="w-8 shrink-0 text-center text-base font-black text-pink-400 self-center leading-none">{team.pt}</div>
                               </div>
                             ))}
                           </div>
@@ -635,13 +639,74 @@ export default function MobileApp() {
               </div>
             )}
 
-            {/* VISTA PLAYOFF */}
+            {/* VISTA PLAYOFF DIVISA PER CATEGORIA */}
             {veroCupTab === 'playoff' && (
-              <div className="flex flex-col gap-3 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex flex-col pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
                  {playoffMatches.length === 0 ? (
                     <p className="text-center text-neutral-500 text-xs font-bold uppercase tracking-widest mt-4 bg-neutral-900/50 py-8 rounded-2xl border border-neutral-800">Tabellone in aggiornamento</p>
                  ) : (
-                    playoffMatches.map(m => renderMatchCard(m, m.match_types?.name))
+                    (() => {
+                      // Dividiamo i match al volo usando le stesse logiche di OBS
+                      // Dividiamo i match escludendo i falsi positivi testuali!
+                      const semis = playoffMatches.filter(m => 
+                        m.match_type_id === 2 || 
+                        m.match_types?.name?.toLowerCase().includes('semi')
+                      );
+                      
+                      const finals = playoffMatches.filter(m => 
+                        m.match_type_id === 3 || 
+                        (m.match_types?.name?.toLowerCase().includes('final') && !m.match_types?.name?.toLowerCase().includes('semi')) // <--- BLINDATO QUI!
+                      );
+                      
+                      const others = playoffMatches.filter(m => 
+                        m.match_type_id !== 2 && 
+                        m.match_type_id !== 3 && 
+                        !m.match_types?.name?.toLowerCase().includes('semi') && 
+                        !m.match_types?.name?.toLowerCase().includes('final')
+                      );
+
+                      return (
+                        <div className="flex flex-col gap-5">
+                          
+                          {/* SEZIONE SEMIFINALI */}
+                          {semis.length > 0 && (
+                            <div className="flex flex-col gap-2.5">
+                              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-500 ml-1">
+                                ➔ Semifinali
+                              </span>
+                              {semis.map(m => renderMatchCard(m, m.match_types?.name))}
+                            </div>
+                          )}
+
+                          {/* DIVISORE DI DESIGN TRA SEMIFINALI E FINALE */}
+                          {semis.length > 0 && finals.length > 0 && (
+                            <div className="flex items-center gap-4 my-2 px-1">
+                              <div className="h-px flex-1 bg-neutral-800/60"></div>
+                              <div className="w-2 h-2 rounded-full bg-pink-500/20 border border-pink-500/40 shadow-[0_0_8px_rgba(236,72,153,0.4)] shrink-0"></div>
+                              <div className="h-px flex-1 bg-neutral-800/60"></div>
+                            </div>
+                          )}
+
+                          {/* SEZIONE FINALE */}
+                          {finals.length > 0 && (
+                            <div className="flex flex-col gap-2.5">
+                              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-pink-500 ml-1 drop-shadow-[0_0_6px_rgba(236,72,153,0.2)]">
+                                👑 Finalissima Vero Cup
+                              </span>
+                              {finals.map(m => renderMatchCard(m, m.match_types?.name))}
+                            </div>
+                          )}
+
+                          {/* Altri match di consolazione/posizionamento se presenti */}
+                          {others.length > 0 && (
+                            <div className="flex flex-col gap-2.5">
+                              {others.map(m => renderMatchCard(m, m.match_types?.name))}
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })()
                  )}
               </div>
             )}
