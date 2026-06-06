@@ -184,9 +184,23 @@ export default function MobileApp() {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     loadData();
   }, []);
+
+  // ==========================================
+  // LOCK DELLO SCROLL SUL BODY QUANDO LA MODALE È APERTA
+  // ==========================================
+  useEffect(() => {
+    if (selectedMatch) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedMatch]); // <--- Questo si attiva ogni volta che apri/chiudi un tabellino
 
   // ==========================================
   // FETCH DETTAGLIO MATCH (TABELLINO LIVE)
@@ -1265,8 +1279,8 @@ export default function MobileApp() {
 
       </header>
 
-      {/* CONTENUTO MAIN */}
-      <main className="flex-1 z-10 px-5 py-6 overflow-y-auto max-w-md mx-auto w-full pb-28">
+      {/* CONTENUTO MAIN - ORA SI CONGELA SE LA MODALE È APERTA */}
+      <main className={`flex-1 z-10 px-5 py-6 max-w-md mx-auto w-full pb-28 ${selectedMatch ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         {renderTabContent()}
       </main>
 
@@ -1276,8 +1290,12 @@ export default function MobileApp() {
       <AnimatePresence>
         {selectedMatch && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm animate-in lighten-in duration-200">
-            {/* Area cliccabile esterna per chiudere la modale */}
-            <div className="absolute inset-0" onClick={() => setSelectedMatch(null)}></div>
+            {/* Area cliccabile esterna per chiudere la modale + Blocco Touch Bleeding */}
+            <div 
+              className="absolute inset-0" 
+              onClick={() => setSelectedMatch(null)}
+              onTouchMove={(e) => e.preventDefault()}
+            ></div>
             
             {/* Pannello che sale dal basso con Gestures attive */}
             <div 
