@@ -45,6 +45,23 @@ export default function MobileApp() {
   const [veroCupTab, setVeroCupTab] = useState('gironi');
   const [activeGroupTab, setActiveGroupTab] = useState(null);
 
+  // ==========================================
+  // GESTURE PER CHIUDERE IL TABELLINO COL DITO
+  // ==========================================
+  const touchStartY = React.useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    // Se trascini il dito verso il basso per più di 100px, chiude il tabellino
+    if (touchEndY - touchStartY.current > 100) {
+      setSelectedMatch(null);
+    }
+  };
+
 // ==========================================
   // FUNZIONE FETCH: Scarica il palinsesto e i Contest
   // ==========================================
@@ -1253,40 +1270,50 @@ export default function MobileApp() {
         {renderTabContent()}
       </main>
 
-      {/* ========================================================
+{/* ========================================================
           📱 MODALE BOTTOMSHEET: IL TABELLINO DELLA PARTITA (BOX SCORE)
           ======================================================== */}
       <AnimatePresence>
         {selectedMatch && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm animate-in lighten-in duration-200">
             {/* Area cliccabile esterna per chiudere la modale */}
             <div className="absolute inset-0" onClick={() => setSelectedMatch(null)}></div>
             
-            {/* Pannello che sale dal basso */}
-            <div className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 animate-in slide-in-from-bottom duration-300 overflow-hidden pb-6">
+            {/* Pannello che sale dal basso con Gestures attive */}
+            <div 
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 animate-in slide-in-from-bottom duration-300 overflow-hidden pb-6"
+            >
               
-              {/* Barra di trascinamento estetica in alto */}
-              <div className="w-12 h-1.5 bg-neutral-800 rounded-full mx-auto my-3 shrink-0"></div>
-              
-              {/* Bottone di chiusura X */}
-              <button 
-                onClick={() => setSelectedMatch(null)}
-                className="absolute top-4 right-5 p-2 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-400 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
+              {/* HEADER FISSO DELLA MODALE (Risolve il bug della X che spariva) */}
+              <div className="w-full flex items-center justify-between px-5 pt-4 pb-2 shrink-0 z-20 relative">
+                {/* Spaziatore sinistro finto per bilanciare la X a destra e tenere la barra al centro */}
+                <div className="w-9 h-1 shrink-0"></div> 
+                
+                {/* Vera barra di trascinamento */}
+                <div className="w-12 h-1.5 bg-neutral-800 rounded-full"></div>
+                
+                {/* Bottone X finalmente visibile e protetto */}
+                <button 
+                  onClick={() => setSelectedMatch(null)}
+                  className="p-2 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-400 hover:text-white active:scale-90 transition-transform shrink-0 flex items-center justify-center shadow-md"
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
               {/* CONTENUTO DELLA MODALE SCROLLABILE INTERNAMENTE */}
               <div className="flex-1 overflow-y-auto px-5 space-y-6 [&::-webkit-scrollbar]:hidden">
                 
                 {/* INTESTAZIONE: SQUADRE E PUNTEGGI */}
-                <div className="text-center pt-2">
+                <div className="text-center pt-1">
                   <span className="text-[10px] bg-pink-500/10 border border-pink-500/30 text-pink-400 px-3 py-1 rounded-full uppercase tracking-widest font-black inline-block mb-4">
-  {(selectedMatch.team_a?.event_id === 1 && (selectedMatch.match_type_id === 1 || selectedMatch.match_types?.name?.toLowerCase().includes('giron')) && selectedMatch.team_a?.group_name)
-    ? `Girone ${selectedMatch.team_a.group_name}`
-    : `${selectedMatch.match_types?.name || 'Match'}${selectedMatch.team_a?.group_name ? ` • ${selectedMatch.team_a.group_name}` : ''}`
-  }
-</span>
+                    {(selectedMatch.team_a?.event_id === 1 && (selectedMatch.match_type_id === 1 || selectedMatch.match_types?.name?.toLowerCase().includes('giron')) && selectedMatch.team_a?.group_name)
+                      ? `Girone ${selectedMatch.team_a.group_name}`
+                      : `${selectedMatch.match_types?.name || 'Match'}${selectedMatch.team_a?.group_name ? ` • ${selectedMatch.team_a.group_name}` : ''}`
+                    }
+                  </span>
                   
                   <div className="flex items-center justify-between w-full px-2 gap-2">
                     <div className="flex-1 text-center min-w-0">
@@ -1321,7 +1348,7 @@ export default function MobileApp() {
                   </div>
                 </div>
 
-                {/* SELETTORE TAB SQUADRE - BORDI REVOLUTION */}
+                {/* SELETTORE TAB SQUADRE */}
                 <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mt-2 shadow-inner">
                   <button
                     onClick={() => setActiveRosterTab('A')}
