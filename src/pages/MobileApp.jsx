@@ -9,7 +9,11 @@ import {
   Grid,
   RefreshCw,
   X,
-  User
+  User,
+  Facebook,  // <--- Aggiunta
+  Instagram, // <--- Aggiunta
+  Youtube,    // <--- Aggiunta
+  Share2
 } from 'lucide-react';
 
 export default function MobileApp() {
@@ -1091,12 +1095,100 @@ export default function MobileApp() {
           </div>
         );
       }
-      case 'others':
+      case 'others': {
+        const socialLinks = [
+          {
+            name: 'Instagram',
+            handle: '@basketville_pordenone', // Modifica con il vostro account reale
+            sub: 'Foto, Reel e Storie live dal playground',
+            url: 'https://www.instagram.com/basketville_pordenone?igsh=MXIzeXp6ZHA1ZGxoZA%3D%3D', // Inserisci il link diretto alla pagina
+            brandColor: 'from-pink-500/10 to-purple-500/10 border-pink-500/20 text-pink-400'
+          },
+          {
+            name: 'YouTube',
+            handle: 'Basketville', // Modifica con il vostro canale reale
+            sub: 'Highlights, interviste e recap dei match',
+            url: 'https://youtube.com/@basketville_pordenone?si=dXvIqWT1s5MrcO4V', // Inserisci il link diretto alla pagina
+            brandColor: 'from-red-500/10 to-red-900/10 border-red-500/20 text-red-500'
+          },
+          {
+            name: 'Facebook',
+            handle: 'Basketville Pn', // Modifica con la vostra pagina reale
+            sub: 'Comunicati, album foto ufficiali e news',
+            url: 'https://www.facebook.com/share/1CpZaM8j8A/?mibextid=LQQJ4d', // Inserisci il link diretto alla pagina
+            brandColor: 'from-blue-500/10 to-blue-900/10 border-blue-500/20 text-blue-400'
+          }
+        ];
+
         return (
-          <div className="animate-in fade-in duration-300 flex items-center justify-center h-40">
-            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest border border-dashed border-neutral-800 rounded-2xl p-6 text-center w-full">Altri tornei in arrivo...</p>
+          <div className="animate-in fade-in duration-300 flex flex-col h-full pb-6">
+            
+            {/* INTESTAZIONE PAGINA */}
+            <div className="mb-6">
+               <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">Social Hub</h2>
+               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
+                 Resta connesso con il mondo Basketville dentro e fuori dal campo
+               </p>
+            </div>
+
+            {/* STRUTTURA DELLE CARD SOCIAL */}
+            <div className="flex flex-col gap-3.5">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 rounded-2xl p-4 flex items-center justify-between transition-all active:scale-[0.98] hover:bg-neutral-900/60 cursor-pointer [-webkit-tap-highlight-color:transparent]"
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    
+                    {/* Box Icona con colore di Brand mascherato */}
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${social.brandColor} border flex items-center justify-center shrink-0 shadow-inner`}>
+                      {social.name === 'Instagram' && <Instagram size={22} />}
+                      {social.name === 'YouTube' && <Youtube size={22} />}
+                      {social.name === 'Facebook' && <Facebook size={22} />}
+                    </div>
+
+                    {/* Testi e Descrizioni informativi */}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-black text-white uppercase tracking-wide">
+                        {social.name}
+                      </span>
+                      <span className="text-[11px] font-mono text-neutral-400 mt-0.5 truncate">
+                        {social.handle}
+                      </span>
+                      <span className="text-[10px] font-bold text-neutral-500 mt-1 line-clamp-1">
+                        {social.sub}
+                      </span>
+                    </div>
+
+                  </div>
+
+                  {/* Bottone d'azione minimal sulla destra */}
+                  <div className="text-[10px] font-black text-pink-500 bg-pink-500/10 px-3 py-2 rounded-xl border border-pink-500/20 uppercase tracking-widest shrink-0 ml-3 shadow-sm">
+                    Apri ➔
+                  </div>
+                </a>
+              ))}
+            </div>
+
+            {/* INFO BANNER REGOLAMENTO / CONTATTI STATICO */}
+            <div className="mt-6 p-4 bg-neutral-900/40 border border-neutral-900 rounded-2xl text-center">
+              <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">
+                Problemi con i tabellini o segnalazione errori?<br/>
+                Rivolgiti direttamente al nostro Staff.
+              </p>
+            </div>
+
+            {/* COLOPHON FINALE EDITORIALE */}
+            <div className="mt-12 text-center text-neutral-700 text-[9px] font-black uppercase tracking-[0.3em]">
+              Vero Cup 2026 • Official Tournament App
+            </div>
+
           </div>
         );
+      }
       default:
         return null;
     }
@@ -1123,17 +1215,30 @@ export default function MobileApp() {
     <div className="w-full min-h-screen bg-neutral-950 text-white font-sans flex flex-col relative select-none antialiased">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none mix-blend-overlay z-0"></div>
 
-      {/* HEADER */}
-      <header className="w-full bg-neutral-950/80 border-b border-neutral-800/50 backdrop-blur-xl sticky top-0 z-40 px-5 py-3 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-2.5">
-          <div className="w-1.5 h-5 bg-pink-500 rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]"></div>
-          <h1 className="text-lg font-black uppercase tracking-wider text-white drop-shadow-sm">
-            Basketville <span className="text-pink-500">App</span>
-          </h1>
+      {/* HEADER SUPERIORE - SIMMETRIA CON SCRITTA CENTRALE MINIMAL */}
+      <header className="w-full bg-neutral-950/80 border-b border-neutral-800/50 backdrop-blur-xl sticky top-0 z-40 px-5 h-14 flex items-center justify-between shadow-md relative">
+        
+        {/* LOGO UFFICIALE A SINISTRA */}
+        <div className="flex items-center shrink-0 z-10">
+          <img 
+            src="/Basketville_logo.svg" 
+            alt="Basketville" 
+            className="h-6 w-auto object-contain" 
+          />
         </div>
-        <span className="text-[9px] font-bold bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800">
+
+        {/* TESTO AL CENTRO: Iper-minimal in grigio scuro per non appesantire */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="text-[8px] font-black uppercase tracking-[0.35em] text-neutral-600 bg-neutral-950 px-2 pointer-events-auto select-none">
+            Official App
+          </span>
+        </div>
+
+        {/* BADGE EDIZIONE A DESTRA */}
+        <span className="text-[8px] font-black bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800 shadow-inner shrink-0 z-10">
           Ed. {activeEdition ? activeEdition.year : '...'}
         </span>
+
       </header>
 
       {/* CONTENUTO MAIN */}
@@ -1275,7 +1380,7 @@ export default function MobileApp() {
 
           <button onClick={() => setActiveTab('verocup')} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'verocup' ? 'text-pink-500 scale-105' : 'text-neutral-500 hover:text-neutral-300'}`}>
             <Trophy size={22} strokeWidth={activeTab === 'verocup' ? 3 : 2} className={activeTab === 'verocup' ? 'drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]' : ''} />
-            <span className="text-[9px] font-black uppercase tracking-wider">Torneo</span>
+            <span className="text-[9px] font-black uppercase tracking-wider">VERO CUP</span>
           </button>
 
           <button onClick={() => setActiveTab('contest')} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'contest' ? 'text-pink-500 scale-105' : 'text-neutral-500 hover:text-neutral-300'}`}>
@@ -1285,12 +1390,12 @@ export default function MobileApp() {
 
           <button onClick={() => setActiveTab('stats')} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'stats' ? 'text-pink-500 scale-105' : 'text-neutral-500 hover:text-neutral-300'}`}>
             <BarChart2 size={22} strokeWidth={activeTab === 'stats' ? 3 : 2} className={activeTab === 'stats' ? 'drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]' : ''} />
-            <span className="text-[9px] font-black uppercase tracking-wider">Stats</span>
+            <span className="text-[9px] font-black uppercase tracking-wider">TOP SCORER</span>
           </button>
 
           <button onClick={() => setActiveTab('others')} className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${activeTab === 'others' ? 'text-pink-500 scale-105' : 'text-neutral-500 hover:text-neutral-300'}`}>
-            <Grid size={22} strokeWidth={activeTab === 'others' ? 3 : 2} className={activeTab === 'others' ? 'drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]' : ''} />
-            <span className="text-[9px] font-black uppercase tracking-wider">Altro</span>
+            <Share2 size={22} strokeWidth={activeTab === 'others' ? 3 : 2} className={activeTab === 'others' ? 'drop-shadow-[0_0_8px_rgba(236,72,153,0.6)]' : ''} />
+            <span className="text-[9px] font-black uppercase tracking-wider">Social</span>
           </button>
 
         </div>
