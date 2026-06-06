@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+// Prima era così: import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion'; // <--- AGGIUNTO 'motion'
 import { supabase } from '../supabase';
 import { 
   Home, 
@@ -1289,30 +1290,34 @@ useEffect(() => {
           ======================================================== */}
       <AnimatePresence>
         {selectedMatch && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm animate-in lighten-in duration-200">
-            {/* Area cliccabile esterna per chiudere la modale + Blocco Touch Bleeding */}
-            <div 
-              className="absolute inset-0" 
+          <div className="fixed inset-0 z-50 flex items-end justify-center">
+            
+            {/* SFONDO OSCURATO: Dissolvenza fluida in entrata e in uscita */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={() => setSelectedMatch(null)}
               onTouchMove={(e) => e.preventDefault()}
-            ></div>
+            />
             
-            {/* Pannello che sale dal basso con Gestures attive */}
-            <div 
+            {/* PANNELLO TABELLINO: Effetto molla nativo (Slide up & Slide down) */}
+            <motion.div 
+              initial={{ y: "100%" }} // Parte da sotto lo schermo
+              animate={{ y: 0 }}       // Sale in posizione
+              exit={{ y: "100%" }}     // Riscivola giù fluidamente quando si chiude
+              transition={{ type: "spring", damping: 28, stiffness: 260 }} // Fisica stile iOS
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
-              className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 animate-in slide-in-from-bottom duration-300 overflow-hidden pb-6"
+              className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 overflow-hidden pb-6"
             >
               
-              {/* HEADER FISSO DELLA MODALE (Risolve il bug della X che spariva) */}
+              {/* HEADER FISSO DELLA MODALE */}
               <div className="w-full flex items-center justify-between px-5 pt-4 pb-2 shrink-0 z-20 relative">
-                {/* Spaziatore sinistro finto per bilanciare la X a destra e tenere la barra al centro */}
                 <div className="w-9 h-1 shrink-0"></div> 
-                
-                {/* Vera barra di trascinamento */}
                 <div className="w-12 h-1.5 bg-neutral-800 rounded-full"></div>
-                
-                {/* Bottone X finalmente visibile e protetto */}
                 <button 
                   onClick={() => setSelectedMatch(null)}
                   className="p-2 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-400 hover:text-white active:scale-90 transition-transform shrink-0 flex items-center justify-center shadow-md"
@@ -1408,7 +1413,7 @@ useEffect(() => {
                 </div>
 
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
