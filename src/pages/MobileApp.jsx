@@ -1215,17 +1215,15 @@ export default function MobileApp() {
     <div className="w-full min-h-screen bg-neutral-950 text-white font-sans flex flex-col relative select-none antialiased">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none mix-blend-overlay z-0"></div>
 
-{/* HEADER SUPERIORE - VERSIONE BLINDATA CON INLINE STYLE PER SAFARI */}
+{/* HEADER SUPERIORE - ALLINEAMENTO MILLIMETRICO DEI TRE ASSI */}
       <header 
         className="w-full bg-neutral-950/80 border-b border-neutral-800/50 backdrop-blur-xl sticky top-0 z-40 px-5 pb-3.5 flex items-end justify-between shadow-md relative"
         style={{ 
-          // Se c'è il notch prende l'altezza del notch + 10px di respiro. 
-          // Se non c'è il notch (es. PC o Android vecchio), mette un minimo di 16px.
           paddingTop: 'max(env(safe-area-inset-top), 16px)' 
         }}
       >
         
-        {/* LOGO UFFICIALE A SINISTRA (Ancorato in basso) */}
+        {/* LOGO UFFICIALE A SINISTRA (Centrato verticalmente nei 28px di altezza) */}
         <div className="flex items-center shrink-0 z-10 h-7">
           <img 
             src="/Basketville_logo.svg" 
@@ -1234,16 +1232,16 @@ export default function MobileApp() {
           />
         </div>
 
-        {/* TESTO AL CENTRO (Ancorato in basso) */}
-        <div className="absolute inset-x-0 bottom-3.5 flex items-center justify-center pointer-events-none">
-          <span className="text-[8px] font-black uppercase tracking-[0.35em] text-neutral-600 bg-neutral-950 px-2 pointer-events-auto select-none">
+        {/* TESTO AL CENTRO: Ora ha lo stesso identico box (bottom-3.5 e h-7) dei laterali */}
+        <div className="absolute inset-x-0 bottom-3.5 h-7 flex items-center justify-center pointer-events-none">
+          <span className="text-[8px] font-black uppercase tracking-[0.35em] text-neutral-600 bg-neutral-950 px-2 pointer-events-auto select-none leading-none">
             Official App
           </span>
         </div>
 
-        {/* BADGE EDIZIONE A DESTRA (Ancorato in basso) */}
+        {/* BADGE EDIZIONE A DESTRA (Centrato verticalmente nei 28px di altezza) */}
         <div className="flex items-center shrink-0 z-10 h-7">
-          <span className="text-[8px] font-black bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800 shadow-inner">
+          <span className="text-[8px] font-black bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800 shadow-inner leading-none">
             Ed. {activeEdition ? activeEdition.year : '...'}
           </span>
         </div>

@@ -1,10 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #0a0a0a;">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/Basketville_logo.svg" />
+    
+    <!-- 1. AGGIUNTO VIEWPORT-FIT=COVER (Risolve il bug del notch su iOS) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
     <title>basketville-app</title>
+    
     <!-- Forza il colore della barra indirizzi sui browser mobile -->
     <meta name="theme-color" content="#0a0a0a">
 
@@ -15,7 +19,9 @@
     <link rel="apple-touch-icon" href="/icon-192.png">
     <link rel="manifest" href="/manifest.json">
   </head>
-  <body>
+  
+  <!-- 2. FORZATO LO SFONDO SCURO NATIVO (Elimina il flash e la barra bianca prima del caricamento) -->
+  <body style="background-color: #0a0a0a; margin: 0;">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
