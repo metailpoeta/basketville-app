@@ -19,6 +19,7 @@ import SponsorCarousel from './pages/SponsorCarousel';
 import SponsorOutput from './pages/SponsorOutput';
 import SponsorManager from './pages/SponsorManager';
 import InstagramGenerator from './pages/InstagramGenerator'; 
+import MobileApp from './pages/MobileApp';
 
 // Importiamo il nuovo canale OBS (che creeremo tra un attimo)
 import ObsOutput from './pages/ObsOutput';
@@ -96,6 +97,7 @@ function App() {
         <Route path="/sponsor-carousel" element={<SponsorCarousel />} />
         <Route path="/sponsor-output" element={<SponsorOutput />} />
         <Route path="/instagram" element={<InstagramGenerator />} />
+        <Route path="/app" element={<MobileApp />} />
       </Routes>
     </Router>
   );
