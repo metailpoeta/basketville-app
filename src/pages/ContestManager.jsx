@@ -60,6 +60,7 @@ export default function ContestManager() {
   const [sdLivePlayer, setSdLivePlayer] = useState(null);
   const [sdDunkNum, setSdDunkNum] = useState(1); 
   const [sdVotes, setSdVotes] = useState(['', '', '', '', '']); 
+  const [winnerPrepared, setWinnerPrepared] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -208,7 +209,8 @@ export default function ContestManager() {
       time: finalTimeStr, 
       status: isRecord ? 'record' : 'scartato',
       prev_score: oldScore, 
-      prev_time: oldTime 
+      prev_time: oldTime,
+      round: livePlayer.round
     });
 
     if (isRecord) {
@@ -373,23 +375,38 @@ export default function ContestManager() {
     handleGenResult(errors);
   };
 
-  const generateWinner = async () => {
-    if (!window.confirm("Incoronare il Vincitore Assoluto? Il punteggio della Finale verrà copiato per la grafica d'onore.")) return;
+const generateWinner = async () => {
+    // === PRIMO CLICK: SPEGNE LO SCHERMO ===
+    if (!winnerPrepared) {
+      await triggerOBS('none', {}); // Manda OBS a schermo nero/vuoto per nascondere il tabellone
+      setWinnerPrepared(true);     // Prepara il secondo click di attivazione
+      return;
+    }
+
+    // === SECONDO CLICK: SALVA I DATI E LANCIA LA GRAFICA ORO ===
+    if (!window.confirm("Confermi l'Incoronazione del Vincitore Assoluto? Verranno salvati i dati e lanciata la grafica oro.")) {
+      return;
+    }
+    
     setIsGenerating(true);
 
     const winner = getWinner('Finale', null);
     if (!winner) {
       alert("Nessun giocatore trovato nella Finale!");
       setIsGenerating(false);
+      setWinnerPrepared(false);
       return;
     }
 
+    // Salva sul database (Upsert)
     const errors = await upsertPlayersToRound([winner], 'Vincitore', () => null, true);
     setIsGenerating(false);
+    setWinnerPrepared(false); // Resetta lo stato di sicurezza
 
     if (errors > 0) {
       alert(`Generazione completata con ${errors} errori. Controlla la lista.`);
     } else {
+      // Invia la splendida grafica oro personalizzata
       triggerOBS('3point_winner', { 
         id: winner.id, 
         player_name: winner.player_name, 
@@ -739,6 +756,7 @@ export default function ContestManager() {
               setPlayerName(''); 
               setRound('Qualificazione'); 
               setHeat('');
+              setWinnerPrepared(false);
             }} 
             className={`flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-all ${
               activeSection === 'threepoint' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
@@ -821,9 +839,14 @@ export default function ContestManager() {
                 <button 
                   onClick={generateWinner} 
                   disabled={isGenerating} 
-                  className="flex items-center justify-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs font-bold text-yellow-700 hover:bg-yellow-100 transition-all shadow-sm text-center disabled:opacity-50"
+                  className={`flex items-center justify-center gap-2 p-3 border rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm text-center disabled:opacity-50 ${
+                    winnerPrepared 
+                      ? 'bg-amber-500 border-amber-600 text-neutral-950 hover:bg-amber-400 animate-pulse' 
+                      : 'bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100'
+                  }`}
                 >
-                  <Crown size={14} /> 4. Decreta Vincitore
+                  <Crown size={14} /> 
+                  {winnerPrepared ? "4. Conferma Vincitore Oro" : "4. Decreta Vincitore (Spegni Schermo)"}
                 </button>
               </div>
             </div>

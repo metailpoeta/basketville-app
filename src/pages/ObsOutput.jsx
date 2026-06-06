@@ -440,9 +440,9 @@ export default function ObsOutput() {
   let currentLogo = "Basketville_logo26_vero.png"; // Logo di Default
   
   if (localGraphic.includes('slamdunk')) {
-    currentLogo = "Logo_SlamDunk.png";
+    currentLogo = "Basketville_logo26_vero.png";
   } else if (localGraphic.includes('3point')) {
-    currentLogo = "Logo_3Point.png";
+    currentLogo = "Basketville_logo26_vero.png";
   } else if (localGraphic === 'match_full' || localGraphic === 'match_lite') {
     // Peschiamo l'event_id direttamente dalla partita caricata!
     const eventId = matchData?.team_a?.event_id;
@@ -451,11 +451,11 @@ export default function ObsOutput() {
     if (eventId === 1) {
       currentLogo = "Basketville_logo26_vero.png"; // VERO Cup
     } else if (eventId === 4) {
-      currentLogo = "Logo_MasterCamp.png";         // OLD
+      currentLogo = "Basketville_logo26_vero.png";         // OLD
     } else if (eventId === 5) {
-      currentLogo = "Logo_AltroEvento.png";        // WOMEN
+      currentLogo = "Basketville_logo26_vero.png";        // WOMEN
     } else if (eventId === 6) {
-      currentLogo = "Logo_AltroEvento.png";        // DR123
+      currentLogo = "Basketville_logo26_vero.png";        // DR123
     }
   }
   // ============================
@@ -469,10 +469,10 @@ export default function ObsOutput() {
       {/* ========================================= */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500">
         <img 
-          src={currentLogo} 
-          alt="Sponsor Logo" 
-          className="h-[140px] w-auto drop-shadow-2xl" 
-        />
+  src={currentLogo} 
+  alt="Sponsor Logo" 
+  className="h-[140px] w-auto" 
+/>
       </div>
 
       {/* ========================================= */}
@@ -480,54 +480,44 @@ export default function ObsOutput() {
       {/* ========================================= */}
       <AnimatePresence mode="wait">
         
-        {localGraphic === '3point_single' && <ThreePointSingle key="single" payload={broadcastState.payload} />}
-        {localGraphic === '3point_result' && <ThreePointResult key="result" payload={broadcastState.payload} />}
+        {/* 🪄 FUSIONE PERFETTA: Single e Result condividono lo stesso componente e la stessa KEY */}
+        {(localGraphic === '3point_single' || localGraphic === '3point_result') && (
+          <ThreePointLiveAndResult 
+            key="3point_live_or_result" // <-- La chiave fissa blocca lo smontaggio della pagina
+            mode={localGraphic} 
+            payload={broadcastState.payload} 
+          />
+        )}
+
+        {/* 3-POINT CONTEST (Ripulito dai doppioni) */}
         {localGraphic === '3point_winner' && <ThreePointWinner key="winner" payload={broadcastState.payload} />}
         {localGraphic === '3point_leaderboard' && <ThreePointLeaderboard key="leaderboard" data={threePointData} highlightedId={highlightedPlayerId} />}
         {localGraphic === '3point_bracket' && <ThreePointBracket key="bracket" data={threePointData} highlightedId={highlightedPlayerId} />}
+
+        {/* SLAM DUNK CONTEST (Ripulito dai doppioni) */}
         {localGraphic === 'slamdunk' && <SlamDunkGraphic key="slamdunk" payload={broadcastState.payload} />}
+
+        {/* VERO CUP / TORNEO */}
         {localGraphic === 'daily_schedule' && <DailyScheduleGraphic key="schedule" dateStr={dailyScheduleDate} data={dailyScheduleData} />}
         {localGraphic === 'match_full' && matchData && <MatchFullGraphic key="match_full" match={matchData} />}
         {localGraphic === 'match_lite' && matchData && <MatchLiteGraphic key="match_lite" match={matchData} />}
+        {localGraphic === 'top_scorers' && <TopScorersGraphic key="top_scorers" data={topScorers} />}
+        {localGraphic === 'recap_girone' && <RecapGironeGraphic key="recap_girone" matches={tournamentMatches} teamsEditionEvents={tournamentTeams} calendar={tournamentCalendar} />}
+        {localGraphic === 'playoff_bracket' && <QuadroPlayoffGraphic key="playoff_bracket" matches={tournamentMatches} teamsEditionEvents={tournamentTeams} calendar={tournamentCalendar} />}
+
+        {/* JOLLY */}
         {localGraphic === 'generic_title' && <GenericTitleGraphic key="generic_title" payload={broadcastState.payload} />}
-        {localGraphic === 'slamdunk' && <SlamDunkGraphic key="slamdunk" payload={broadcastState.payload} />}
-        {localGraphic === 'top_scorers' && (
-          <TopScorersGraphic key="top_scorers" data={topScorers} />
-        )}
         {localGraphic === 'mvp_title' && <MvpTitleGraphic key="mvp_title" payload={broadcastState.payload} />}
 
-        {/* === NUOVE GRAFICHE AGGIUNTE ALL'ANIMATE PRESENCE === */}
-        {localGraphic === 'recap_girone' && (
-          <RecapGironeGraphic key="recap_girone" matches={tournamentMatches} teamsEditionEvents={tournamentTeams} calendar={tournamentCalendar} />
-        )}
-        {localGraphic === 'playoff_bracket' && (
-          <QuadroPlayoffGraphic key="playoff_bracket" matches={tournamentMatches} teamsEditionEvents={tournamentTeams} calendar={tournamentCalendar} />
-        )}
-
-        {localGraphic === 'draft_cronologica' && (
-          <DraftCronologicaGraphic key="draft_crono" picks={draftPicks} highlightRound={highlightRound} />
-        )}
-        {localGraphic === 'draft_rosters' && (
-          <DraftRostersGraphic key="draft_rosters" picks={draftPicks} teams={draftTeams} />
-        )}
-        {localGraphic === 'draft_mista' && (
-          <DraftMistaGraphic key="draft_mista" picks={draftPicks} teams={draftTeams} />
-        )}
-        {localGraphic === 'draft_attesa' && (
-          <DraftAttesaGraphic key="draft_attesa" activePayload={broadcastState.payload} />
-        )}
-        {localGraphic === 'draft_round_attesa' && (
-          <DraftRoundAttesaGraphic key="draft_round_attesa" payload={broadcastState.payload} />
-        )}
-        {localGraphic === 'draft_annuncio' && (
-          <DraftAnnuncioGraphic key="draft_annuncio" picks={draftPicks} />
-        )}
-        {localGraphic === 'draft_round_reveal' && (
-          <DraftRoundRevealGraphic key="draft_round_reveal" picks={draftPicks} round={broadcastState.payload.round} />
-        )}
-        {localGraphic === 'draft_pool_status' && (
-          <DraftPoolGraphic key="draft_pool_status" players={eligiblePlayers} picks={draftPicks} />
-        )}
+        {/* DRAFT */}
+        {localGraphic === 'draft_cronologica' && <DraftCronologicaGraphic key="draft_crono" picks={draftPicks} highlightRound={highlightRound} />}
+        {localGraphic === 'draft_rosters' && <DraftRostersGraphic key="draft_rosters" picks={draftPicks} teams={draftTeams} />}
+        {localGraphic === 'draft_mista' && <DraftMistaGraphic key="draft_mista" picks={draftPicks} teams={draftTeams} />}
+        {localGraphic === 'draft_attesa' && <DraftAttesaGraphic key="draft_attesa" activePayload={broadcastState.payload} />}
+        {localGraphic === 'draft_round_attesa' && <DraftRoundAttesaGraphic key="draft_round_attesa" payload={broadcastState.payload} />}
+        {localGraphic === 'draft_annuncio' && <DraftAnnuncioGraphic key="draft_annuncio" picks={draftPicks} />}
+        {localGraphic === 'draft_round_reveal' && <DraftRoundRevealGraphic key="draft_round_reveal" picks={draftPicks} round={broadcastState.payload.round} />}
+        {localGraphic === 'draft_pool_status' && <DraftPoolGraphic key="draft_pool_status" players={eligiblePlayers} picks={draftPicks} />}
 
       </AnimatePresence>
     </div>
@@ -559,12 +549,10 @@ function MatchLiteGraphic({ match }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
-          {match.event_name}
-        </span>
-        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.08em] drop-shadow-lg">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">{match.event_name}</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           {subtitle}
-        </span>
+        </h2>
       </div>
 
       <div className="z-10 w-full max-w-[1300px] bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-16 shadow-2xl flex flex-col items-center">
@@ -658,12 +646,10 @@ function MatchFullGraphic({ match }) {
 
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className={`inline-block px-4 py-1.5 rounded-xl text-sm font-bold uppercase tracking-[0.3em] mb-2 drop-shadow-md ${styles.tag}`}>
-          {match.event_name}
-        </span>
-        <span className="text-3xl font-black text-neutral-300 uppercase tracking-[0.08em] drop-shadow-lg">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">{match.event_name}</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           {subtitle}
-        </span>
+        </h2>
       </div>
 
       <div className="z-10 w-[95%] max-w-[1500px] flex flex-col items-center gap-5">
@@ -881,12 +867,10 @@ function DailyScheduleGraphic({ dateStr, data }) {
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-xl font-bold uppercase tracking-[0.5em] text-pink-500 mb-1 drop-shadow-md">
-          Il Programma
-        </span>
-        <h1 className="text-5xl font-black uppercase tracking-tighter text-white drop-shadow-lg capitalize">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Il Programma</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider capitalize">
           {formatDate(dateStr)}
-        </h1>
+        </h2>
       </div>
 
       <div className="z-10 w-full max-w-5xl flex flex-col items-center">
@@ -950,33 +934,56 @@ function DailyScheduleGraphic({ dateStr, data }) {
   );
 }
 
-// ==========================================
-// COMPONENTI GRAFICI MAXISCHERMO (GIOCHI)
-// ==========================================
-
-function ThreePointSingle({ payload }) {
+// ========================================================
+// COMPONENTE UNIFICATO: LIVE TRACKER & RISULTATO UFFICIALE
+// ========================================================
+function ThreePointLiveAndResult({ mode, payload }) {
   const [localTime, setLocalTime] = useState(60.0);
   const [isRunning, setIsRunning] = useState(false);
+  const [showStamp, setShowStamp] = useState(false);
+  
+  // 🔒 CASSAFORTE DI SICUREZZA: Blocca i dati del giocatore per evitare il flash a "TIRATORE"
+  const [lockedPayload, setLockedPayload] = useState(payload);
 
   useEffect(() => {
-    if (payload.command === 'start') {
-      setIsRunning(true);
-      if (payload.time) setLocalTime(parseFloat(payload.time));
-    } else if (payload.command === 'pause') {
-      setIsRunning(false);
-      if (payload.time) setLocalTime(parseFloat(payload.time)); 
-    } else if (payload.command === 'idle') {
-      setIsRunning(false);
-      setLocalTime(60.0);
-    } else if (!payload.command) {
-      setIsRunning(false);
-      setLocalTime(parseFloat(payload.time) || 0.0);
+    if (payload && payload.player_name) {
+      setLockedPayload(payload);
     }
   }, [payload]);
 
+  const isResultMode = mode === '3point_result';
+
+  useEffect(() => {
+    if (mode === '3point_single') {
+      setShowStamp(false); 
+      if (payload.command === 'start') {
+        setIsRunning(true);
+        if (payload.time) setLocalTime(parseFloat(payload.time));
+      } else if (payload.command === 'pause') {
+        setIsRunning(false);
+        if (payload.time) setLocalTime(parseFloat(payload.time)); 
+      } else if (payload.command === 'idle') {
+        setIsRunning(false);
+        setLocalTime(60.0);
+      } else if (!payload.command) {
+        setIsRunning(false);
+        setLocalTime(parseFloat(payload.time) || 0.0);
+      }
+    } else if (mode === '3point_result') {
+      setIsRunning(false); 
+      setShowStamp(false);  
+      
+      const timer = setTimeout(() => {
+        setShowStamp(true);
+      }, 2500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [payload, mode]);
+
   useEffect(() => {
     let interval;
-    if (isRunning && localTime > 0) {
+    if (isRunning && localTime > 0 && mode === '3point_single') {
       interval = setInterval(() => {
         setLocalTime(prev => {
           const next = prev - 0.1;
@@ -987,78 +994,150 @@ function ThreePointSingle({ payload }) {
       setIsRunning(false);
     }
     return () => clearInterval(interval);
-  }, [isRunning, localTime]);
+  }, [isRunning, localTime, mode]);
 
-  const hasPrev = payload.prev_score !== null && payload.prev_score !== undefined;
-  const isLive = !!payload.command; 
+  // Usiamo sempre lockedPayload per garantire stabilità visiva assoluta
+  const hasPrev = lockedPayload.prev_score !== null && lockedPayload.prev_score !== undefined;
+  const isLive = mode === '3point_single' ? !!payload.command : false; 
+
+  const isRecord = lockedPayload.status === 'record';
+  const isScartato = lockedPayload.status === 'scartato';
+
+  // Filtro di ferro della miglior prestazione legato a lockedPayload
+  const showMigliorPrestazione = hasPrev && lockedPayload.round === 'Qualificazione';
+
+  // Logica taglio nome intelligente (> 15 caratteri) ancorata a lockedPayload
+  let displayName = lockedPayload.player_name || 'Tiratore';
+  if (lockedPayload.player_name && lockedPayload.player_name.length > 14) {
+    const parts = lockedPayload.player_name.trim().split(/\s+/);
+    if (parts.length > 1) {
+      displayName = `${parts[0].charAt(0).toUpperCase()}. ${parts.slice(1).join(' ')}`;
+    }
+  }
+
+  const blurClass = (isResultMode && showStamp) ? "blur-md filter transition-all duration-700" : "transition-all duration-700";
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }} 
-      animate={{ opacity: 1, scale: 1 }} 
-      exit={{ opacity: 0, scale: 1.05 }} 
-      transition={{ type: "spring", stiffness: 100, damping: 20 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black"
-    >
+    <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black overflow-hidden">
+      
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">
+          {isResultMode ? "Contest Concluso" : (isLive ? "Live in corso" : "Attesa tiratore")}
+        </span>
         <div className="flex items-center gap-3">
-          {isRunning && <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>}
-          <h2 className="text-4xl font-black uppercase tracking-[0.3em] text-pink-500 drop-shadow-md">
-            {isLive ? "3-Point Contest" : "3-Point Contest"}
+          {isRunning && mode === '3point_single' && (
+            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)] mb-1"></div>
+          )}
+          <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+            {isResultMode ? "Risultato Ufficiale" : "3-Point Contest"}
           </h2>
         </div>
       </div>
 
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[200px]">
+      {/* CONTENUTO CENTRALE (Nomi e Punteggi) */}
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[320px]">
         
-        <h1 className="text-[100px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl text-white">
-          {payload.player_name || 'Tiratore'}
+        {/* Nome stabile e bloccato */}
+        <h1 className={`text-[160px] leading-none font-black uppercase tracking-wider mb-4 drop-shadow-2xl text-white ${blurClass}`}>
+          {displayName}
         </h1>
-        
-        <div className="mb-12 h-10">
-          {isLive && hasPrev && (
-            <div className="inline-flex items-center gap-4 px-6 py-2 rounded-full border bg-white/5 border-white/10 text-neutral-400">
-              <span className="text-[10px] font-bold uppercase tracking-widest">Miglior Prestazione</span>
-              <span className="text-lg font-black">{payload.prev_score} pt <span className="text-sm font-normal">in {payload.prev_time}s</span></span>
-            </div>
-          )}
-        </div>
 
-        <div className="flex items-center gap-12 w-full justify-center relative">
-          <div className="bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-            <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-3">Punteggio</span>
-            <span className="text-[130px] leading-none font-black text-white drop-shadow-[0_0_30px_rgba(236,72,153,0.6)]">
-              {payload.score || 0}
-            </span>
-          </div>
+        <div className="flex items-center gap-6 w-full justify-center relative pt-[10px]">
           
-          <div className="bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] shadow-2xl">
-            <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-3">
-              {isLive ? "Tempo Rimasto" : "Tempo Impiegato"}
-            </span>
-            <span className={`text-[130px] leading-none font-black tabular-nums ${localTime <= 10 && isRunning ? 'text-red-500' : 'text-neutral-200'}`}>
-              {isLive ? localTime.toFixed(1) : `${payload.time || '0.0'}s`}
-            </span>
+          {/* BOX TEMPO */}
+          <div className={`bg-white/5 backdrop-blur-xl w-[450px] h-[300px] rounded-[1.5rem] border border-white/10 flex flex-col overflow-hidden transition-all ${isResultMode && isScartato && showStamp ? 'opacity-30 grayscale' : 'shadow-2xl'} ${blurClass}`}>
+            <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[40px] font-bold text-neutral-400 uppercase tracking-wider translate-y-[1px]">
+                Tempo
+              </span>
+            </div>
+            <div className="flex-1 flex items-center justify-center pb-4">
+              <span className="text-[160px] tracking-wider leading-none font-black tabular-nums text-neutral-200">
+                {isResultMode ? (lockedPayload.time ? `${lockedPayload.time}s` : '0.0s') : (isLive ? localTime.toFixed(1) : `${lockedPayload.time || '0.0'}s`)}
+              </span>
+            </div>
           </div>
+
+          {/* BOX PUNTEGGIO */}
+          <div className={`bg-white/5 backdrop-blur-xl w-[450px] h-[300px] rounded-[1.5rem] border border-white/10 flex flex-col overflow-hidden transition-all relative ${isResultMode && isScartato && showStamp ? 'opacity-30 grayscale' : 'shadow-2xl'} ${blurClass}`}>
+            <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[40px] font-bold text-pink-400 uppercase tracking-wider translate-y-[1px]">
+                Punteggio
+              </span>
+            </div>
+            <div className="flex-1 flex items-center justify-center pb-4 relative">
+              <div className="absolute top-0 right-0 w-32 h-32 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+              <span className="text-[160px] tracking-wider leading-none font-black z-10 text-white">
+                {lockedPayload.score || 0}
+              </span>
+            </div>
+          </div>
+
+          {/* OVERLAY TIMBRO */}
+          <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-50 -translate-y-14">
+            <AnimatePresence>
+              {isResultMode && showStamp && isScartato && (
+                <motion.div 
+                  key="scartato"
+                  initial={{ opacity: 0, scale: 0.3, y: 30 }} 
+                  animate={{ opacity: 1, scale: 1, y: 0 }} 
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 15 }}
+                  className="text-[160px] font-black text-red-400 uppercase tracking-wider border border-red-500/30 px-20 py-10 rounded-full bg-red-950/50 backdrop-blur-md shadow-[0_0_60px_rgba(239,68,68,0.4)] flex items-center justify-center leading-none"
+                >
+                  SCARTATO
+                </motion.div>
+              )}
+              {isResultMode && showStamp && isRecord && (
+                <motion.div 
+                  key="record"
+                  initial={{ opacity: 0, scale: 0.3, y: 30 }} 
+                  animate={{ opacity: 1, scale: 1, y: 0 }} 
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 15 }}
+                  className="text-[160px] font-black text-green-400 uppercase tracking-wider border border-green-500/30 px-20 py-10 rounded-full bg-green-950/50 backdrop-blur-md shadow-[0_0_60px_rgba(34,197,94,0.4)] flex items-center justify-center leading-none"
+                >
+                  VALIDO
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
         </div>
       </div>
-    </motion.div>
+
+      {/* SPAZIO CONGELATO IN ALTEZZA PER EVITARE SBALZI */}
+      <div className="mt-32 mb-16 w-full flex justify-center h-[112px] items-center">
+        {showMigliorPrestazione && (
+          <motion.div 
+            layoutId="shared-miglior-prestazione"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`flex items-center gap-10 px-12 py-6 rounded-full bg-pink-950/40 border border-pink-500/20 backdrop-blur-md shadow-2xl ${blurClass}`}
+          >
+            <span className="text-[40px] font-bold uppercase tracking-wider text-pink-400/90 leading-none">
+              Miglior Prestazione
+            </span>
+            <div className="w-px h-8 bg-pink-500/30"></div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[40px] font-black text-white middle leading-none drop-shadow-md">
+                {lockedPayload.prev_score} pt
+              </span>
+              <span className="text-[40px] font-medium text-pink-200/70 leading-none">
+                in {lockedPayload.prev_time}s
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+    </div>
   );
 }
 
-// === NUOVA SCHERMATA INTERMEDIA: RISULTATO CONFERMATO ===
-function ThreePointResult({ payload }) {
-  const [lockedPayload, setLockedPayload] = useState(payload);
-
-  useEffect(() => {
-    if (payload && payload.player_name) setLockedPayload(payload);
-  }, [payload]);
-
-  const isRecord = lockedPayload.status === 'record';
-  const isScartato = lockedPayload.status === 'scartato';
-  const hasPrev = lockedPayload.prev_score !== null && lockedPayload.prev_score !== undefined;
+function ThreePointWinner({ payload }) {
+  const hasPrev = payload.prev_score !== null && payload.prev_score !== undefined;
 
   return (
     <motion.div 
@@ -1066,119 +1145,92 @@ function ThreePointResult({ payload }) {
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 1.05 }} 
       transition={{ type: "spring", stiffness: 100, damping: 20 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-950 via-neutral-950 to-black overflow-hidden"
     >
-      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
-      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-4xl font-black uppercase tracking-[0.3em] text-neutral-500 drop-shadow-md">
-          Risultato Ufficiale
-        </h2>
-      </div>
-
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[200px]">
-        <h1 className="text-[100px] leading-none font-black uppercase tracking-tighter mb-4 drop-shadow-2xl">
-          {lockedPayload.player_name || 'Tiratore'}
-        </h1>
-        
-        <div className="mb-4 h-10">
-          {hasPrev && (
-            <motion.div 
-              animate={isScartato ? { scale: [1, 1.1, 1], backgroundColor: ['rgba(34,197,94,0.1)', 'rgba(34,197,94,0.4)', 'rgba(34,197,94,0.1)'], borderColor: '#22c55e' } : {}}
-              transition={{ duration: 1, repeat: isScartato ? 3 : 0 }}
-              className={`inline-flex items-center gap-4 px-6 py-2 rounded-full border ${isScartato ? 'border-green-500 text-green-400' : 'bg-white/5 border-white/10 text-neutral-400'}`}
-            >
-              <span className="text-[10px] font-bold uppercase tracking-widest">Miglior Prestazione</span>
-              <span className="text-lg font-black">{lockedPayload.prev_score} pt <span className="text-sm font-normal">in {lockedPayload.prev_time}s</span></span>
-            </motion.div>
-          )}
-        </div>
-
-        <div className="h-[120px] mb-8 flex justify-center items-center w-full">
-          <AnimatePresence>
-            {isScartato && (
-              <motion.div 
-                key="scartato"
-                initial={{ opacity: 0, scale: 0.5, rotate: -10 }} 
-                animate={{ opacity: 1, scale: 1, rotate: -5 }} 
-                exit={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                className="text-[90px] font-black text-red-500 uppercase tracking-widest border-8 border-red-500 px-8 py-2 rounded-3xl bg-black/80 backdrop-blur-md shadow-[0_0_50px_rgba(239,68,68,0.5)]"
-              >
-                SCARTATO
-              </motion.div>
-            )}
-            {isRecord && (
-              <motion.div 
-                key="record"
-                initial={{ opacity: 0, scale: 0.5, rotate: 10 }} 
-                animate={{ opacity: 1, scale: 1, rotate: 5 }} 
-                exit={{ opacity: 0, scale: 0.5, rotate: 10 }}
-                className="text-[90px] font-black text-green-500 uppercase tracking-widest border-8 border-green-500 px-8 py-2 rounded-3xl bg-black/80 backdrop-blur-md shadow-[0_0_50px_rgba(34,197,94,0.5)]"
-              >
-                VALIDO
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="flex items-center gap-12 w-full justify-center relative">
-          <div className={`bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] relative overflow-hidden transition-all ${isScartato ? 'opacity-30 blur-sm grayscale' : 'shadow-2xl'}`}>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
-            <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-3">
-              Punteggio Finale
-            </span>
-            <span className={`text-[130px] leading-none font-black text-white drop-shadow-[0_0_30px_rgba(236,72,153,0.6)] ${isRecord ? 'text-pink-400' : ''}`}>
-              {lockedPayload.score || 0}
-            </span>
-          </div>
-          
-          <div className={`bg-white/5 backdrop-blur-xl px-12 py-10 rounded-[2.5rem] border border-white/10 w-[450px] transition-all ${isScartato ? 'opacity-30 blur-sm grayscale' : 'shadow-2xl'}`}>
-            <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.3em] block mb-3">
-              Tempo Impiegato
-            </span>
-            <span className="text-[130px] leading-none font-black tabular-nums text-neutral-200">
-              {lockedPayload.time}s
-            </span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function ThreePointWinner({ payload }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.8 }} 
-      animate={{ opacity: 1, scale: 1 }} 
-      exit={{ opacity: 0, scale: 1.1 }} 
-      transition={{ type: "spring", stiffness: 70, damping: 20 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-900 via-neutral-950 to-black overflow-hidden"
-    >
+      {/* Texture stellata celebrativa in overlay */}
       <div className="absolute top-0 w-full h-full opacity-20 pointer-events-none mix-blend-screen bg-center bg-cover bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-4xl font-black uppercase tracking-[0.08em] text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
-          3-Point Champion
-        </h2>
-      </div>
-      
-      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 z-10 pt-[200px]">
-        <h1 className="text-[140px] leading-none font-black uppercase tracking-tighter mb-16 text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-2xl">
-          {payload.player_name}
-        </h1>
-        
-        <div className="flex items-center gap-12 w-full justify-center">
-          <div className="bg-yellow-500/10 backdrop-blur-xl px-16 py-8 rounded-[3rem] border border-yellow-500/40 w-[500px] shadow-[0_0_80px_rgba(234,179,8,0.2)]">
-            <span className="text-2xl font-bold text-yellow-200 uppercase tracking-[0.08em] block mb-4">
-              Final Score
-            </span>
-            <span className="text-[140px] leading-none font-black text-white drop-shadow-[0_0_40px_rgba(234,179,8,0.8)]">
-              {payload.score || 0}
-            </span>
-          </div>
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Campione Assoluto</span>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] animate-bounce mb-1">👑</span>
+          <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+            3-Point <span className="text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]">Champion</span>
+          </h2>
         </div>
       </div>
+
+      {/* CONTENUTO CENTRALE */}
+      <div className="flex flex-col items-center text-center w-full max-w-6xl px-12 relative pt-[320px]">
+        
+        {/* Nome del Campione */}
+        <h1 className="text-[160px] leading-none font-black uppercase tracking-wider mb-4 text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-yellow-400 to-yellow-600 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+          {payload.player_name || 'Campione'}
+        </h1>
+
+        <div className="flex items-center gap-6 w-full justify-center relative pt-[10px]">
+          
+          {/* BOX TEMPO FINALE */}
+          <div className="bg-yellow-500/5 backdrop-blur-xl w-[450px] h-[300px] rounded-[1.5rem] border border-yellow-500/20 flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+            {/* Banda scura superiore */}
+            <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[40px] font-bold text-neutral-400 uppercase tracking-wider translate-y-[1px]">
+                Tempo Finale
+              </span>
+            </div>
+            {/* Numero centrato */}
+            <div className="flex-1 flex items-center justify-center pb-4">
+              <span className="text-[160px] tracking-wider leading-none font-black tabular-nums text-yellow-100/90 drop-shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                {payload.time ? `${payload.time}s` : '0.0s'}
+              </span>
+            </div>
+          </div>
+
+          {/* BOX PUNTEGGIO RECORD */}
+          <div className="bg-yellow-500/5 backdrop-blur-xl w-[450px] h-[300px] rounded-[1.5rem] border border-yellow-500/30 flex flex-col overflow-hidden relative shadow-[0_0_60px_rgba(234,179,8,0.15)]">
+            {/* Banda scura superiore */}
+            <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[40px] font-bold text-yellow-400 uppercase tracking-wider translate-y-[1px] drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">
+                Punteggio
+              </span>
+            </div>
+            {/* Numero centrato */}
+            <div className="flex-1 flex items-center justify-center pb-4 relative">
+              <span className="text-[160px] tracking-wider leading-none font-black text-yellow-400 z-10 drop-shadow-[0_0_40px_rgba(234,179,8,0.6)]">
+                {payload.score || 0}
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* SPAZIO CONGELATO IN ALTEZZA PER EVITARE SBALZI */}
+      <div className="mt-32 mb-16 w-full flex justify-center h-[112px] items-center">
+        {hasPrev && (
+          <motion.div 
+            layoutId="shared-miglior-prestazione"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-10 px-12 py-6 rounded-full bg-yellow-950/40 border border-yellow-500/20 backdrop-blur-md shadow-2xl"
+          >
+            <span className="text-[40px] font-bold uppercase tracking-wider text-yellow-500/90 leading-none">
+              Record Precedente
+            </span>
+            <div className="w-px h-8 bg-yellow-500/30"></div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[40px] font-black text-white middle leading-none drop-shadow-md">
+                {payload.prev_score} pt
+              </span>
+              <span className="text-[40px] font-medium text-yellow-200/70 leading-none">
+                in {payload.prev_time}s
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
     </motion.div>
   );
 }
@@ -1210,34 +1262,51 @@ function ThreePointLeaderboard({ data, highlightedId }) {
           scale: isHighlighted ? [1, 1.03, 1] : 1 
         }} 
         transition={{ duration: 1, repeat: isHighlighted ? 4 : 0 }} 
-        className="flex items-center justify-between px-6 py-3 rounded-2xl border backdrop-blur-sm shadow-lg mb-3"
+        className="flex items-center justify-between px-2 py-2 rounded-[1.5rem] border backdrop-blur-md shadow-2xl mb-4"
       >
-        <div className="flex items-center gap-5">
-          <span className="text-2xl font-black text-pink-500 w-10 text-right">
+        <div className="flex items-center gap-6">
+          <span className="text-[40px] tracking-wider font-black text-pink-500 w-14 text-right leading-none shrink-0 drop-shadow-md translate-y-[2px]">
             {position}.
           </span>
-          <span className="text-2xl font-bold uppercase tracking-tight text-white">
+          <span className="text-[40px] tracking-wider font-black uppercase tracking-tight text-white leading-none translate-y-[2px]">
             {player.player_name}
           </span>
         </div>
         
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <span className="text-[9px] uppercase tracking-widest text-neutral-400 block">
-              Tempo
-            </span>
-            <span className="text-xl font-bold text-neutral-300">
-              {player.time || '-'}
-            </span>
+<div className="flex items-center gap-2 shrink-0">
+          
+          {/* BOX TEMPO AGGIORNATO CON FASCIA ANCORATA IN ALTO */}
+          <div className="w-32 h-[96px] bg-white/10 rounded-2xl border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+            {/* Fascia scura superiore */}
+            <div className="w-full bg-black/40 py-1.5 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[18px] tracking-wider font-black uppercase text-neutral-400 leading-none translate-y-[1px]">
+                Tempo
+              </span>
+            </div>
+            {/* Numero perfettamente centrato nello spazio rimanente */}
+            <div className="flex-1 flex items-center justify-center pb-1">
+              <span className="text-[40px] tracking-wider font-black text-neutral-300 leading-none translate-y-[2px]">
+                {player.time || '-'}
+              </span>
+            </div>
           </div>
-          <div className="text-center w-20 bg-white/10 py-1.5 rounded-xl">
-            <span className="text-[9px] uppercase tracking-widest text-pink-400 block">
-              Punti
-            </span>
-            <span className="text-2xl font-black text-white">
-              {player.score}
-            </span>
+          
+          {/* BOX PUNTI AGGIORNATO CON FASCIA ANCORATA IN ALTO */}
+          <div className="w-28 h-[96px] bg-white/10 rounded-2xl border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+            {/* Fascia scura superiore */}
+            <div className="w-full bg-black/40 py-1.5 border-b border-black/50 flex items-center justify-center shrink-0">
+              <span className="text-[18px] tracking-wider font-black uppercase text-pink-400 leading-none translate-y-[1px]">
+                Punti
+              </span>
+            </div>
+            {/* Numero perfettamente centrato nello spazio rimanente */}
+            <div className="flex-1 flex items-center justify-center pb-1">
+              <span className="text-[40px] tracking-wider font-black uppercase tracking-tight text-white leading-none translate-x-[2px] translate-y-[2px]">
+                {player.score}
+              </span>
+            </div>
           </div>
+
         </div>
       </motion.div>
     );
@@ -1249,21 +1318,19 @@ function ThreePointLeaderboard({ data, highlightedId }) {
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 1.05 }} 
       transition={{ duration: 0.4 }} 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12 pt-[200px]"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black p-12 pt-[270px]"
     >
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <h2 className="text-4xl font-black uppercase tracking-tighter text-white drop-shadow-lg">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Leaderboard Qualificazioni</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
           3-Point Contest <span className="text-pink-500">Top 12</span>
         </h2>
-        <p className="text-sm text-neutral-400 font-bold uppercase tracking-[0.3em] mt-1">
-          Leaderboard Qualificazioni
-        </p>
       </div>
       
-      <div className="grid grid-cols-2 gap-x-20 w-full max-w-[1500px] mt-8">
-        <div>{col1.map((player, idx) => renderRow(player, idx, 0))}</div>
-        <div>{col2.map((player, idx) => renderRow(player, idx, 6))}</div>
+      <div className="grid grid-cols-2 gap-x-6 w-full max-w-[2000px] mt-4">
+        <div className="flex flex-col">{col1.map((player, idx) => renderRow(player, idx, 0))}</div>
+        <div className="flex flex-col">{col2.map((player, idx) => renderRow(player, idx, 6))}</div>
       </div>
     </motion.div>
   );
@@ -1273,54 +1340,107 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
   const slots = Array.from({ length: maxPlayers }).map((_, i) => players[i] || null);
   const cardWidth = isFinal ? 'w-[420px]' : 'w-[280px]';
   
+  // Match concluso se tutti i giocatori hanno un punteggio
+  const isMatchupCompleted = slots.every(s => s !== null && s.score !== null && s.score !== undefined);
+
+  // Calcolo ID del vincitore del round
+  let winnerId = null;
+  if (isMatchupCompleted && !isFinal) {
+    const sortedByScore = [...slots].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const timeA = parseFloat(a.time) || 999;
+      const timeB = parseFloat(b.time) || 999;
+      return timeA - timeB;
+    });
+    winnerId = sortedByScore[0].id;
+  }
+
   return (
     <div className={`backdrop-blur-xl border rounded-2xl p-4 flex flex-col gap-2 shadow-2xl bg-white/5 border-white/10 ${cardWidth}`}>
-      <div className="text-center text-[11px] font-black uppercase tracking-widest mb-0.5 text-pink-500">
+      <div className="text-center text-[18px] font-black uppercase tracking-wider mb-0.5 text-pink-500">
         {title}
       </div>
       
       {slots.map((p, i) => {
         const isHighlighted = p && String(p.id) === String(highlightedId);
-        
-        // LOGICA CAMPIONE ASSOLUTO
         const isChampion = championName && p && p.player_name === championName;
+        const isMatchupWinner = !isFinal && isMatchupCompleted && p && p.id === winnerId;
 
-        // Impostiamo i colori dinamici
-        const bgColors = isChampion ? ['rgba(234,179,8,0.15)', 'rgba(234,179,8,0.4)', 'rgba(234,179,8,0.15)'] :
-                         isHighlighted ? ['rgba(255, 255, 255, 0.05)', 'rgba(236, 72, 153, 0.4)', 'rgba(255, 255, 255, 0.05)'] : 'rgba(255, 255, 255, 0.05)';
-        const borderColors = isChampion ? ['rgba(234,179,8,0.4)', 'rgba(234,179,8,1)', 'rgba(234,179,8,0.4)'] :
-                             isHighlighted ? ['rgba(255, 255, 255, 0.05)', 'rgba(236, 72, 153, 0.8)', 'rgba(255, 255, 255, 0.05)'] : 'rgba(255, 255, 255, 0.05)';
+        // 🧠 DEFINIZIONE PRIORITÀ ANIMAZIONI
+        let animateObj = {};
+        let transitionObj = { duration: 0.5 };
+
+        if (isChampion) {
+          // LAMPEGGIO ORO
+          animateObj = { 
+            backgroundColor: ["rgba(234,179,8,0.1)", "rgba(234,179,8,0.4)", "rgba(234,179,8,0.1)"],
+            borderColor: ["rgba(234,179,8,0.4)", "rgba(234,179,8,1)", "rgba(234,179,8,0.4)"],
+            scale: [1, 1.03, 1]
+          };
+          transitionObj = { duration: 1.5, repeat: Infinity };
+        } else if (isHighlighted) {
+          // LAMPEGGIO ROSA (Regia Live)
+          animateObj = { 
+            backgroundColor: ["rgba(236,72,153,0.05)", "rgba(236,72,153,0.4)", "rgba(236,72,153,0.05)"],
+            borderColor: ["rgba(236,72,153,0.3)", "rgba(236,72,153,1)", "rgba(236,72,153,0.3)"],
+            scale: [1, 1.03, 1]
+          };
+          transitionObj = { duration: 1.5, repeat: Infinity };
+        } else if (isMatchupWinner) {
+          // AZZURRO VERO CUP FISSO (#92C2E0)
+          animateObj = { 
+            backgroundColor: "rgba(146, 194, 224, 0.2)", 
+            borderColor: "rgba(146, 194, 224, 0.8)",
+            boxShadow: "0px 0px 20px rgba(146, 194, 224, 0.3)",
+            scale: 1
+          };
+        } else {
+          // STATO DEFAULT
+          animateObj = { 
+            backgroundColor: "rgba(255, 255, 255, 0.05)", 
+            borderColor: "rgba(255, 255, 255, 0.1)",
+            boxShadow: "0px 0px 0px rgba(0,0,0,0)",
+            scale: 1
+          };
+        }
+
         const textColor = isChampion ? 'text-yellow-400 drop-shadow-md' : (p ? 'text-white' : 'text-neutral-500');
         const scoreColor = isChampion ? 'text-yellow-400' : (p && p.score > 0 ? 'text-pink-400' : 'text-neutral-700');
+        
+        let displayName = 'TBD';
+        if (p && p.player_name) {
+          displayName = p.player_name;
+          if (p.player_name.length > 14) {
+            const parts = p.player_name.trim().split(/\s+/);
+            if (parts.length > 1) {
+              displayName = `${parts[0].charAt(0).toUpperCase()}. ${parts.slice(1).join(' ')}`;
+            }
+          }
+        }
 
         return (
           <motion.div 
             key={p ? p.id : `empty-${i}`} 
-            animate={{ 
-              backgroundColor: bgColors, 
-              borderColor: borderColors, 
-              scale: isHighlighted || isChampion ? [1, 1.05, 1] : 1 
-            }} 
-            transition={{ duration: 1.2, repeat: (isHighlighted || isChampion) ? Infinity : 0 }} 
-            className="flex justify-between items-center px-4 py-3 rounded-xl border relative"
+            animate={animateObj} 
+            transition={transitionObj} 
+            className="flex justify-between items-center px-4 py-3 rounded-xl border relative overflow-hidden"
           >
-            {/* AGGIUNTA LA CLASSE "uppercase" QUI SOTTO */}
-            <span className={`font-bold uppercase truncate pr-3 flex-1 ${isFinal ? 'text-xl' : 'text-base'} ${textColor}`}>
-              {p ? p.player_name : 'TBD'}
+            <span className={`font-bold uppercase truncate pr-3 flex-1 ${isFinal ? 'text-[30px]' : 'text-[20px]'} ${textColor}`}>
+              {displayName}
             </span>
             
-            <div className="flex items-center gap-3 shrink-0">
-              {p && p.time && (
-                <span className="text-[10px] text-neutral-400 bg-black/40 px-1.5 py-0.5 rounded font-mono border border-white/5">
-                  {p.time}s
-                </span>
-              )}
-              <span className={`font-black ${isFinal ? 'text-2xl' : 'text-xl'} ${scoreColor}`}>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className={`w-[55px] text-center text-[20px] py-0.5 rounded tracking-wider block tabular-nums border ${
+                p && p.time ? 'text-neutral-400 bg-black/40 border-white/5' : 'text-neutral-800 border-transparent'
+              }`}>
+                {p && p.time ? `${p.time}s` : '-'}
+              </span>
+              
+              <span className={`w-[20px] text-right font-black tabular-nums block ${isFinal ? 'text-[25px]' : 'text-[20px]'} ${scoreColor}`}>
                 {p && p.score !== null ? p.score : '-'}
               </span>
             </div>
 
-            {/* CORONCINA PER IL VINCITORE */}
             {isChampion && (
               <span className="text-2xl absolute -right-3 -top-3 drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">👑</span>
             )}
@@ -1333,29 +1453,29 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
 
 function ThreePointBracket({ data, highlightedId }) {
   const getHeatPlayers = (roundName, heatNum) => {
-    return data.filter(p => p.round === roundName && p.heat === `Batteria ${heatNum}`).sort((a, b) => b.score - a.score);
+    // Ordine per ID per mantenere le posizioni fisse nelle card
+    return data.filter(p => p.round === roundName && p.heat === `Batteria ${heatNum}`).sort((a, b) => a.id - b.id);
   };
-  const finalePlayers = data.filter(p => p.round === 'Finale').sort((a, b) => b.score - a.score);
+  
+  const finalePlayers = data.filter(p => p.round === 'Finale').sort((a, b) => a.id - b.id);
   const winnerPlayer = data.find(p => p.round === 'Vincitore');
   
-  // 1. Linea a "U" (Larghezza 296px, altezza verticale aumentata a h-8 per riempire lo schermo)
   const QuarterToSemiConnector = () => (
-    <div className="flex flex-col items-center w-full">
-      <div className="w-[296px] h-8 border-b-[3px] border-l-[3px] border-r-[3px] border-neutral-700/60 rounded-b-xl"></div>
-      <div className="h-8 w-[3px] bg-neutral-700/60"></div>
+    <div className="flex flex-col items-center w-full pointer-events-none">
+      <div className="w-[296px] h-6 border-b-[3px] border-l-[3px] border-r-[3px] border-neutral-700/60 rounded-b-xl"></div>
+      <div className="h-6 w-[3px] bg-neutral-700/60"></div>
     </div>
   );
 
-  // 2. Linea a Tridente (Larghezza 1216px, drop verticale aumentato)
   const SemisToFinaleConnector = () => (
-    <div className="flex flex-col items-center w-full">
-      <div className="w-[1216px] h-10 relative">
+    <div className="flex flex-col items-center w-full pointer-events-none">
+      <div className="w-[1216px] h-6 relative">
         <div className="absolute left-0 top-0 w-[3px] h-full bg-neutral-700/60"></div>
         <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[3px] h-full bg-neutral-700/60"></div>
         <div className="absolute right-0 top-0 w-[3px] h-full bg-neutral-700/60"></div>
       </div>
       <div className="w-[1216px] h-[3px] bg-neutral-700/60 rounded-full"></div>
-      <div className="h-10 w-[4px] bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)]"></div>
+      <div className="h-6 w-[4px] bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)]"></div>
     </div>
   );
 
@@ -1364,23 +1484,21 @@ function ThreePointBracket({ data, highlightedId }) {
       initial={{ opacity: 0, scale: 0.95 }} 
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 1.05 }} 
-      transition={{ duration: 0.4 }} 
-      // pt-[140px] e layout fluido, nessun trucco "scale" che sfascia il bordo.
-      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-start bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black pt-[220px] overflow-hidden"
+      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col items-center justify-start bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-900 to-black pt-[180px] overflow-hidden"
     >
-      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
 
-      <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">3-Point Contest</span>
-        <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Playoff Bracket</h2>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">3-Point Contest</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+          Playoff Bracket
+        </h2>
       </div>
       
       <div className="flex flex-col items-center w-full z-10 relative mt-4 max-w-[1850px] mx-auto">
-        
-        {/* RIGA IN ALTO: Quarti -> Semifinali */}
-        <div className="flex justify-center gap-8 w-full">
-          
-          <div className="flex flex-col items-center">
+        <div className="flex gap-8">
+          <div className="flex flex-col items-center shrink-0">
             <div className="flex gap-4">
               <MatchupCard title="Quarto 1" players={getHeatPlayers('Quarti di finale', 1)} highlightedId={highlightedId} />
               <MatchupCard title="Quarto 2" players={getHeatPlayers('Quarti di finale', 2)} highlightedId={highlightedId} />
@@ -1389,7 +1507,7 @@ function ThreePointBracket({ data, highlightedId }) {
             <MatchupCard title="Semifinale 1" players={getHeatPlayers('Semifinale', 1)} highlightedId={highlightedId} />
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center shrink-0">
             <div className="flex gap-4">
               <MatchupCard title="Quarto 3" players={getHeatPlayers('Quarti di finale', 3)} highlightedId={highlightedId} />
               <MatchupCard title="Quarto 4" players={getHeatPlayers('Quarti di finale', 4)} highlightedId={highlightedId} />
@@ -1398,7 +1516,7 @@ function ThreePointBracket({ data, highlightedId }) {
             <MatchupCard title="Semifinale 2" players={getHeatPlayers('Semifinale', 2)} highlightedId={highlightedId} />
           </div>
 
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center shrink-0">
             <div className="flex gap-4">
               <MatchupCard title="Quarto 5" players={getHeatPlayers('Quarti di finale', 5)} highlightedId={highlightedId} />
               <MatchupCard title="Quarto 6" players={getHeatPlayers('Quarti di finale', 6)} highlightedId={highlightedId} />
@@ -1406,10 +1524,8 @@ function ThreePointBracket({ data, highlightedId }) {
             <QuarterToSemiConnector />
             <MatchupCard title="Semifinale 3" players={getHeatPlayers('Semifinale', 3)} highlightedId={highlightedId} />
           </div>
-
         </div>
         
-        {/* CONNETTORE GIGANTE E FINALE */}
         <SemisToFinaleConnector />
         <MatchupCard 
           title="La Finale" 
@@ -1458,22 +1574,16 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
         style={{ borderColor: defaultBorder }}
         className={`flex-1 flex flex-col rounded-2xl border relative p-1.5 justify-center ${defaultBgClass}`}
       >
-        {/* === MODIFICA: NUMERO SCELTA === */}
-        {/* Cambia "text-sm" in "text-base" (16px) o "text-[16px]". Usa "top-1.5" e "left-2" per spostarlo */}
         <span className="absolute top-1.5 left-2 text-[24px] font-black text-pink-500 opacity-100">
           #{pickNum}
         </span>
         
-        {/* === MODIFICA: NOME SQUADRA E DISTANZA DALL'ALTO === */}
-        {/* "mt-2.5" è la distanza dall'alto (puoi usare mt-1, mt-3 ecc). "text-[11px]" è la grandezza testo */}
         <div className="w-full text-center mt-2.5">
            <span className="text-[30px] font-black text-white uppercase tracking-wider block drop-shadow-md truncate px-1">
              {teamName}
            </span>
         </div>
 
-        {/* === MODIFICA: ALTEZZA SPAZIO GIOCATORE E NOME GIOCATORE === */}
-        {/* "h-5" (20px) è l'altezza fissa. Se aumenti il "text-[9px]" del giocatore a 11px o 12px, aumenta h-5 in h-6 o h-7! */}
         <div className="w-full text-center h-5 flex items-center justify-center">
           {isFilled ? (
              <span className="text-[20px] font-bold text-neutral-400 uppercase leading-none block truncate px-1 tracking-wider">
@@ -1509,8 +1619,6 @@ function DraftCronologicaGraphic({ picks, highlightRound }) {
           return (
             <div key={roundNum} className="flex-1 flex flex-col border-r border-pink-500/20 last:border-r-0 pr-3 last:pr-0">
               
-              {/* === MODIFICA: TITOLO ROUND ("ROUND 1", "ROUND 2") === */}
-              {/* "text-[14px]" regola la grandezza. */}
               <div className="text-center font-black uppercase text-pink-500 tracking-[0.08em] mb-2 border-b border-pink-500/30 pb-1.5 text-[20px] drop-shadow-md">
                 ROUND {roundNum}
               </div>
@@ -1554,7 +1662,6 @@ function DraftRostersGraphic({ picks, teams }) {
         </h2>
       </div>
 
-      {/* Aumentata l'altezza a h-[980px] per dare più respiro al fondo del box grigio */}
       <motion.div variants={containerVars} className="flex gap-5 w-full max-w-[1880px] mx-auto z-10 justify-center h-[981px] pt-[250px] pb-4 px-6">
         {teams.map(team => {
           const teamPicks = picks.filter(p => p.team_edition_event_id === team.id).sort((a,b) => a.pick_number - b.pick_number);
@@ -1566,7 +1673,6 @@ function DraftRostersGraphic({ picks, teams }) {
                 {team.teams?.name}
               </h3>
 
-              {/* BOX STAFF IN ALTO E OTTIMIZZATO */}
               <div className="mb-2 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-1.5 shrink-0">
                  {team.coach ? (
                    <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
@@ -1582,15 +1688,11 @@ function DraftRostersGraphic({ picks, teams }) {
                  )}
               </div>
               
-              {/* LISTA GIOCATORI COMPATTATA */}
               <div className="flex flex-col gap-1 flex-1 min-h-0">
                 {Array.from({ length: 10 }).map((_, i) => {
                   const pick = teamPicks[i];
                   const isFilled = pick && pick.player_id;
 
-                  // ==========================================
-                  // LOGICA TAGLIO NOME INTELLIGENTE
-                  // ==========================================
                   let displayLast = '';
                   let displayFirst = '';
                   
@@ -1665,7 +1767,6 @@ function DraftMistaGraphic({ picks, teams }) {
                 {team.teams?.name}
               </h3>
               
-              {/* --- BOX STAFF --- */}
               <div className="mb-2 flex flex-col items-center justify-center min-h-[60px] bg-black/40 border border-neutral-800 rounded-xl px-2 py-1.5 shrink-0">
                  {team.coach ? (
                    <div className="text-[18px] leading-none font-bold text-neutral-400 uppercase tracking-widest text-center truncate w-full">
@@ -1681,16 +1782,12 @@ function DraftMistaGraphic({ picks, teams }) {
                  )}
               </div>
 
-              {/* --- LISTA GIOCATORI --- */}
               <div className="flex flex-col gap-1 [perspective:1000px] flex-1 min-h-0">
                 {Array.from({ length: 10 }).map((_, i) => {
                   const pick = teamPicks[i];
                   const isFilled = pick && pick.player_id;
                   const isLatest = isFilled && pick.id === latestPickId;
 
-                  // ==========================================
-                  // LOGICA TAGLIO NOME INTELLIGENTE
-                  // ==========================================
                   let displayLast = '';
                   let displayFirst = '';
                   
@@ -1698,8 +1795,6 @@ function DraftMistaGraphic({ picks, teams }) {
                     displayLast = pick.players?.last_name || '';
                     const rawFirst = pick.players?.first_name || '';
                     
-                    // Se la somma dei caratteri supera 13, taglia al primo carattere + "."
-                    // Puoi aumentare o diminuire il 13 a tuo piacimento!
                     if ((displayLast.length + rawFirst.length) > 20) {
                       displayFirst = rawFirst.charAt(0) + '.';
                     } else {
@@ -1737,12 +1832,10 @@ function DraftMistaGraphic({ picks, teams }) {
 
                       <div className="flex flex-col justify-center min-w-0 flex-1">
                         {isFilled ? (
-                          // Uso le mie variabili intelligenti "displayLast" e "displayFirst"
                           <span className="font-bold text-white uppercase text-[24px] truncate block leading-tight">
                             {displayLast} <span className="font-normal text-[18px] text-pink-500 ml-1">{displayFirst}</span>
                           </span>
                         ) : (
-                          // IL TRATTINO ORA HA LE STESSE DIMENSIONI DEL NOME GIOCATORE (text-[24px] e leading-tight)
                           <span className="font-bold text-neutral-600 uppercase text-[24px] block leading-tight">-</span>
                         )}
                       </div>
@@ -1756,11 +1849,9 @@ function DraftMistaGraphic({ picks, teams }) {
         })}
       </div>
 
-      {/* --- BANNER INFERIORE (ON THE CLOCK E NEXT PICK) --- */}
       <div className="shrink-0 w-full px-6 pb-6 z-10 h-[140px] mb-4 mt-2">
         <div className="w-full h-full bg-black/60 backdrop-blur-2xl border border-neutral-800 rounded-3xl shadow-2xl flex overflow-hidden">
           
-          {/* LATO SINISTRO: ON THE CLOCK */}
           {onTheClock ? (
             <div className="w-1/3 bg-pink-500/10 flex flex-col justify-center items-center relative shadow-[5px_0_30px_rgba(236,72,153,0.1)]">
               <div className="absolute top-0 w-full bg-pink-500 text-white text-[15px] font-black uppercase tracking-[0.08em] py-1 text-center animate-pulse">
@@ -1781,10 +1872,8 @@ function DraftMistaGraphic({ picks, teams }) {
             </div>
           )}
 
-          {/* LATO DESTRO: NEXT PICK */}
           <div className="w-2/3 flex flex-col justify-center px-6 relative">
             
-            {/* STRISCIA SUPERIORE NEXT PICK (Grigio chiaro) */}
             <div className="absolute top-0 left-0 w-full bg-neutral-900 border-b border-neutral-800 text-neutral-400 text-[15px] font-black uppercase tracking-[0.08em] py-1 pl-[42px] text-left">
               Next Pick
             </div>
@@ -1821,27 +1910,22 @@ function DraftAnnuncioGraphic({ picks }) {
   const lastName = latestPick?.players?.last_name || "";
   const pickNum = latestPick?.pick_number;
 
-  // 1. Uniamo il nome in un'unica stringa per l'effetto Typewriter
   const fullName = `${firstName} ${lastName}`.trim();
-  // 2. Lo dividiamo in un array di singole lettere
   const letters = fullName.split("");
 
-  // =========================================
-  // REGOLE ANIMAZIONE MACCHINA DA SCRIVERE
-  // =========================================
   const containerVars = {
     hidden: { opacity: 1 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08, // Velocità di battitura (0.08s tra una lettera e l'altra)
-        delayChildren: 0.8,    // Aspetta quasi un secondo prima di iniziare a scrivere
+        staggerChildren: 0.08, 
+        delayChildren: 0.8,    
       }
     }
   };
 
   const letterVars = {
-    hidden: { opacity: 0, scale: 0.8, filter: "blur(4px)" }, // Parte sfocato e invisibile
+    hidden: { opacity: 0, scale: 0.8, filter: "blur(4px)" }, 
     visible: { 
       opacity: 1, 
       scale: 1, 
@@ -1860,11 +1944,9 @@ function DraftAnnuncioGraphic({ picks }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen pointer-events-none"></div>
       
-      
       {latestPick ? (
         <div className="flex flex-col items-center justify-center text-center z-10 w-full h-full relative -translate-y-[40px]">
           
-          {/* BADGE PICK */}
           <motion.div 
             initial={{ y: 30, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
@@ -1883,7 +1965,6 @@ function DraftAnnuncioGraphic({ picks }) {
           </motion.div>
 
           <div className="relative">
-            {/* EFFETTO MACCHINA DA SCRIVERE SUL NOME GIOCATORE */}
             <motion.h1 
               variants={containerVars}
               initial="hidden"
@@ -1892,13 +1973,11 @@ function DraftAnnuncioGraphic({ picks }) {
             >
               {letters.map((char, index) => (
                 <motion.span key={index} variants={letterVars} className="inline-block">
-                  {/* Se è uno spazio vuoto, mettiamo il codice dello spazio per non far collassare l'HTML */}
                   {char === " " ? "\u00A0" : char}
                 </motion.span>
               ))}
             </motion.h1>
 
-            {/* TIMBRO "SCELTO" RITARDATO PER FAR FINIRE LA BATTITURA */}
             <motion.div
               initial={{ scale: 4, opacity: 0, rotate: -30 }}
               animate={{ scale: 1, opacity: 0.9, rotate: -15 }}
@@ -1906,7 +1985,7 @@ function DraftAnnuncioGraphic({ picks }) {
                 type: "spring", 
                 stiffness: 1000, 
                 damping: 30, 
-                delay: 2.8, // Ritardato per aspettare il Typewriter
+                delay: 2.8, 
                 opacity: { duration: 0.1, delay: 2.8 } 
               }}
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
@@ -1939,26 +2018,22 @@ function DraftAnnuncioGraphic({ picks }) {
 function DraftAttesaGraphic({ activePayload }) {
   const [lockedPayload, setLockedPayload] = useState(activePayload);
   
-  // STATO DEL CRONOMETRO (Parte da 60)
   const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     if (activePayload && activePayload.team_name) {
       setLockedPayload(activePayload);
-      // Quando arriva una nuova squadra al draft, resetto il timer a 60!
       setTimeLeft(60);
     }
   }, [activePayload]);
 
-  // MOTORE DEL CRONOMETRO
   useEffect(() => {
-    if (timeLeft <= 0) return; // Si ferma a 0
+    if (timeLeft <= 0) return; 
     
     const timer = setInterval(() => {
       setTimeLeft(prev => prev - 1);
     }, 1000);
     
-    // Pulizia del timer per evitare accavallamenti
     return () => clearInterval(timer);
   }, [timeLeft]);
 
@@ -1977,12 +2052,8 @@ function DraftAttesaGraphic({ activePayload }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen"></div>
 
-      {/* CONTENITORE PRINCIPALE CENTRATO ASSOLUTO */}
-      {/* === MODIFICA: CENTRATURA GLOBALE === */}
-      {/* Usa "-mt-[30px]" (o cambialo a tuo piacimento, es: "-mt-[60px]" o "mt-[20px]") per alzare o abbassare tutto il blocco in una volta sola */}
       <div className="flex flex-col items-center justify-center text-center z-10 w-full h-full pt-[90px]">
         
-        {/* BADGE PICK RIDIMENSIONATO E PULITO */}
         <motion.div 
           animate={{ scale: [1, 1.02, 1] }} 
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
@@ -1995,12 +2066,10 @@ function DraftAttesaGraphic({ activePayload }) {
           </div>
         </motion.div>
 
-        {/* NOME SQUADRA (Libertà totale per voi) */}
         <h2 className="text-[170px] leading-none font-black text-white uppercase tracking-[0.08em] drop-shadow-2xl mb-10 text-balance px-10">
           {teamName}
         </h2>
         
-        {/* ALLENATORI: DESIGN ELEGANTE TESTUALE (Senza Box) */}
         {(coach || vice) && (
           <div className="flex flex-col items-center justify-center gap-3 mb-12">
             {coach && (
@@ -2018,9 +2087,6 @@ function DraftAttesaGraphic({ activePayload }) {
           </div>
         )}
 
-        {/* CRONOMETRO */}
-        {/* === MODIFICA: ALZARE SOLO IL CRONOMETRO === */}
-        {/* Ho inserito "-mt-4" (margin-top negativo) per tirarlo più su avvicinandolo agli allenatori. Puoi usare "-mt-8" o "-mt-[40px]" per alzarlo ancora di più! */}
         <div className="flex flex-col items-center -mt-2">
           <div 
             className={`text-[160px] font-black leading-none uppercase tracking-widest ${
@@ -2061,7 +2127,6 @@ function DraftRoundAttesaGraphic({ payload }) {
           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
           className="mb-8 flex flex-col items-center"
         >
-          {/* Cerchio di caricamento figo rotante */}
           <div className="w-20 h-20 border-8 border-neutral-800 border-t-pink-500 rounded-full animate-spin mb-16 shadow-[0_0_20px_rgba(236,72,153,0.3)]"></div>
           
           <span className="inline-block bg-pink-600/20 border border-pink-500/50 text-pink-400 px-12 py-5 rounded-full text-8xl font-black uppercase tracking-[0.08em] shadow-[0_0_40px_rgba(235,109,165,0.4)]">
@@ -2082,7 +2147,6 @@ function DraftRoundAttesaGraphic({ payload }) {
 // GRAFICA DRAFT POOL STATUS 
 // ==========================================
 function DraftPoolGraphic({ players, picks }) {
-  // Raggruppa i giocatori in base al ruolo
   const groupedPlayers = players.reduce((acc, p) => {
     const r = p.role ? p.role.toUpperCase() : 'ALTRO';
     if (!acc[r]) acc[r] = [];
@@ -2090,10 +2154,7 @@ function DraftPoolGraphic({ players, picks }) {
     return acc;
   }, {});
 
-  // Ordine fisso dei ruoli nel basket
   const roleOrder = ['PLAYMAKER', 'GUARDIA', 'ALA PICCOLA', 'ALA GRANDE', 'CENTRO'];
-  
-  // Assicuriamoci che i 5 ruoli principali siano sempre mostrati, per mantenere le 5 colonne intatte
   const roles = roleOrder;
 
   return (
@@ -2115,19 +2176,16 @@ function DraftPoolGraphic({ players, picks }) {
           return (
             <div key={role} className="flex-1 bg-white/5 backdrop-blur-xl border border-neutral-800 rounded-3xl px-5 pt-4 pb-4 shadow-2xl flex flex-col min-w-0">
               
-              {/* TITOLO RUOLO CON FONT INGRANDITO E PADDING AGGIUSTATI */}
               <h3 className="text-center text-[28px] font-black uppercase text-white tracking-widest mb-3 border-b border-neutral-700 pb-2.5 shrink-0 truncate drop-shadow-md">
                 {role}
               </h3>
               
-              {/* LISTA GIOCATORI: FISSATA A 12 ELEMENTI */}
               <div className="flex flex-col gap-1.5 flex-1 min-h-0">
                 {Array.from({ length: 14 }).map((_, i) => {
                   const p = playersInRole[i];
                   const isFilled = !!p;
                   const isPicked = isFilled ? picks.some(pick => pick.player_id === p.id) : false;
 
-                  // LOGICA TAGLIO NOME INTELLIGENTE
                   let displayLast = '';
                   let displayFirst = '';
                   
@@ -2149,7 +2207,6 @@ function DraftPoolGraphic({ players, picks }) {
                     >
                       <div className="flex-1 min-w-0">
                         {isFilled ? (
-                          // === MODIFICA: TOLTO "line-through" DA QUI SOTTO ===
                           <span className={`font-bold uppercase text-[24px] block leading-tight truncate ${isPicked ? 'text-white' : 'text-white'}`}>
                             {displayLast} <span className={`font-normal text-[18px] ml-1 ${isPicked ? 'text-pink-500' : 'text-pink-500'}`}>{displayFirst}</span>
                           </span>
@@ -2190,17 +2247,12 @@ function GenericTitleGraphic({ payload }) {
       transition={{ type: "spring", stiffness: 100, damping: 20 }} 
       className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 via-neutral-950 to-black overflow-hidden"
     >
-      {/* Sfondo Texture Carbonio */}
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
       
-      {/* Bagliore Rosa Morbido al centro */}
       <div className="absolute w-[1000px] h-[1000px] bg-pink-500/10 blur-[180px] rounded-full pointer-events-none mix-blend-screen"></div>
 
-      {/* Contenitore: rimosso pt-[40px] per un centro assoluto e perfetto */}
       <div className="flex flex-col items-center text-center w-full max-w-[1800px] px-12 z-10">
 
-        {/* === MODIFICA KERNING (SPAZIATURA LETTERE) === */}
-        {/* Sostituisci "tracking-widest" con "tracking-[0.1em]" o un'altra misura per avere il pieno controllo */}
         <h1 
           className="text-[240px] leading-none font-black uppercase tracking-wider text-white drop-shadow-[0_20px_50px_rgba(0,0,0,1)]"
           style={{ textWrap: 'balance' }} 
@@ -2214,18 +2266,16 @@ function GenericTitleGraphic({ payload }) {
 }
 
 // ==========================================
-// GRAFICA RECAP GIRONE & CLASSIFICA (LAYOUT SPLIT & 3 SLOT FISSI E BLINDATI)
+// GRAFICA RECAP GIRONE & CLASSIFICA
 // ==========================================
 function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
   
-  // 1. FILTRI DI FERRO SUI TEAM
   const validTeams = teamsEditionEvents.filter(tee => 
     tee.event_id === 1 && 
     tee.group_name && 
     tee.group_name.trim() !== ''
   );
 
-  // 2. Raggruppiamo i team validi per girone
   const groups = validTeams.reduce((acc, tee) => {
     if (!acc[tee.group_name]) acc[tee.group_name] = [];
     acc[tee.group_name].push(tee);
@@ -2234,13 +2284,11 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
 
   const validTeamIds = validTeams.map(t => t.id);
 
-  // 3. FILTRO DI FERRO SUI MATCH
   const groupMatches = matches.filter(m => 
     m.match_type_id === 1 && 
     (validTeamIds.includes(m.team_a_id) || validTeamIds.includes(m.team_b_id))
   );
 
-  // Helper PRO per data e orario (Es: "15 GIU • 20:30")
   const getMatchScheduleString = (matchId) => {
     const cal = calendar.find(c => c.match_id === matchId);
     if (!cal) return "DATA TBD";
@@ -2253,7 +2301,6 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
     return `${dateStr} • ${time}`;
   };
 
-  // 4. Funzione per calcolare la classifica di un girone
   const calculateStandings = (teamsInGroup) => {
     let standings = teamsInGroup.map(tee => {
       return { 
@@ -2324,13 +2371,14 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-      {/* TITOLO GLOBALE IN ALTO A DESTRA */}
-      <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Classifica Gironi</h2>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+          Classifica Gironi
+        </h2>
       </div>
 
-      {/* CONTENITORE SPLIT 2 COLONNE - pt aumentato per centrare in verticale */}
       <div className="flex justify-center items-start gap-16 w-full max-w-[1800px] mx-auto h-full pt-[220px] px-8 z-10">
         
         {Object.keys(groups).sort().map(groupName => {
@@ -2344,17 +2392,14 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
           return (
             <div key={groupName} className="flex-1 flex flex-col gap-5 max-w-[800px]">
               
-              {/* TITOLO GIRONE */}
               <h3 className="text-5xl font-black uppercase text-pink-500 tracking-widest text-center drop-shadow-lg mb-1">
                 Girone {groupName}
               </h3>
 
-              {/* LISTA MATCH CON 3 SLOT FISSI E BLINDATI NELL'ALTEZZA */}
               <div className="flex flex-col gap-3 h-full">
                 {Array.from({ length: 3 }).map((_, index) => {
                   const m = matchesInThisGroup[index];
 
-                  // BLOCCO PARTITA ESISTENTE: ALTEZZA BLOCCATA A h-[90px]
                   if (m) {
                     const tA = teamsInThisGroup.find(t => t.id === m.team_a_id)?.teams?.name || "TBD";
                     const tB = teamsInThisGroup.find(t => t.id === m.team_b_id)?.teams?.name || "TBD";
@@ -2370,15 +2415,12 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                           <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-transparent to-red-500/10 animate-pulse pointer-events-none"></div>
                         )}
 
-                        {/* NOME CASA: ALTEZZA FISSA h-full */}
                         <div className={`flex-1 text-right z-10 h-full flex items-center justify-end px-4 transition-opacity ${isConclusa && !aWon ? 'opacity-40' : 'opacity-100'}`}>
                           <span className="text-[24px] font-black text-white uppercase tracking-wider truncate drop-shadow-sm">{tA}</span>
                         </div>
                         
-                        {/* CENTRO: ALTEZZA FISSA h-full */}
                         <div className="w-44 shrink-0 flex flex-col items-center justify-center h-full z-10 mx-4">
                           
-                          {/* Etichetta Stato: h-4 FISSO */}
                           <div className="h-4 flex items-center justify-center mb-1">
                             {isLive && (
                               <span className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">
@@ -2389,7 +2431,6 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                             {!isLive && !isConclusa && <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">IN PROGRAMMA</span>}
                           </div>
                           
-                          {/* Punteggio/Orario: h-10 FISSO */}
                           <div className="h-10 flex items-center justify-center w-full">
                             {isConclusa || isLive ? (
                               <div className="px-4 py-1 rounded-xl font-black text-3xl tabular-nums text-white">
@@ -2403,7 +2444,6 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                           </div>
                         </div>
 
-                        {/* NOME TRASFERTA: ALTEZZA FISSA h-full */}
                         <div className={`flex-1 text-left z-10 h-full flex items-center justify-start px-4 transition-opacity ${isConclusa && !bWon ? 'opacity-40' : 'opacity-100'}`}>
                           <span className="text-[24px] font-black text-white uppercase tracking-wider truncate drop-shadow-sm">{tB}</span>
                         </div>
@@ -2411,7 +2451,6 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                     );
                   }
 
-                  // BLOCCO PLACEHOLDER: ALTEZZA FISSA h-[90px]
                   return (
                     <div key={`empty-${index}`} className="flex items-center justify-center bg-white/5 border border-dashed border-neutral-700/50 rounded-2xl px-6 h-[90px] shadow-inner opacity-50">
                       <span className="text-neutral-500 font-bold uppercase tracking-widest text-[13px]">
@@ -2422,7 +2461,6 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                 })}
               </div>
 
-              {/* TABELLA CLASSIFICA */}
               <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col mt-2">
                 <div className="flex text-neutral-400 font-bold uppercase text-[15px] tracking-widest px-4 pb-3 border-b border-neutral-800 mb-3">
                   <div className="flex-1">Squadra</div>
@@ -2458,13 +2496,12 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
 }
 
 // ==========================================
-// GRAFICA QUADRO PLAYOFF (LAYOUT SIMMETRICO E BOX INGRANDITI)
+// GRAFICA QUADRO PLAYOFF
 // ==========================================
 function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
   
   const getTeamName = (id) => teamsEditionEvents.find(t => t.id === id)?.teams?.name || "TBD";
   
-  // Data in formato elegante
   const getMatchDate = (matchId) => {
     const cal = calendar.find(c => c.match_id === matchId);
     if (!cal) return "DATA TBD";
@@ -2477,11 +2514,9 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
     return `${dateStr} • ${time}`;
   };
 
-  // 2 = Semifinali, 3 = Finale
   const semiFinals = matches.filter(m => m.match_type_id === 2);
   const finale = matches.find(m => m.match_type_id === 3);
 
-  // Box Partita con dimensioni native (niente scale CSS per garantire centratura perfetta)
   const MatchBox = ({ match, title, isFinal = false }) => {
     const scoreA = match?.score_a ?? "-";
     const scoreB = match?.score_b ?? "-";
@@ -2491,7 +2526,6 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
     const isConclusa = match?.status === 'conclusa';
     const statusText = isConclusa ? 'FINALE' : (match ? getMatchDate(match.id) : "IN PROGRAMMA");
 
-    // Dimensioni dinamiche base vs finale
     const boxWidth = isFinal ? 'w-[600px]' : 'w-[500px]';
     const boxHeight = isFinal ? 'h-[280px]' : 'h-[240px]';
     const titleSize = isFinal ? 'text-[18px] py-3' : 'text-[16px] py-2.5';
@@ -2501,27 +2535,22 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
     return (
       <div className={`${boxWidth} ${boxHeight} bg-neutral-900/95 border rounded-2xl shadow-2xl flex flex-col relative z-10 ${isFinal ? 'border-pink-500/50 shadow-[0_0_40px_rgba(236,72,153,0.2)]' : 'border-neutral-800'}`}>
         
-        {/* HEADER */}
         <div className={`${isFinal ? 'bg-pink-600' : 'bg-neutral-800'} text-white text-center font-black uppercase tracking-[0.2em] ${titleSize} rounded-t-2xl shrink-0`}>
           {title}
         </div>
         
-        {/* CORPO (Squadre e Punteggi) */}
         <div className={`p-5 flex flex-col gap-3 flex-1 justify-center ${isFinal ? '-mt-4' : '-mt-2'}`}>
-          {/* Team A */}
           <div className={`flex justify-between items-center bg-black/50 px-5 py-4 rounded-xl border border-neutral-800/60 shadow-inner`}>
             <span className={`font-bold text-white uppercase truncate mr-4 ${teamTextSize}`}>{teamA}</span>
             <span className={`font-black text-neutral-300 shrink-0 ${scoreSize}`}>{scoreA}</span>
           </div>
           
-          {/* Team B */}
           <div className={`flex justify-between items-center bg-black/50 px-5 py-4 rounded-xl border border-neutral-800/60 shadow-inner`}>
             <span className={`font-bold text-white uppercase truncate mr-4 ${teamTextSize}`}>{teamB}</span>
             <span className={`font-black text-neutral-300 shrink-0 ${scoreSize}`}>{scoreB}</span>
           </div>
         </div>
 
-        {/* STATO PARTITA (Fisso in basso) */}
         {!isConclusa && (
           <div className={`absolute ${isFinal ? 'bottom-4' : 'bottom-3'} left-0 w-full text-center text-neutral-500 font-bold uppercase text-[12px] tracking-widest`}>
             {statusText}
@@ -2535,30 +2564,26 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0">
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      {/* TITOLO GLOBALE UNIFORMATO */}
-      <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Playoff Bracket</h2>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+          Playoff Bracket
+        </h2>
       </div>
 
-      {/* CONTENITORE TABELLONE: Centratura assoluta tramite flexbox nativo */}
       <div className="flex items-center justify-center w-full h-full pt-[100px] z-10 relative">
         
-        {/* 1. COLONNA SEMIFINALI (Box alti 240px, gap 100px = distanza centri 340px) */}
         <div className="flex flex-col gap-[100px] relative z-10">
           <MatchBox match={semiFinals[0]} title="Semifinale 1" />
           <MatchBox match={semiFinals[1]} title="Semifinale 2" />
         </div>
 
-        {/* 2. LINEE DI CONGIUNZIONE (BRACKET) */}
         <div className="flex items-center relative z-0 -ml-2 -mr-2">
-           {/* La "C" che unisce le semifinali (Altezza matematicamente perfetta di 340px) */}
            <div className="w-20 h-[340px] border-t-[4px] border-b-[4px] border-r-[4px] border-neutral-700/80 rounded-r-3xl"></div>
-           {/* La linea dritta illuminata che entra nella finale */}
            <div className="w-24 h-[4px] bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)]"></div>
         </div>
 
-        {/* 3. COLONNA FINALE */}
         <div className="relative z-10">
           <MatchBox match={finale} title="FINALE VERO CUP" isFinal={true} />
         </div>
@@ -2567,6 +2592,7 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
     </motion.div>
   );
 }
+
 // ==========================================
 // GRAFICA CLASSIFICA MARCATORI (TOP 10)
 // ==========================================
@@ -2584,15 +2610,16 @@ function TopScorersGraphic({ data }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-      {/* TITOLO GLOBALE IN ALTO A DESTRA */}
-      <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
-        <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Top 10 Marcatori</h2>
+      {/* TITOLO SPOSTATO IN ALTO A DESTRA CON STILE LIVE DRAFT */}
+      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+          Top 10 Marcatori
+        </h2>
       </div>
 
-      <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-16 gap-16 z-10 px-8">
+      <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-12 gap-16 z-10 px-8">
         
-        {/* COLONNA SINISTRA: IL RE ASSOLUTO (#1) */}
         <div className="w-[600px] h-full shrink-0 flex flex-col">
           {top1 ? (
             <div className="w-full h-full bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border-[3px] border-yellow-500/80 rounded-[3rem] shadow-[0_0_80px_rgba(234,179,8,0.2)] flex flex-col items-center justify-center relative p-10">
@@ -2638,10 +2665,11 @@ function TopScorersGraphic({ data }) {
           )}
         </div>
 
-        {/* COLONNA DESTRA: GLI INSEGUITORI (Dal 2° al 10°) */}
-        <div className="flex-1 flex flex-col h-full bg-neutral-900/90 border border-neutral-800 rounded-[3rem] p-8 shadow-2xl">
+        {/* BOX DESTRA: Padding verticale compattato (py-6 invece di p-8) per recuperare spazio */}
+        <div className="flex-1 flex flex-col h-full bg-neutral-900/90 border border-neutral-800 rounded-[3rem] px-8 py-6 shadow-2xl">
           
-          <div className="flex text-neutral-400 font-bold uppercase text-[14px] tracking-widest px-8 pb-4 border-b border-neutral-800 shrink-0">
+          {/* Header colonna allargato con w originali */}
+          <div className="flex text-neutral-400 font-bold uppercase text-[14px] tracking-widest px-6 pb-3 border-b border-neutral-800 shrink-0">
             <div className="w-20">Pos</div>
             <div className="flex-1">Giocatore</div>
             <div className="w-32 text-center">Partite</div>
@@ -2649,23 +2677,25 @@ function TopScorersGraphic({ data }) {
             <div className="w-32 text-right text-pink-500">Punti</div>
           </div>
           
-          <div className="flex flex-col gap-3 mt-4 flex-1 justify-between">
+          {/* gap molto ridotto (6px) per incollare le box */}
+          <div className="flex flex-col gap-[6px] mt-3 flex-1">
             {others.map((p, i) => (
-              <div key={p.id} className="flex items-center bg-black/40 border border-neutral-800/80 rounded-2xl px-8 py-3.5 shadow-sm">
-                <div className="w-20 text-3xl font-black text-neutral-600">#{i + 2}</div>
+              <div key={p.id} className="flex items-center bg-black/40 border border-neutral-800/80 rounded-2xl px-6 py-3.5 shadow-sm">
+                
+                {/* 🚀 FONT GIGANTI RIPRISTINATI */}
+                <div className="w-20 text-4xl font-black text-neutral-600 leading-none">#{i + 2}</div>
                 <div className="flex-1 flex items-baseline gap-3 truncate min-w-0 pr-4">
-                  <span className="text-[28px] font-black text-white uppercase truncate">{p.last_name}</span>
-                  <span className="text-[18px] font-bold text-neutral-400 uppercase truncate">{p.first_name}</span>
+                  <span className="text-[40px] tracking-wider font-black text-white uppercase truncate leading-none">{p.last_name}</span>
+                  <span className="text-[32px] tracking-wider font-bold text-neutral-400 uppercase truncate leading-none">{p.first_name}</span>
                 </div>
-                <div className="w-32 text-center text-2xl font-bold text-neutral-500">{p.games}</div>
-                <div className="w-32 text-center text-2xl font-black text-neutral-300">{p.avgPoints}</div>
-                <div className="w-32 text-right text-4xl font-black text-pink-500 drop-shadow-md">{p.totalPoints}</div>
+                <div className="w-32 text-center tracking-wider text-2xl font-bold text-neutral-500 leading-none">{p.games}</div>
+                <div className="w-32 text-center tracking-wider text-2xl font-black text-neutral-300 leading-none">{p.avgPoints}</div>
+                <div className="w-32 text-right tracking-wider text-[47px] font-black text-pink-500 drop-shadow-md leading-none">{p.totalPoints}</div>
               </div>
             ))}
             
-            {/* Slot vuoti in caso di database parziale */}
             {Array.from({ length: Math.max(0, 9 - others.length) }).map((_, i) => (
-              <div key={`empty-${i}`} className="flex items-center bg-white/5 border border-dashed border-neutral-800/50 rounded-2xl px-8 py-3.5 opacity-40 flex-1 min-h-[60px]">
+              <div key={`empty-${i}`} className="flex items-center bg-white/5 border border-dashed border-neutral-800/50 rounded-2xl px-6 py-3.5 opacity-40 flex-1 min-h-[60px]">
                 <div className="text-neutral-600 font-bold uppercase tracking-widest text-sm">In Attesa...</div>
               </div>
             ))}
@@ -2677,6 +2707,7 @@ function TopScorersGraphic({ data }) {
     </motion.div>
   );
 }
+
 // ==========================================
 // COMPONENTE: SLAM DUNK CONTEST
 // ==========================================
@@ -2687,7 +2718,6 @@ function SlamDunkGraphic({ payload }) {
   const winner = payload?.winner || null;
   const liveDunker = payload?.liveDunker || null;
   
-  // STATI PER IL LAMPEGGIO MIRATO
   const lastUpdatedPlayer = payload?.lastUpdatedPlayer || null; 
   const lastUpdatedDunk = payload?.lastUpdatedDunk || null; 
 
@@ -2701,10 +2731,8 @@ function SlamDunkGraphic({ payload }) {
       transition={{ duration: 0.4 }} 
       className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 overflow-hidden"
     >
-      {/* Sfondo Carbon Fibre Fisso per tutte le schermate */}
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
-      {/* MOTORE DI TRANSIZIONE DELLE 3 SCHERMATE */}
       <AnimatePresence mode="wait">
         
         {activeVote ? (
@@ -2715,24 +2743,23 @@ function SlamDunkGraphic({ payload }) {
             exit={{ opacity: 0, y: -50 }}
             className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
           >
-            {/* SCHERMATA 1: ANIMAZIONE DEI VOTI - TITOLO IN ALTO A DX */}
-            <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-              <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Voti Giuria</span>
+            {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+            <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+              <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Voti Giuria</span>
               <motion.h2 
                 initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-                className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg"
+                className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider"
               >
                 {activeVote.playerName}
               </motion.h2>
               <motion.h3 
                 initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }}
-                className="text-xl font-bold uppercase text-neutral-400 tracking-widest mt-1"
+                className="text-xl font-bold uppercase text-neutral-400 tracking-wider mt-1"
               >
                 Dunk {activeVote.dunkNumber}
               </motion.h3>
             </div>
 
-            {/* I 5 Cartellini (Centrati) */}
             <div className="flex gap-8 mb-10 mt-16">
               {activeVote.votes.map((vote, i) => (
                 <motion.div
@@ -2747,7 +2774,6 @@ function SlamDunkGraphic({ payload }) {
               ))}
             </div>
 
-            {/* Totale Esplosivo */}
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -2770,7 +2796,6 @@ function SlamDunkGraphic({ payload }) {
             exit={{ scale: 1.1, opacity: 0 }}
             className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm"
           >
-             {/* SCHERMATA 2: IL CARTELLO GIGANTE LIVE */}
              <span className="text-pink-500 font-bold uppercase tracking-[0.5em] text-4xl mb-8 drop-shadow-lg">
                {liveDunker.round}
              </span>
@@ -2791,11 +2816,13 @@ function SlamDunkGraphic({ payload }) {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 w-full h-full flex flex-col z-10"
           >
-            {/* SCHERMATA 3: GRIGLIA CARTE STANDARD (Default) */}
-            <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
-              <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
-              <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Slam Dunk Contest</h2>
-              <h3 className="text-xl font-bold uppercase text-neutral-400 tracking-widest mt-1">{round}</h3>
+            {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
+            <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
+              <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+              <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+                Slam Dunk Contest
+              </h2>
+              <h3 className="text-xl font-bold uppercase text-neutral-400 tracking-wider mt-1">{round}</h3>
             </div>
 
             <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-16 items-center justify-center gap-12 px-8">
@@ -2821,7 +2848,6 @@ function SlamDunkGraphic({ payload }) {
                         : 'bg-neutral-900/90 border border-neutral-800 rounded-[3rem] shadow-2xl'
                     }`}
                   >
-                    {/* LAMPEGGIANTE BORDO INTERA CARD */}
                     {isPlayerUpdated && (
                       <motion.div 
                         animate={{ opacity: [0, 1, 0, 1, 0] }}
@@ -2853,7 +2879,6 @@ function SlamDunkGraphic({ payload }) {
                       </div>
                     </div>
 
-                    {/* BOX SCHIACCIATE IN BASSO (CON LAMPEGGIO) */}
                     <div className="w-full flex gap-6 mt-auto relative z-40">
                       <ScoreBox 
                         label="DUNK 1" 
@@ -2884,7 +2909,6 @@ function ScoreBox({ label, score, isWinner, isJustUpdated }) {
   return (
     <div className={`flex-1 flex flex-col items-center rounded-3xl p-6 relative overflow-hidden ${isWinner ? 'bg-black/40 border border-yellow-500/20' : 'bg-black/60 border border-neutral-800/80'}`}>
       
-      {/* IL LAMPEGGIO PIENO DENTRO AL BOX */}
       {isJustUpdated && (
         <motion.div 
           animate={{ 
@@ -2901,5 +2925,94 @@ function ScoreBox({ label, score, isWinner, isJustUpdated }) {
         {score !== null && score !== undefined && score !== 0 ? score : '-'}
       </span>
     </div>
+  );
+}
+
+// ==========================================
+// COMPONENTE: MVP TITLE (ESPLOSIVO E VIBRANTE)
+// ==========================================
+function MvpTitleGraphic({ payload }) {
+  // Legge correttamente payload.name inviato dal tuo ObsController
+  const playerName = payload?.name || payload?.player_name || payload?.text || '';
+  
+  // Stato per gestire la sequenza: prima vibra MVP (false), poi esplode il nome (true)
+  const [showName, setShowName] = useState(false);
+
+  useEffect(() => {
+    // 3.5 secondi di suspense con vibrazione, poi scatta l'esplosione
+    const timer = setTimeout(() => {
+      setShowName(true);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      transition={{ duration: 0.5 }} 
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-950 via-neutral-950 to-black overflow-hidden"
+    >
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-screen pointer-events-none"></div>
+
+      {/* Bagliore Rosa di sfondo */}
+      <div className="absolute w-[1200px] h-[1200px] bg-pink-500/20 blur-[200px] rounded-full pointer-events-none mix-blend-screen z-0"></div>
+
+      <AnimatePresence>
+        {!showName && (
+          <motion.div 
+            key="mvp-text"
+            // Animazione di uscita: l'MVP schizza in avanti e sparisce sfocato
+            exit={{ scale: 4, opacity: 0, filter: "blur(20px)" }}
+            transition={{ duration: 0.6, ease: "easeIn" }}
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+          >
+            <motion.div 
+              // Effetto terremoto ignorante
+              animate={{ 
+                x: [-10, 10, -10, 10, -5, 5, 0], 
+                y: [-5, 5, -5, 5, -2, 2, 0] 
+              }} 
+              transition={{ duration: 0.1, repeat: Infinity, ease: "linear" }}
+              className="text-[500px] leading-none font-black text-pink-500 drop-shadow-[0_0_80px_rgba(236,72,153,0.8)] tracking-[0.05em]"
+            >
+              MVP
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showName && (
+          <motion.div
+            key="player-name"
+            className="absolute inset-0 flex flex-col items-center justify-center z-20 px-12"
+          >
+            {/* NOME DEL GIOCATORE CHE ESPLODE */}
+            <motion.h1 
+              initial={{ scale: 0, opacity: 0, rotateZ: -15, filter: "blur(20px)" }}
+              animate={{ scale: 1, opacity: 1, rotateZ: 0, filter: "blur(0px)" }}
+              transition={{ type: "spring", stiffness: 100, damping: 12 }}
+              className="text-[250px] leading-[0.85] font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white via-neutral-200 to-neutral-500 drop-shadow-[0_20px_50px_rgba(0,0,0,1)] text-center w-full"
+              style={{ textWrap: 'balance' }} 
+            >
+              {playerName}
+            </motion.h1>
+
+            {/* TARGHETTA FINALE CHE POPPA SUBITO DOPO */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.5 }}
+              className="mt-14 bg-pink-500 text-white font-black uppercase tracking-[0.4em] px-12 py-4 rounded-[2rem] text-4xl shadow-[0_0_40px_rgba(236,72,153,0.6)] border-4 border-pink-300"
+            >
+              Most Valuable Player
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </motion.div>
   );
 }
