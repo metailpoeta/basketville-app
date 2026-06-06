@@ -76,11 +76,24 @@ export default function MobileApp() {
           setAvailableDates(dates);
           
           if (dates.length > 0 && !selectedDate) {
-            const today = new Date();
-            const offset = today.getTimezoneOffset() * 60000;
-            const todayStr = (new Date(today - offset)).toISOString().split('T')[0];
-            setSelectedDate(dates.includes(todayStr) ? todayStr : dates[0]);
+          const today = new Date();
+          const offset = today.getTimezoneOffset() * 60000;
+          const todayStr = (new Date(today - offset)).toISOString().split('T')[0];
+          
+          if (dates.includes(todayStr)) {
+            // 1. OGGI È UNO DEI GIORNI DEL TORNEO -> Carica oggi
+            setSelectedDate(todayStr);
+          } else if (todayStr < dates[0]) {
+            // 2. TORNEO DEVE ANCORA INIZIARE -> Carica il primo giorno di default
+            setSelectedDate(dates[0]);
+          } else if (todayStr > dates[dates.length - 1]) {
+            // 3. TORNEO FINITO -> Carica l'ultimo giorno (le finali)
+            setSelectedDate(dates[dates.length - 1]);
+          } else {
+            // Fallback di sicurezza (es. giorno di pausa in mezzo al torneo)
+            setSelectedDate(dates[0]);
           }
+        }
         }
 
         // --- 2. DATI 3-POINT CONTEST ---
@@ -294,6 +307,16 @@ export default function MobileApp() {
     );
   };
 
+  const getFormattedDateParts = (dateStr) => {
+    if (!dateStr) return { weekday: '???', dayNum: '00' };
+    const d = new Date(dateStr);
+    const giorni = ['DOM', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB'];
+    return {
+      weekday: giorni[d.getDay()],
+      dayNum: d.getDate()
+    };
+  };
+
   // ==========================================
   // RENDER DEI CONTENUTI DEI TAB
   // ==========================================
@@ -314,21 +337,43 @@ export default function MobileApp() {
                </button>
             </div>
             
-            {/* SELETTORE GIORNI */}
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-4 -mx-5 px-5 snap-x [&::-webkit-scrollbar]:hidden">
-              {availableDates.map(date => (
-                <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={`shrink-0 px-4 py-2 rounded-full font-bold uppercase tracking-widest text-[11px] border transition-all snap-start ${
-                    selectedDate === date 
-                      ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' 
-                      : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:bg-neutral-800'
-                  }`}
-                >
-                  {formatDayMonth(date)}
-                </button>
-              ))}
+            {/* NUOVO CALENDAR STRIP HUB - STILE PREMIUM NBA */}
+            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-none whitespace-nowrap w-full">
+              {availableDates.map((dateStr) => {
+                const isActive = selectedDate === dateStr;
+                const { weekday, dayNum } = getFormattedDateParts(dateStr);
+
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => setSelectedDate(dateStr)}
+                    className={`appearance-none outline-none focus:ring-0 flex flex-col items-center justify-center w-16 h-20 shrink-0 rounded-2xl border transition-all duration-300 ${
+                      isActive
+                        ? 'bg-gradient-to-b from-neutral-800 to-neutral-900 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.25)] scale-105'
+                        : 'bg-neutral-950/60 border-neutral-800/80 hover:border-neutral-700'
+                    }`}
+                  >
+                    {/* Giorno della settimana (LUN, MAR...) */}
+                    <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${
+                      isActive ? 'text-pink-500' : 'text-neutral-500'
+                    }`}>
+                      {weekday}
+                    </span>
+                    
+                    {/* Numero del giorno (15, 16...) */}
+                    <span className={`text-2xl font-black tabular-nums tracking-tighter mt-1 transition-colors ${
+                      isActive ? 'text-white' : 'text-neutral-400'
+                    }`}>
+                      {dayNum}
+                    </span>
+                    
+                    {/* Indicatorino minimal a fondo card solo per l'attivo */}
+                    {isActive && (
+                      <div className="w-4 h-0.5 bg-pink-500 rounded-full mt-1.5 shadow-[0_0_8px_rgba(236,72,153,1)]"></div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* LISTA MATCH (ORA CLICCABILI) */}
