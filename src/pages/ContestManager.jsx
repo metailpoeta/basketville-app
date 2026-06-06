@@ -4,7 +4,7 @@ import {
   Target, Flame, Trash2, ChevronDown, Search, Edit2, 
   Check, X, ChevronLeft, ChevronRight, AlertCircle, 
   Tv, ListOrdered, Trophy, Wand2, Crown,
-  Play, Pause, Square, Timer, Radio
+  Play, Pause, Square, Timer, Radio, Send
 } from 'lucide-react';
 
 export default function ContestManager() {
@@ -50,10 +50,16 @@ export default function ContestManager() {
 
   const [sdSearchTerm, setSdSearchTerm] = useState('');
   const [sdCurrentPage, setSdCurrentPage] = useState(1);
+  const [sdActiveTab, setSdActiveTab] = useState('Qualificazione'); // NUOVO STATO PER I TAB
 
   const [sdEditingId, setSdEditingId] = useState(null);
   const [sdEditDunk1, setSdEditDunk1] = useState('');
   const [sdEditDunk2, setSdEditDunk2] = useState('');
+
+  // --- STATI PER REGIA LIVE SLAM DUNK (VOTI) ---
+  const [sdLivePlayer, setSdLivePlayer] = useState(null);
+  const [sdDunkNum, setSdDunkNum] = useState(1); 
+  const [sdVotes, setSdVotes] = useState(['', '', '', '', '']); 
 
   useEffect(() => {
     async function init() {
@@ -82,7 +88,7 @@ export default function ContestManager() {
 
   useEffect(() => {
     setSdCurrentPage(1);
-  }, [sdSearchTerm]);
+  }, [sdSearchTerm, sdActiveTab]);
 
   async function loadThreePoint() {
     const { data, error } = await supabase
@@ -100,13 +106,12 @@ export default function ContestManager() {
       .from('slam_dunk')
       .select('*')
       .eq('edition_id', activeEdition.id)
-      .order('updated_at', { ascending: false });
+      .order('id', { ascending: true }); // BLOCCATO L'ORDINAMENTO ALL'ID
       
     if (error) console.error("Errore caricamento Slam Dunk:", error.message);
     if (data) setSlamDunkList(data);
   }
 
-  // --- FUNZIONE REGIA: TELECOMANDO OBS ---
   async function triggerOBS(type, payloadData = {}) {
     const { error } = await supabase.from('broadcast_state').update({
       active_graphic: type,
@@ -116,9 +121,6 @@ export default function ContestManager() {
     if (error) alert("Errore connessione Regia: " + error.message);
   }
 
-  // ==========================================
-  // HELPER: CONTROLLO PRESTAZIONE MIGLIORE
-  // ==========================================
   const isBetterPerformance = (oldScore, oldTime, newScore, newTime) => {
     if (oldScore === null || oldScore === undefined || oldScore === '') return true;
     if (newScore > oldScore) return true;
@@ -130,12 +132,6 @@ export default function ContestManager() {
     return false;
   };
 
-
-  // ==========================================
-  // MOTORE REGIA LIVE 3-POINT CONTEST (DECIMI DI SECONDO)
-  // ==========================================
-  
-  // 1. Cronometro locale dell'Admin (gira fluido per i fatti suoi)
   useEffect(() => {
     let interval = null;
     if (isTimerRunning && liveTimeLeft > 0) {
@@ -151,23 +147,19 @@ export default function ContestManager() {
     return () => clearInterval(interval);
   }, [isTimerRunning, liveTimeLeft]);
 
-// 2. SINCRONIZZAZIONE INTELLIGENTE CON OBS
-  // Spara il segnale SOLO quando clicchi Play, Pausa o fai Canestro (+1/-1).
   useEffect(() => {
     if (!livePlayer) return;
-    
     triggerOBS('3point_single', {
       command: isTimerRunning ? 'start' : 'pause',
       id: livePlayer.id,
       player_name: livePlayer.player_name,
       score: liveScore,
-      time: liveTimeLeft.toFixed(1), // MANDA IL TEMPO ESATTO IN CUI HAI CLICCATO PAUSA
+      time: liveTimeLeft.toFixed(1),
       round: livePlayer.round,
       prev_score: livePlayer.score,
       prev_time: livePlayer.time
     });
-
-  }, [isTimerRunning, liveScore]); // Reagisce SOLO al tasto Play/Pausa e ai punti!
+  }, [isTimerRunning, liveScore]); 
   
   const handleStartLiveFromRow = (playerItem) => {
     setLivePlayer(playerItem);
@@ -194,7 +186,6 @@ export default function ContestManager() {
   };
 
   const handleStopAndSaveLive = async () => {
-    // 1. Congeliamo tutto
     setIsTimerRunning(false);
     const currentPlayer = livePlayer;
     const finalScore = liveScore;
@@ -204,17 +195,13 @@ export default function ContestManager() {
     const oldScore = currentPlayer.score;
     const oldTime = currentPlayer.time;
 
-    // 2. Chiudiamo SUBITO la console Live.
     setLivePlayer(null);
-
-    // 3. Aspettiamo 100ms per far svuotare la coda di comandi a OBS
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const isPlayoff = ['Quarti di finale', 'Semifinale', 'Finale'].includes(currentPlayer.round);
     const nextScreen = isPlayoff ? '3point_bracket' : '3point_leaderboard';
     const isRecord = isBetterPerformance(oldScore, oldTime, finalScore, finalTimeStr);
 
-    // 4. Inviamo con certezza l'ultima grafica fissa del Risultato
     await triggerOBS('3point_result', { 
       player_name: currentPlayer.player_name,
       score: finalScore, 
@@ -232,7 +219,6 @@ export default function ContestManager() {
       }).eq('id', currentPlayer.id);
     } 
 
-    // 5. NESSUN ALERT BLOCCANTE. Partono i 5 secondi per il cambio scena automatico.
     setTimeout(() => {
       triggerOBS(nextScreen, { id: currentPlayer.id });
     }, 5000);
@@ -240,7 +226,6 @@ export default function ContestManager() {
     loadThreePoint();
   };
 
-  // --- LOGICA CAMBIO FASE ---
   const handleRoundChange = (e) => {
     const selectedRound = e.target.value;
     setRound(selectedRound);
@@ -251,10 +236,6 @@ export default function ContestManager() {
     }
   };
 
-  // ==========================================
-  // LIBRERIA AUTOMAZIONI PLAYOFF
-  // ==========================================
-  
   const getWinner = (roundName, heatName = null) => {
     let filtered = threePointList.filter(p => p.round === roundName);
     if (heatName) {
@@ -315,7 +296,6 @@ export default function ContestManager() {
     loadThreePoint();
   };
 
-  // 1. GENERA QUARTI
   const generateQuarters = async () => {
     if (!window.confirm("Generare i Quarti di finale prendendo i Top 12 dalle Qualificazioni? I punteggi ripartiranno da 0.")) return;
     setIsGenerating(true);
@@ -356,7 +336,6 @@ export default function ContestManager() {
     handleGenResult(errors);
   };
 
-  // 2. GENERA SEMIFINALI
   const generateSemifinals = async () => {
     if (!window.confirm("Passare i 6 vincitori dei Quarti alle Semifinali? I punteggi ripartiranno da 0.")) return;
     setIsGenerating(true);
@@ -381,7 +360,6 @@ export default function ContestManager() {
     handleGenResult(errors);
   };
 
-  // 3. GENERA FINALE
   const generateFinal = async () => {
     if (!window.confirm("Passare i 3 vincitori delle Semifinali alla Finale a tre? I punteggi ripartiranno da 0.")) return;
     setIsGenerating(true);
@@ -395,7 +373,6 @@ export default function ContestManager() {
     handleGenResult(errors);
   };
 
-  // 4. GENERA VINCITORE
   const generateWinner = async () => {
     if (!window.confirm("Incoronare il Vincitore Assoluto? Il punteggio della Finale verrà copiato per la grafica d'onore.")) return;
     setIsGenerating(true);
@@ -426,9 +403,6 @@ export default function ContestManager() {
     loadThreePoint();
   };
 
-  // ==========================================
-  // SALVATAGGI MANUALI E MODIFICA INLINE
-  // ==========================================
   async function handleAddThreePoint(e) {
     e.preventDefault();
     const tName = playerName.trim();
@@ -446,7 +420,6 @@ export default function ContestManager() {
     const newTime = time || null;
 
     if (existing) {
-      // CONTROLLO PRESTAZIONE RIGIDO PER INSERIMENTO MANUALE
       if (isBetterPerformance(existing.score, existing.time, newScore, newTime)) {
         const { error } = await supabase.from('three_point').update({
           score: newScore,
@@ -597,6 +570,111 @@ export default function ContestManager() {
     }
   };
 
+  // ==========================================
+  // MOTORE REGIA SLAM DUNK
+  // ==========================================
+  const handleShowSlamDunkScreen = (targetRound) => {
+    const players = slamDunkList.filter(p => p.round === targetRound);
+    triggerOBS('slamdunk', { round: targetRound, players, winner: null });
+  };
+
+  const handleShowSlamDunkWinner = () => {
+    const finalPlayers = slamDunkList.filter(p => p.round === 'Finale');
+    if(finalPlayers.length === 0) return alert('Nessun finalista trovato!');
+    
+    const winner = finalPlayers.sort((a,b) => ((b.dunk_1||0)+(b.dunk_2||0)) - ((a.dunk_1||0)+(a.dunk_2||0)))[0];
+    triggerOBS('slamdunk', { round: 'Finale', players: finalPlayers, winner: winner.player_name });
+    alert(`👑 Vincitore decretato: ${winner.player_name}!`);
+  };
+
+  // 1. APRE LA CONSOLE E LANCIA IL CARTELLO GIGANTE SU OBS (Ora sa se è Dunk 1 o 2)
+  const startSlamDunkLive = (player, dunkNum) => {
+    setSdLivePlayer(player);
+    setSdDunkNum(dunkNum);
+    setSdVotes(['', '', '', '', '']);
+    
+    const players = slamDunkList.filter(p => p.round === player.round);
+    triggerOBS('slamdunk', { 
+      round: player.round, 
+      players, 
+      winner: null,
+      liveDunker: { playerName: player.player_name, dunkNumber: dunkNum, round: player.round }
+    });
+  };
+
+  // 2. AGGIORNA IL CARTELLO GIGANTE SE CAMBI DA DUNK 1 A DUNK 2
+  const handleDunkNumChange = (num) => {
+    setSdDunkNum(num);
+    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+    triggerOBS('slamdunk', {
+      round: sdLivePlayer.round,
+      players,
+      winner: null,
+      liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: num, round: sdLivePlayer.round }
+    });
+  };
+
+  // 3. CHIUDE LA CONSOLE E RIMANDA ALLA GRIGLIA
+  const closeSlamDunkLive = () => {
+    const currentRound = sdLivePlayer.round;
+    setSdLivePlayer(null);
+    handleShowSlamDunkScreen(currentRound);
+  };
+
+  // 4. MANDA I VOTI IN DIRETTA E SALVA (IL LAMPEGGIO ENTRA QUI)
+  const handleProcessSlamDunkVotes = async () => {
+    const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
+    const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
+    const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
+
+    // A. Manda su OBS la schermata con i voti che girano
+    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+    triggerOBS('slamdunk', {
+      round: sdLivePlayer.round,
+      players: players,
+      winner: null,
+      activeVote: {
+        playerName: sdLivePlayer.player_name,
+        dunkNumber: sdDunkNum,
+        votes: parsedVotes,
+        total: total
+      }
+    });
+
+    // B. Salva su Supabase in Background
+    await supabase.from('slam_dunk').update({ 
+      [fieldToUpdate]: total,
+      updated_at: new Date().toISOString()
+    }).eq('id', sdLivePlayer.id);
+
+    loadSlamDunk();
+
+    // C. Aspetta gli 8 secondi e richiama la griglia mandandole il comando per lampeggiare solo il box specifico
+    setTimeout(async () => {
+      const { data } = await supabase
+        .from('slam_dunk')
+        .select('*')
+        .eq('edition_id', activeEdition.id)
+        .order('id', { ascending: true }); // Mantiene l'ordine originale
+        
+      if (data) {
+        setSlamDunkList(data);
+        const updatedPlayers = data.filter(p => p.round === sdLivePlayer.round);
+        
+        triggerOBS('slamdunk', {
+          round: sdLivePlayer.round,
+          players: updatedPlayers,
+          winner: null,
+          lastUpdatedPlayer: sdLivePlayer.player_name, 
+          lastUpdatedDunk: sdDunkNum 
+        });
+      }
+      
+      setSdLivePlayer(null);
+    }, 8000);
+  };
+
+
   const getHeatOptions = () => {
     if (round === 'Quarti di finale') return [1, 2, 3, 4, 5, 6];
     if (round === 'Semifinale') return [1, 2, 3];
@@ -609,7 +687,9 @@ export default function ContestManager() {
   const totalPages = Math.ceil(filteredThreePoint.length / ITEMS_PER_PAGE);
   const currentThreePoint = filteredThreePoint.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const filteredSlamDunk = slamDunkList.filter(item => 
+  // FILTRI AGGIORNATI PER I TAB DINAMICI SLAM DUNK
+  const filteredSlamDunkByTab = slamDunkList.filter(item => item.round === sdActiveTab);
+  const filteredSlamDunk = filteredSlamDunkByTab.filter(item => 
     item.player_name?.toLowerCase().includes(sdSearchTerm.toLowerCase())
   );
   const sdTotalPages = Math.ceil(filteredSlamDunk.length / ITEMS_PER_PAGE);
@@ -995,16 +1075,13 @@ export default function ContestManager() {
                             </div>
                             <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                               
-                              {/* PULSANTE MAGICO LIVE SULLA RIGA */}
-                              {!livePlayer && item.round !== 'Vincitore' && (
-                                <button 
-                                  onClick={() => handleStartLiveFromRow(item)} 
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest animate-pulse"
-                                  title="Apri Console Live"
-                                >
-                                  🔴 Live
-                                </button>
-                              )}
+                              <button 
+                                onClick={() => handleStartLiveFromRow(item)} 
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest animate-pulse"
+                                title="Apri Console Live"
+                              >
+                                🔴 Live
+                              </button>
 
                               <button 
                                 onClick={() => triggerOBS(item.round === 'Vincitore' ? '3point_winner' : '3point_single', { 
@@ -1084,231 +1161,309 @@ export default function ContestManager() {
         {activeSection === 'slamdunk' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             
-            {/* Form Inserimento */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
-              <h3 className="text-sm font-semibold text-neutral-800 mb-6 flex items-center gap-2">
-                <Flame size={18} className="text-pink-500"/> Iscrizione Slam Dunk Contest
-              </h3>
-              
-              <form onSubmit={handleAddSlamDunk} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-4 space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Nome Partecipante
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Es. Zach LaVine" 
-                    className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                    value={playerName} 
-                    onChange={e => setPlayerName(e.target.value)} 
-                  />
-                </div>
-                
-                <div className="md:col-span-4 space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Fase
-                  </label>
-                  <div className="relative">
-                    <select 
-                      className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 appearance-none outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                      value={round} 
-                      onChange={e => setRound(e.target.value)}
-                    >
-                      <option value="Qualificazione">Qualificazione</option>
-                      <option value="Finale">Finale</option>
-                    </select>
-                    <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Dunk 1 (Max 50)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="50" 
-                    placeholder="Es. 45" 
-                    className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                    value={dunk1} 
-                    onChange={e => setDunk1(e.target.value)} 
-                  />
-                </div>
-                
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                    Dunk 2 (Max 50)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    max="50" 
-                    placeholder="Es. 50" 
-                    className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                    value={dunk2} 
-                    onChange={e => setDunk2(e.target.value)} 
-                  />
-                </div>
-
-                <div className="md:col-span-4 mt-2">
-                  <button 
-                    type="submit" 
-                    className="w-full md:w-auto px-6 py-3 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm"
-                  >
-                    Aggiungi / Aggiorna Schiacciatore
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Lista Partecipanti Slam Dunk */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h3 className="text-sm font-semibold text-neutral-800">Lista Iscritti Slam Dunk</h3>
-                <div className="relative w-full sm:w-auto">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Cerca giocatore..." 
-                    className="w-full sm:w-64 pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
-                    value={sdSearchTerm}
-                    onChange={(e) => setSdSearchTerm(e.target.value)}
-                  />
+            {/* PANNELLO REGIA GLOBALE SLAM DUNK */}
+            <div className="bg-gradient-to-r from-neutral-50 to-neutral-100/50 p-5 rounded-2xl border border-neutral-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Tv size={18} className="text-pink-500"/>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-700">Regia Slam Dunk (Grafiche Intere)</h3>
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button 
+                  onClick={() => handleShowSlamDunkScreen('Qualificazione')} 
+                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
+                >
+                  Mostra Qualificazioni
+                </button>
+                <button 
+                  onClick={() => handleShowSlamDunkScreen('Spareggio')} 
+                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
+                >
+                  Mostra Spareggio
+                </button>
+                <button 
+                  onClick={() => handleShowSlamDunkScreen('Finale')} 
+                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
+                >
+                  Mostra Finale
+                </button>
+                <button 
+                  onClick={handleShowSlamDunkWinner} 
+                  className="flex items-center justify-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs font-bold text-yellow-700 hover:bg-yellow-100 transition-all shadow-sm text-center"
+                >
+                  <Crown size={14} /> Incorona Vincitore
+                </button>
+              </div>
+            </div>
 
-              <div className="space-y-3">
-                {currentSlamDunk.length === 0 ? (
-                  <div className="p-8 border border-dashed border-neutral-200 rounded-xl text-center">
-                    <p className="text-sm text-neutral-500">Nessun iscritto trovato</p>
+            {sdLivePlayer ? (
+              // CONSOLE LIVE VOTI SLAM DUNK
+              <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-10 text-white flex flex-col items-center relative shadow-2xl animate-in zoom-in-95">
+                <div className="absolute top-0 w-full h-1.5 bg-pink-500 animate-pulse rounded-t-3xl"></div>
+                <button onClick={closeSlamDunkLive} className="absolute top-4 right-4 text-neutral-500 hover:text-white bg-neutral-900 p-2 rounded-lg transition-colors"><X size={20}/></button>
+                
+                <div className="flex items-center gap-2 mb-2 bg-red-500/10 border border-red-500/30 px-3 py-1 rounded-full">
+                  <Radio size={14} className="text-red-500 animate-pulse"/>
+                  <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">CONSOLE GIUDICI</span>
+                </div>
+
+                <h2 className="text-5xl font-black uppercase tracking-tight text-white mb-1">{sdLivePlayer.player_name}</h2>
+                <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mb-8">{sdLivePlayer.round}</p>
+                
+                {/* Selezione Schiacciata */}
+                <div className="flex gap-4 mb-8 bg-neutral-900 p-2 rounded-xl">
+                  <button onClick={() => handleDunkNumChange(1)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 1 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 1</button>
+                  <button onClick={() => handleDunkNumChange(2)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 2 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 2</button>
+                </div>
+
+                {/* I 5 Voti */}
+                <div className="flex gap-4 mb-8 flex-wrap justify-center">
+                  {sdVotes.map((v, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2">
+                      <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Giudice {i+1}</label>
+                      <input 
+                        type="number" 
+                        min="0" max="10"
+                        value={v}
+                        onChange={(e) => {
+                          const newVotes = [...sdVotes];
+                          newVotes[i] = e.target.value;
+                          setSdVotes(newVotes);
+                        }}
+                        className="w-20 h-24 bg-neutral-900 border-2 border-neutral-700 rounded-xl text-center text-4xl font-black text-white outline-none focus:border-pink-500 transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Totale Calcolato Automaticamente */}
+                <div className="text-center mb-10">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Totale</span>
+                  <div className="text-7xl font-black text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.4)]">
+                    {sdVotes.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0)}
                   </div>
-                ) : currentSlamDunk.map(item => (
-                  <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-neutral-200 rounded-xl group hover:border-pink-300 hover:shadow-sm transition-all gap-4">
+                </div>
+
+                {/* TASTO UNICO MAGICO: Manda Voti + Salva + Transizione Automatica */}
+                <div className="flex flex-col w-full max-w-md">
+                   <button type="button" onClick={handleProcessSlamDunkVotes} className="w-full bg-pink-600 hover:bg-pink-500 text-white py-4 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)]">
+                     <Send size={16}/> Manda Voti in Diretta e Salva (Auto)
+                   </button>
+                   <span className="text-[10px] text-center text-neutral-500 mt-3 uppercase tracking-widest font-bold">
+                     Tornerà in automatico alla griglia dopo 8 secondi
+                   </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Form Inserimento Slam Dunk */}
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
+                  <h3 className="text-sm font-semibold text-neutral-800 mb-6 flex items-center gap-2">
+                    <Flame size={18} className="text-pink-500"/> Iscrizione Slam Dunk Contest
+                  </h3>
+                  
+                  <form onSubmit={handleAddSlamDunk} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-4 space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        Nome Partecipante
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="Es. Zach LaVine" 
+                        className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
+                        value={playerName} 
+                        onChange={e => setPlayerName(e.target.value)} 
+                      />
+                    </div>
                     
-                    <div className="flex-1 flex flex-col">
-                      <span className="text-base font-semibold text-neutral-900">{item.player_name}</span>
-                      <span className="text-xs font-medium text-neutral-500 mt-0.5">{item.round}</span>
+                    <div className="md:col-span-4 space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        Fase
+                      </label>
+                      <div className="relative">
+                        <select 
+                          className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 appearance-none outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
+                          value={round} 
+                          onChange={e => setRound(e.target.value)}
+                        >
+                          <option value="Qualificazione">Qualificazione</option>
+                          <option value="Spareggio">Spareggio</option>
+                          <option value="Finale">Finale</option>
+                        </select>
+                        <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                      </div>
                     </div>
 
-                    {/* MODALITÀ MODIFICA SLAM DUNK (Inline Edit) */}
-                    {sdEditingId === item.id ? (
-                      <div className="flex items-center gap-3 animate-in fade-in bg-pink-50/50 p-2 rounded-lg border border-pink-100">
-                        <div className="flex flex-col gap-1 w-20">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                            Dunk 1
-                          </label>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="50" 
-                            className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
-                            value={sdEditDunk1} 
-                            onChange={e => setSdEditDunk1(e.target.value)} 
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1 w-20">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                            Dunk 2
-                          </label>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="50" 
-                            className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
-                            value={sdEditDunk2} 
-                            onChange={e => setSdEditDunk2(e.target.value)} 
-                          />
-                        </div>
-                        <div className="flex gap-1 ml-2 mt-5">
-                          <button 
-                            onClick={() => saveSdEditing(item.id)} 
-                            className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"
-                          >
-                            <Check size={16}/>
-                          </button>
-                          <button 
-                            onClick={cancelSdEditing} 
-                            className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"
-                          >
-                            <X size={16}/>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* MODALITÀ VISUALIZZAZIONE SLAM DUNK & COMANDI REGIA */
-                      <div className="flex items-center gap-6 self-end md:self-auto border-t border-neutral-100 md:border-0 pt-3 md:pt-0 w-full md:w-auto">
-                        <div className="text-center px-4 border-r border-neutral-100 flex-1 md:flex-none">
-                          <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest">Dunk 1</p>
-                          <p className="text-xl font-bold text-neutral-900">{item.dunk_1}</p>
-                        </div>
-                        <div className="text-center flex-1 md:flex-none">
-                          <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest">Dunk 2</p>
-                          <p className="text-xl font-bold text-neutral-900">{item.dunk_2}</p>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                          
-                          <button 
-                            onClick={() => triggerOBS('slamdunk', { player_name: item.player_name, dunk_1: item.dunk_1, dunk_2: item.dunk_2 })} 
-                            className="flex items-center gap-1 px-3 py-1.5 bg-pink-500 text-white hover:bg-pink-600 rounded-lg transition-colors text-[10px] font-bold uppercase tracking-widest" 
-                            title="Manda su OBS"
-                          >
-                            <Tv size={14} /> In Onda
-                          </button>
-                          
-                          <button 
-                            onClick={() => triggerOBS('none', {})} 
-                            className="px-3 py-1.5 bg-neutral-100 text-neutral-500 hover:bg-neutral-200 rounded-lg transition-colors text-[10px] font-bold uppercase tracking-widest mr-2" 
-                            title="Togli da OBS"
-                          >
-                            Chiudi
-                          </button>
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        Dunk 1 (Max 50)
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="50" 
+                        placeholder="Es. 45" 
+                        className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
+                        value={dunk1} 
+                        onChange={e => setDunk1(e.target.value)} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                        Dunk 2 (Max 50)
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="50" 
+                        placeholder="Es. 50" 
+                        className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
+                        value={dunk2} 
+                        onChange={e => setDunk2(e.target.value)} 
+                      />
+                    </div>
 
-                          <button 
-                            onClick={() => startSdEditing(item)} 
-                            className="p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-lg transition-colors" 
-                            title="Modifica Punteggi"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          
-                          <button 
-                            onClick={() => handleDelete('slam_dunk', item.id)} 
-                            className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" 
-                            title="Elimina"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Controlli Paginazione Slam Dunk */}
-              {sdTotalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
-                  <p className="text-xs font-semibold text-neutral-500">Pagina {sdCurrentPage} di {sdTotalPages}</p>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => setSdCurrentPage(p => Math.max(1, p - 1))} 
-                      disabled={sdCurrentPage === 1}
-                      className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <button 
-                      onClick={() => setSdCurrentPage(p => Math.min(sdTotalPages, p + 1))} 
-                      disabled={sdCurrentPage === sdTotalPages}
-                      className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
+                    <div className="md:col-span-4 mt-2">
+                      <button 
+                        type="submit" 
+                        className="w-full md:w-auto px-6 py-3 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm"
+                      >
+                        Aggiungi / Aggiorna Schiacciatore
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              )}
-            </div>
+
+                {/* Lista Partecipanti Slam Dunk (CON TAB) */}
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                    <h3 className="text-sm font-semibold text-neutral-800">Lista Iscritti Slam Dunk</h3>
+                    <div className="relative w-full sm:w-auto">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Cerca giocatore..." 
+                        className="w-full sm:w-64 pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
+                        value={sdSearchTerm}
+                        onChange={(e) => setSdSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* TAB DINAMICI PER ROUND */}
+                  <div className="flex gap-2 mb-6 border-b border-neutral-100 pb-4 overflow-x-auto">
+                    {['Qualificazione', 'Spareggio', 'Finale'].map(tab => (
+                      <button 
+                        key={tab}
+                        onClick={() => { setSdActiveTab(tab); setSdCurrentPage(1); }}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                          sdActiveTab === tab ? 'bg-pink-50 text-pink-600 border border-pink-200' : 'text-neutral-500 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    {currentSlamDunk.length === 0 ? (
+                      <div className="p-8 border border-dashed border-neutral-200 rounded-xl text-center">
+                        <p className="text-sm text-neutral-500">Nessun iscritto trovato per questo round</p>
+                      </div>
+                    ) : currentSlamDunk.map(item => (
+                      <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-neutral-200 rounded-xl group hover:border-pink-300 hover:shadow-sm transition-all gap-4">
+                        
+                        <div className="flex-1 flex flex-col">
+                          <span className="text-base font-semibold text-neutral-900">{item.player_name}</span>
+                          <span className="text-xs font-medium text-neutral-500 mt-0.5">{item.round}</span>
+                        </div>
+
+                        {/* MODALITÀ MODIFICA SLAM DUNK (Inline Edit) */}
+                        {sdEditingId === item.id ? (
+                          <div className="flex items-center gap-3 animate-in fade-in bg-pink-50/50 p-2 rounded-lg border border-pink-100">
+                            <div className="flex flex-col gap-1 w-20">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
+                                Dunk 1
+                              </label>
+                              <input 
+                                type="number" 
+                                min="0" max="50" 
+                                className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                value={sdEditDunk1} 
+                                onChange={e => setSdEditDunk1(e.target.value)} 
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1 w-20">
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
+                                Dunk 2
+                              </label>
+                              <input 
+                                type="number" 
+                                min="0" max="50" 
+                                className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
+                                value={sdEditDunk2} 
+                                onChange={e => setSdEditDunk2(e.target.value)} 
+                              />
+                            </div>
+                            <div className="flex gap-1 ml-2 mt-5">
+                              <button onClick={() => saveSdEditing(item.id)} className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"><Check size={16}/></button>
+                              <button onClick={cancelSdEditing} className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"><X size={16}/></button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* MODALITÀ VISUALIZZAZIONE E COMANDI REGIA */
+                          <div className="flex items-center gap-6 self-end md:self-auto border-t border-neutral-100 md:border-0 pt-3 md:pt-0 w-full md:w-auto">
+                            <div className="text-center px-4 border-r border-neutral-100 flex-1 md:flex-none">
+                              <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest">Dunk 1</p>
+                              <p className="text-xl font-bold text-neutral-900">{item.dunk_1}</p>
+                            </div>
+                            <div className="text-center flex-1 md:flex-none">
+                              <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest">Dunk 2</p>
+                              <p className="text-xl font-bold text-neutral-900">{item.dunk_2}</p>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                              
+                              {/* TASTI LIVE MIRATI: Chiedono subito la dunk giusta */}
+                              <button 
+                                onClick={() => startSlamDunkLive(item, 1)} 
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-1"
+                                title="Manda la Grafica Dunk 1"
+                              >
+                                LIVE DUNK 1
+                              </button>
+                              <button 
+                                onClick={() => startSlamDunkLive(item, 2)} 
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-2"
+                                title="Manda la Grafica Dunk 2"
+                              >
+                                LIVE DUNK 2
+                              </button>
+
+                              <button onClick={() => startSdEditing(item)} className="p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-lg transition-colors" title="Modifica Punteggi"><Edit2 size={16} /></button>
+                              <button onClick={() => handleDelete('slam_dunk', item.id)} className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" title="Elimina"><Trash2 size={16} /></button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Controlli Paginazione Slam Dunk */}
+                  {sdTotalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
+                      <p className="text-xs font-semibold text-neutral-500">Pagina {sdCurrentPage} di {sdTotalPages}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => setSdCurrentPage(p => Math.max(1, p - 1))} disabled={sdCurrentPage === 1} className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"><ChevronLeft size={16} /></button>
+                        <button onClick={() => setSdCurrentPage(p => Math.min(sdTotalPages, p + 1))} disabled={sdCurrentPage === sdTotalPages} className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"><ChevronRight size={16} /></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 

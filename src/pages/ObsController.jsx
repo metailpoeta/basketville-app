@@ -4,7 +4,8 @@ import { Target, XCircle, ListOrdered, Trophy, Type, Tv } from 'lucide-react';
 
 export default function ObsController() {
   const [currentGraphic, setCurrentGraphic] = useState('none');
-  const [genericTitleText, setGenericTitleText] = useState(''); // STATO PER IL TESTO
+  const [genericTitleText, setGenericTitleText] = useState(''); // STATO PER IL TESTO JOLLY
+  const [mvpNameText, setMvpNameText] = useState(''); // STATO PER IL TESTO MVP
 
   // Ascoltiamo in tempo reale cosa c'è in onda
   useEffect(() => {
@@ -38,6 +39,12 @@ export default function ObsController() {
     triggerOBS('generic_title', { text: genericTitleText.trim() });
   };
 
+  // Funzione dedicata per l'MVP
+  const sendMvpTitle = () => {
+    if (!mvpNameText.trim()) return alert('Inserisci il nome del giocatore!');
+    triggerOBS('mvp_title', { name: mvpNameText.trim() });
+  };
+
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in pb-20 space-y-8">
       
@@ -57,9 +64,12 @@ export default function ObsController() {
         </button>
       </div>
 
+      {/* GRIGLIA A 4 CELLE (2x2) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* CARD: 3-POINT CONTEST */}
+        {/* ========================================== */}
+        {/* CARD: 3-POINT CONTEST (ROSA)               */}
+        {/* ========================================== */}
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
             <div className="p-3 bg-pink-50 text-pink-500 rounded-xl"><Target size={24}/></div>
@@ -87,14 +97,14 @@ export default function ObsController() {
         </div>
 
         {/* ========================================== */}
-        {/* NUOVA CARD: TORNEO E PLAYOFF               */}
+        {/* CARD: TORNEO E PLAYOFF (VIOLA)             */}
         {/* ========================================== */}
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
             <div className="p-3 bg-purple-50 text-purple-500 rounded-xl"><Trophy size={24}/></div>
             <div>
               <h3 className="text-lg font-semibold text-neutral-800">Torneo & Playoff</h3>
-              <p className="text-xs text-neutral-500">Classifiche gironi e tabellone</p>
+              <p className="text-xs text-neutral-500">Classifiche gironi, tabellone e marcatori</p>
             </div>
           </div>
           
@@ -112,25 +122,61 @@ export default function ObsController() {
             >
               <Trophy size={16} /> Tabellone Playoff
             </button>
+
+            <button 
+              onClick={() => triggerOBS('top_scorers')}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'top_scorers' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Target size={16} /> Classifica Marcatori
+            </button>
           </div>
         </div>
 
         {/* ========================================== */}
-        {/* CARD: TITOLO GENERICO (JOLLY)              */}
+        {/* CARD: MVP DEL MATCH (ORO/GIALLO)           */}
         {/* ========================================== */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200 md:col-span-2">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
-            <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><Type size={24}/></div>
+            <div className="p-3 bg-yellow-50 text-yellow-500 rounded-xl"><Trophy size={24}/></div>
             <div>
-              <h3 className="text-lg font-semibold text-neutral-800">Messaggio Jolly</h3>
-              <p className="text-xs text-neutral-500">Scrivi e manda a schermo intero</p>
+              <h3 className="text-lg font-semibold text-neutral-800">MVP del Match</h3>
+              <p className="text-xs text-neutral-500">Incorona il migliore in campo</p>
             </div>
           </div>
           
           <div className="space-y-4">
             <input 
               type="text" 
-              placeholder="Es: PAUSA PRANZO - RIPRENDIAMO ALLE 15:00"
+              placeholder="Es: MARIO ROSSI"
+              value={mvpNameText}
+              onChange={(e) => setMvpNameText(e.target.value)}
+              className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-800 outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all uppercase tracking-wider"
+            />
+            <button 
+              onClick={sendMvpTitle}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'mvp_title' ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Tv size={16} /> Lancia Grafica MVP
+            </button>
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* CARD: TITOLO GENERICO JOLLY (BLU)          */}
+        {/* ========================================== */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
+          <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
+            <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><Type size={24}/></div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-800">Messaggio Jolly</h3>
+              <p className="text-xs text-neutral-500">Testo personalizzato a tutto schermo</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              placeholder="Es: PAUSA PRANZO"
               value={genericTitleText}
               onChange={(e) => setGenericTitleText(e.target.value)}
               className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all uppercase tracking-wider"

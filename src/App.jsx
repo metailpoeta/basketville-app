@@ -18,6 +18,7 @@ import MatchScoreboard from './pages/MatchScoreboard';
 import SponsorCarousel from './pages/SponsorCarousel';
 import SponsorOutput from './pages/SponsorOutput';
 import SponsorManager from './pages/SponsorManager';
+import InstagramGenerator from './pages/InstagramGenerator'; 
 
 // Importiamo il nuovo canale OBS (che creeremo tra un attimo)
 import ObsOutput from './pages/ObsOutput';
@@ -94,6 +95,7 @@ function App() {
         <Route path="/match-scoreboard" element={<MatchScoreboard />} />
         <Route path="/sponsor-carousel" element={<SponsorCarousel />} />
         <Route path="/sponsor-output" element={<SponsorOutput />} />
+        <Route path="/instagram" element={<InstagramGenerator />} />
       </Routes>
     </Router>
   );

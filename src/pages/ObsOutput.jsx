@@ -35,6 +35,7 @@ export default function ObsOutput() {
   const [tournamentMatches, setTournamentMatches] = useState([]);
   const [tournamentTeams, setTournamentTeams] = useState([]);
   const [tournamentCalendar, setTournamentCalendar] = useState([]);
+  const [topScorers, setTopScorers] = useState([]);
 
   // ==========================================
   // WATCHDOG ANTI-CRASH PER OBS (COSTO ZERO)
@@ -126,7 +127,7 @@ export default function ObsOutput() {
       .select(`
         *,
         match_types(name),
-        team_a:team_a_id(team_id, coach, assistant_coach, group_name, teams(name, short_name)),
+        team_a:team_a_id(team_id, event_id, coach, assistant_coach, group_name, teams(name, short_name)),
         team_b:team_b_id(team_id, coach, assistant_coach, group_name, teams(name, short_name))
       `)
       .eq('id', matchId)
@@ -229,6 +230,61 @@ export default function ObsOutput() {
     setTournamentCalendar(cal || []);
   };
 
+  // === FUNZIONE PER LA CLASSIFICA MARCATORI (SOLO VERO CUP) ===
+  const fetchTopScorers = async () => {
+    const editionId = await getActiveEditionId();
+    if (!editionId) return;
+
+    // 1. Troviamo la Vero Cup
+    const { data: ev } = await supabase.from('events').select('id').ilike('name', '%vero cup%').single();
+    if (!ev) return;
+
+    // 2. Troviamo le squadre iscritte
+    const { data: tee } = await supabase.from('teams_edition_events').select('id').eq('edition_id', editionId).eq('event_id', ev.id);
+    if (!tee || tee.length === 0) return;
+    const teeIds = tee.map(t => t.id);
+
+    // 3. Troviamo tutte le partite giocate da queste squadre
+    const { data: matches } = await supabase.from('matches').select('id').in('team_a_id', teeIds);
+    if (!matches || matches.length === 0) return;
+    const matchIds = matches.map(m => m.id);
+
+    // 4. Peschiamo tutti i punti segnati in queste partite e info giocatore
+    const { data: points } = await supabase.from('match_points')
+      .select('player_id, points, match_id, players(first_name, last_name)')
+      .in('match_id', matchIds);
+
+    if (!points) return;
+
+    // 5. Sommiamo tutto e calcoliamo le medie
+    const playerStats = {};
+    points.forEach(p => {
+      if (!playerStats[p.player_id]) {
+        playerStats[p.player_id] = {
+          id: p.player_id,
+          first_name: p.players?.first_name || '',
+          last_name: p.players?.last_name || '',
+          totalPoints: 0,
+          matchesPlayed: new Set()
+        };
+      }
+      playerStats[p.player_id].totalPoints += p.points;
+      playerStats[p.player_id].matchesPlayed.add(p.match_id); // Usiamo un Set per contare le partite uniche
+    });
+
+    // 6. Ordiniamo per Punti Totali (in caso di parità, per media punti) e prendiamo i Top 10
+    const processedScorers = Object.values(playerStats).map(p => ({
+      ...p,
+      games: p.matchesPlayed.size,
+      avgPoints: (p.totalPoints / p.matchesPlayed.size).toFixed(1)
+    })).sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return b.avgPoints - a.avgPoints;
+    }).slice(0, 10);
+
+    setTopScorers(processedScorers);
+  };
+
   useEffect(() => {
     fetchThreePointData(); 
     fetchEligiblePlayers();
@@ -295,6 +351,9 @@ export default function ObsOutput() {
       else if (nextGraphic === 'daily_schedule' && broadcastState.payload.date) {
         await fetchDailySchedule(broadcastState.payload.date);
       } 
+      else if (nextGraphic === 'slamdunk') {
+        // Nessun fetch, il Controller ci invia già tutto nel payload!
+      }
       else if (nextGraphic === '3point_leaderboard' || nextGraphic === '3point_bracket') {
         await fetchThreePointData();
         setHighlightedPlayerId(broadcastState.payload?.id || null);
@@ -309,6 +368,10 @@ export default function ObsOutput() {
       // === NUOVA LOGICA FETCH PER TORNEO ===
       else if (nextGraphic === 'recap_girone' || nextGraphic === 'playoff_bracket') {
         await fetchTournamentData();
+      }
+
+      else if (nextGraphic === 'top_scorers') {
+        await fetchTopScorers();
       }
 
       if (transitionTimer.current) clearTimeout(transitionTimer.current);
@@ -373,6 +436,30 @@ export default function ObsOutput() {
     };
   }, [broadcastState]);
 
+  // === LOGICA LOGO DINAMICO ===
+  let currentLogo = "Basketville_logo26_vero.png"; // Logo di Default
+  
+  if (localGraphic.includes('slamdunk')) {
+    currentLogo = "Logo_SlamDunk.png";
+  } else if (localGraphic.includes('3point')) {
+    currentLogo = "Logo_3Point.png";
+  } else if (localGraphic === 'match_full' || localGraphic === 'match_lite') {
+    // Peschiamo l'event_id direttamente dalla partita caricata!
+    const eventId = matchData?.team_a?.event_id;
+    
+    // Inserisci qui gli ID reali dei tuoi eventi e i loghi corrispondenti
+    if (eventId === 1) {
+      currentLogo = "Basketville_logo26_vero.png"; // VERO Cup
+    } else if (eventId === 4) {
+      currentLogo = "Logo_MasterCamp.png";         // OLD
+    } else if (eventId === 5) {
+      currentLogo = "Logo_AltroEvento.png";        // WOMEN
+    } else if (eventId === 6) {
+      currentLogo = "Logo_AltroEvento.png";        // DR123
+    }
+  }
+  // ============================
+
 
   return (
     <div className="w-[1920px] h-[1080px] overflow-hidden bg-neutral-950 relative font-dimbo text-white origin-top-left">
@@ -380,10 +467,10 @@ export default function ObsOutput() {
       {/* ========================================= */}
       {/* OVERLAY LOGO CENTRALE UNICO (Z-50) */}
       {/* ========================================= */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50">
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500">
         <img 
-          src="Basketville_logo26_vero.png" 
-          alt="Basketville 2026" 
+          src={currentLogo} 
+          alt="Sponsor Logo" 
           className="h-[140px] w-auto drop-shadow-2xl" 
         />
       </div>
@@ -403,6 +490,11 @@ export default function ObsOutput() {
         {localGraphic === 'match_full' && matchData && <MatchFullGraphic key="match_full" match={matchData} />}
         {localGraphic === 'match_lite' && matchData && <MatchLiteGraphic key="match_lite" match={matchData} />}
         {localGraphic === 'generic_title' && <GenericTitleGraphic key="generic_title" payload={broadcastState.payload} />}
+        {localGraphic === 'slamdunk' && <SlamDunkGraphic key="slamdunk" payload={broadcastState.payload} />}
+        {localGraphic === 'top_scorers' && (
+          <TopScorersGraphic key="top_scorers" data={topScorers} />
+        )}
+        {localGraphic === 'mvp_title' && <MvpTitleGraphic key="mvp_title" payload={broadcastState.payload} />}
 
         {/* === NUOVE GRAFICHE AGGIUNTE ALL'ANIMATE PRESENCE === */}
         {localGraphic === 'recap_girone' && (
@@ -2473,5 +2565,341 @@ function QuadroPlayoffGraphic({ matches, teamsEditionEvents, calendar }) {
         
       </div>
     </motion.div>
+  );
+}
+// ==========================================
+// GRAFICA CLASSIFICA MARCATORI (TOP 10)
+// ==========================================
+function TopScorersGraphic({ data }) {
+  const top1 = data && data.length > 0 ? data[0] : null;
+  const others = data ? data.slice(1, 10) : [];
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      exit={{ opacity: 0, scale: 1.05 }} 
+      transition={{ duration: 0.4 }} 
+      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 overflow-hidden"
+    >
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
+      {/* TITOLO GLOBALE IN ALTO A DESTRA */}
+      <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
+        <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+        <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Top 10 Marcatori</h2>
+      </div>
+
+      <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-16 gap-16 z-10 px-8">
+        
+        {/* COLONNA SINISTRA: IL RE ASSOLUTO (#1) */}
+        <div className="w-[600px] h-full shrink-0 flex flex-col">
+          {top1 ? (
+            <div className="w-full h-full bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border-[3px] border-yellow-500/80 rounded-[3rem] shadow-[0_0_80px_rgba(234,179,8,0.2)] flex flex-col items-center justify-center relative p-10">
+              
+              <motion.div 
+                animate={{ y: [-10, 5, -10] }} 
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-16 text-[130px] drop-shadow-[0_0_30px_rgba(234,179,8,0.8)]"
+              >
+                👑
+              </motion.div>
+              
+              <div className="text-yellow-500 font-black tracking-[0.4em] uppercase mb-8 mt-12 text-xl drop-shadow-md">
+                Capocannoniere
+              </div>
+              
+              <div className="flex flex-col items-center text-center w-full mb-10">
+                <span className="text-7xl font-black text-white uppercase tracking-wider leading-none drop-shadow-lg truncate w-full px-4">
+                  {top1.last_name}
+                </span>
+                <span className="text-4xl font-bold text-yellow-400 uppercase tracking-widest mt-4">
+                  {top1.first_name}
+                </span>
+              </div>
+              
+              <div className="bg-black/60 w-full rounded-[2.5rem] py-12 flex flex-col items-center border border-yellow-500/30 shadow-inner">
+                <span className="text-sm font-bold text-neutral-400 uppercase tracking-[0.3em] mb-2">Punti Totali</span>
+                <span className="text-[160px] leading-none font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.5)]">
+                  {top1.totalPoints}
+                </span>
+                
+                <div className="mt-10 flex items-center gap-4 bg-white/5 px-8 py-4 rounded-full border border-yellow-500/20">
+                  <span className="text-neutral-400 uppercase font-bold tracking-widest text-sm">Media Punti:</span>
+                  <span className="text-white font-black text-3xl tabular-nums">{top1.avgPoints} <span className="text-lg text-neutral-500 font-bold ml-1">pt/gara</span></span>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center border-2 border-dashed border-neutral-700/50 rounded-[3rem] bg-white/5">
+              <span className="text-neutral-500 uppercase font-bold tracking-widest text-xl">Nessun Dato</span>
+            </div>
+          )}
+        </div>
+
+        {/* COLONNA DESTRA: GLI INSEGUITORI (Dal 2° al 10°) */}
+        <div className="flex-1 flex flex-col h-full bg-neutral-900/90 border border-neutral-800 rounded-[3rem] p-8 shadow-2xl">
+          
+          <div className="flex text-neutral-400 font-bold uppercase text-[14px] tracking-widest px-8 pb-4 border-b border-neutral-800 shrink-0">
+            <div className="w-20">Pos</div>
+            <div className="flex-1">Giocatore</div>
+            <div className="w-32 text-center">Partite</div>
+            <div className="w-32 text-center">Media</div>
+            <div className="w-32 text-right text-pink-500">Punti</div>
+          </div>
+          
+          <div className="flex flex-col gap-3 mt-4 flex-1 justify-between">
+            {others.map((p, i) => (
+              <div key={p.id} className="flex items-center bg-black/40 border border-neutral-800/80 rounded-2xl px-8 py-3.5 shadow-sm">
+                <div className="w-20 text-3xl font-black text-neutral-600">#{i + 2}</div>
+                <div className="flex-1 flex items-baseline gap-3 truncate min-w-0 pr-4">
+                  <span className="text-[28px] font-black text-white uppercase truncate">{p.last_name}</span>
+                  <span className="text-[18px] font-bold text-neutral-400 uppercase truncate">{p.first_name}</span>
+                </div>
+                <div className="w-32 text-center text-2xl font-bold text-neutral-500">{p.games}</div>
+                <div className="w-32 text-center text-2xl font-black text-neutral-300">{p.avgPoints}</div>
+                <div className="w-32 text-right text-4xl font-black text-pink-500 drop-shadow-md">{p.totalPoints}</div>
+              </div>
+            ))}
+            
+            {/* Slot vuoti in caso di database parziale */}
+            {Array.from({ length: Math.max(0, 9 - others.length) }).map((_, i) => (
+              <div key={`empty-${i}`} className="flex items-center bg-white/5 border border-dashed border-neutral-800/50 rounded-2xl px-8 py-3.5 opacity-40 flex-1 min-h-[60px]">
+                <div className="text-neutral-600 font-bold uppercase tracking-widest text-sm">In Attesa...</div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
+      </div>
+    </motion.div>
+  );
+}
+// ==========================================
+// COMPONENTE: SLAM DUNK CONTEST
+// ==========================================
+function SlamDunkGraphic({ payload }) {
+  const round = payload?.round || "Qualificazione";
+  const players = payload?.players || [];
+  const activeVote = payload?.activeVote || null;
+  const winner = payload?.winner || null;
+  const liveDunker = payload?.liveDunker || null;
+  
+  // STATI PER IL LAMPEGGIO MIRATO
+  const lastUpdatedPlayer = payload?.lastUpdatedPlayer || null; 
+  const lastUpdatedDunk = payload?.lastUpdatedDunk || null; 
+
+  const isFinal = round === "Finale";
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      exit={{ opacity: 0, scale: 1.05 }} 
+      transition={{ duration: 0.4 }} 
+      className="absolute inset-0 w-[1920px] h-[1080px] flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black z-0 overflow-hidden"
+    >
+      {/* Sfondo Carbon Fibre Fisso per tutte le schermate */}
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
+      {/* MOTORE DI TRANSIZIONE DELLE 3 SCHERMATE */}
+      <AnimatePresence mode="wait">
+        
+        {activeVote ? (
+          <motion.div 
+            key="votes-screen"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
+          >
+            {/* SCHERMATA 1: ANIMAZIONE DEI VOTI - TITOLO IN ALTO A DX */}
+            <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
+              <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">Voti Giuria</span>
+              <motion.h2 
+                initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+                className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg"
+              >
+                {activeVote.playerName}
+              </motion.h2>
+              <motion.h3 
+                initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }}
+                className="text-xl font-bold uppercase text-neutral-400 tracking-widest mt-1"
+              >
+                Dunk {activeVote.dunkNumber}
+              </motion.h3>
+            </div>
+
+            {/* I 5 Cartellini (Centrati) */}
+            <div className="flex gap-8 mb-10 mt-16">
+              {activeVote.votes.map((vote, i) => (
+                <motion.div
+                  key={`vote-${i}`}
+                  initial={{ rotateY: -90, opacity: 0, scale: 0.8 }}
+                  animate={{ rotateY: 0, opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 + (i * 0.5), type: "spring", damping: 12 }}
+                  className="w-36 h-48 bg-gradient-to-br from-white to-neutral-200 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-center border-4 border-neutral-300"
+                >
+                  <span className="text-8xl font-black text-neutral-900 drop-shadow-md">{vote}</span>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Totale Esplosivo */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 3.5, type: "spring", stiffness: 200, damping: 20 }}
+              className="flex flex-col items-center mt-4 bg-black/60 px-24 py-10 rounded-[4rem] border border-pink-500/30 shadow-[0_0_100px_rgba(236,72,153,0.15)]"
+            >
+              <span className="text-xl font-bold text-neutral-400 uppercase tracking-[0.4em] mb-2">Score Totale</span>
+              <div className="text-[180px] leading-none font-black text-pink-500 drop-shadow-[0_0_50px_rgba(236,72,153,0.8)]">
+                {activeVote.total}
+              </div>
+            </motion.div>
+          </motion.div>
+
+        ) : liveDunker ? (
+          
+          <motion.div 
+            key="live-slate-screen"
+            initial={{ scale: 0.8, opacity: 0 }} 
+            animate={{ scale: 1, opacity: 1 }} 
+            exit={{ scale: 1.1, opacity: 0 }}
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+             {/* SCHERMATA 2: IL CARTELLO GIGANTE LIVE */}
+             <span className="text-pink-500 font-bold uppercase tracking-[0.5em] text-4xl mb-8 drop-shadow-lg">
+               {liveDunker.round}
+             </span>
+             <h1 className="text-[220px] leading-[0.85] font-black uppercase text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.2)] text-center mb-16 px-10 text-balance">
+               {liveDunker.playerName}
+             </h1>
+             <div className="bg-white text-black px-24 py-8 rounded-[4rem] border-8 border-neutral-300 shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
+                <span className="text-8xl font-black uppercase tracking-widest">
+                  Dunk {liveDunker.dunkNumber}
+                </span>
+             </div>
+          </motion.div>
+
+        ) : (
+
+          <motion.div 
+            key="grid-screen" 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 w-full h-full flex flex-col z-10"
+          >
+            {/* SCHERMATA 3: GRIGLIA CARTE STANDARD (Default) */}
+            <div className="absolute top-16 right-16 z-50 flex flex-col items-end text-right">
+              <span className="text-pink-500 font-bold uppercase tracking-[0.4em] text-sm mb-1 drop-shadow-md">VERO Cup 2026</span>
+              <h2 className="text-4xl font-black uppercase text-white tracking-widest drop-shadow-lg">Slam Dunk Contest</h2>
+              <h3 className="text-xl font-bold uppercase text-neutral-400 tracking-widest mt-1">{round}</h3>
+            </div>
+
+            <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-16 items-center justify-center gap-12 px-8">
+              {players.map((player, idx) => {
+                const isWinner = winner === player.player_name;
+                const totalScore = (player.dunk_1 || 0) + (player.dunk_2 || 0);
+                const isPlayerUpdated = player.player_name === lastUpdatedPlayer; 
+                
+                const nameParts = player.player_name ? player.player_name.split(' ') : [''];
+                const firstName = nameParts.slice(0, -1).join(' ');
+                const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : player.player_name;
+
+                return (
+                  <motion.div
+                    key={player.player_name + idx}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    className={`relative flex flex-col items-center p-10 transition-all ${
+                      isFinal ? 'w-[650px] h-[750px]' : 'w-[420px] h-[650px]'
+                    } ${
+                      isWinner 
+                        ? 'bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border-[3px] border-yellow-500/80 rounded-[3rem] shadow-[0_0_80px_rgba(234,179,8,0.2)]' 
+                        : 'bg-neutral-900/90 border border-neutral-800 rounded-[3rem] shadow-2xl'
+                    }`}
+                  >
+                    {/* LAMPEGGIANTE BORDO INTERA CARD */}
+                    {isPlayerUpdated && (
+                      <motion.div 
+                        animate={{ opacity: [0, 1, 0, 1, 0] }}
+                        transition={{ duration: 3, ease: "easeInOut" }}
+                        className="absolute inset-0 border-[6px] border-pink-500 rounded-[3rem] shadow-[0_0_80px_rgba(236,72,153,0.8)] z-30 pointer-events-none"
+                      />
+                    )}
+
+                    {isWinner && (
+                      <motion.div animate={{ y: [-10, 5, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-16 text-[100px] drop-shadow-[0_0_30px_rgba(234,179,8,0.8)] z-20">👑</motion.div>
+                    )}
+
+                    <div className="flex flex-col items-center text-center w-full mt-2 relative z-40">
+                      {firstName && <span className={`font-bold uppercase tracking-widest ${isFinal ? 'text-3xl' : 'text-xl'} ${isWinner ? 'text-yellow-400' : 'text-neutral-400'} mb-2`}>{firstName}</span>}
+                      <span className={`font-black text-white uppercase tracking-wider leading-none drop-shadow-lg truncate w-full px-4 ${isFinal ? 'text-7xl' : 'text-5xl'}`}>{lastName}</span>
+                    </div>
+
+                    <div className="flex-1 flex items-center justify-center w-full my-6 relative z-40">
+                      <div className={`relative flex flex-col items-center justify-center rounded-full border-4 ${
+                        isWinner ? 'border-yellow-400/50 bg-yellow-900/30 shadow-[0_0_60px_rgba(234,179,8,0.3)]' : 'border-neutral-800 bg-black/60 shadow-inner'
+                        } ${isFinal ? 'w-[280px] h-[280px]' : 'w-[200px] h-[200px]'} transition-all duration-500`}
+                      >
+                        <span className={`absolute ${isFinal ? 'top-12' : 'top-8'} text-xs font-bold ${isWinner ? 'text-yellow-500' : 'text-neutral-500'} uppercase tracking-[0.4em]`}>Score</span>
+                        <span className={`font-black leading-none mt-4 ${isFinal ? 'text-[110px]' : 'text-[80px]'} ${
+                          isWinner ? 'text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.6)]' : (totalScore > 0 ? 'text-white' : 'text-neutral-700')
+                        }`}>
+                          {totalScore > 0 ? totalScore : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* BOX SCHIACCIATE IN BASSO (CON LAMPEGGIO) */}
+                    <div className="w-full flex gap-6 mt-auto relative z-40">
+                      <ScoreBox 
+                        label="DUNK 1" 
+                        score={player.dunk_1} 
+                        isWinner={isWinner} 
+                        isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 1} 
+                      />
+                      <ScoreBox 
+                        label="DUNK 2" 
+                        score={player.dunk_2} 
+                        isWinner={isWinner} 
+                        isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 2} 
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </motion.div>
+  );
+}
+
+function ScoreBox({ label, score, isWinner, isJustUpdated }) {
+  return (
+    <div className={`flex-1 flex flex-col items-center rounded-3xl p-6 relative overflow-hidden ${isWinner ? 'bg-black/40 border border-yellow-500/20' : 'bg-black/60 border border-neutral-800/80'}`}>
+      
+      {/* IL LAMPEGGIO PIENO DENTRO AL BOX */}
+      {isJustUpdated && (
+        <motion.div 
+          animate={{ 
+            opacity: [0, 1, 0, 1, 0],
+            scale: [1, 1.05, 1, 1.05, 1]
+          }}
+          transition={{ duration: 3, ease: "easeInOut" }}
+          className="absolute inset-0 border-4 border-pink-300 rounded-3xl bg-pink-600 shadow-[0_0_60px_rgba(236,72,153,0.8)] z-0 pointer-events-none"
+        />
+      )}
+
+      <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3 relative z-10 drop-shadow-md">{label}</span>
+      <span className={`text-6xl font-black relative z-10 drop-shadow-md ${isWinner ? 'text-yellow-400' : 'text-white'}`}>
+        {score !== null && score !== undefined && score !== 0 ? score : '-'}
+      </span>
+    </div>
   );
 }
