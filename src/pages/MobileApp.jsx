@@ -172,9 +172,7 @@ export default function MobileApp() {
       <div 
         key={m.id} 
         onClick={() => openMatchDetail(m.id)} 
-        className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-950 border ${
-          isLive ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-neutral-800/80 shadow-sm'
-        } p-3 transition-all active:scale-[0.98] cursor-pointer [-webkit-tap-highlight-color:transparent]`}
+        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-sm p-3 transition-all active:scale-[0.98] cursor-pointer [-webkit-tap-highlight-color:transparent]"
       >
         {/* Bordino superiore rosso se è live */}
         {isLive && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-400"></div>}
