@@ -46,23 +46,6 @@ export default function MobileApp() {
   const [veroCupTab, setVeroCupTab] = useState('gironi');
   const [activeGroupTab, setActiveGroupTab] = useState(null);
 
-  // ==========================================
-  // GESTURE PER CHIUDERE IL TABELLINO COL DITO
-  // ==========================================
-  const touchStartY = React.useRef(0);
-
-  const handleTouchStart = (e) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    // Se trascini il dito verso il basso per più di 100px, chiude il tabellino
-    if (touchEndY - touchStartY.current > 100) {
-      setSelectedMatch(null);
-    }
-  };
-
 // ==========================================
   // FUNZIONE FETCH: Scarica il palinsesto e i Contest
   // ==========================================
@@ -1286,13 +1269,13 @@ useEffect(() => {
       </main>
 
 {/* ========================================================
-          📱 MODALE BOTTOMSHEET: IL TABELLINO DELLA PARTITA (BOX SCORE)
+          📱 MODALE BOTTOMSHEET: IL TABELLINO CON DRAG REALE (STILE APPLE)
           ======================================================== */}
       <AnimatePresence>
         {selectedMatch && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden">
             
-            {/* SFONDO OSCURATO: Dissolvenza fluida in entrata e in uscita */}
+            {/* SFONDO OSCURATO */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1303,31 +1286,42 @@ useEffect(() => {
               onTouchMove={(e) => e.preventDefault()}
             />
             
-            {/* PANNELLO TABELLINO: Effetto molla nativo (Slide up & Slide down) */}
+            {/* PANNELLO TABELLINO - ORA APPIZZATO AL TUO DITO */}
             <motion.div 
-              initial={{ y: "100%" }} // Parte da sotto lo schermo
-              animate={{ y: 0 }}       // Sale in posizione
-              exit={{ y: "100%" }}     // Riscivola giù fluidamente quando si chiude
-              transition={{ type: "spring", damping: 28, stiffness: 260 }} // Fisica stile iOS
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-              className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 overflow-hidden pb-6"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              
+              // 👑 LE RIGHE MAGICHE DEL DRAG NATIVO:
+              drag="y" // Permette lo scroll solo verticale
+              dragConstraints={{ top: 0 }} // Impedisce di trascinare la modale più in alto del dovuto
+              dragElastic={{ top: 0, bottom: 0.6 }} // Effetto elastico/molla quando trascini verso il basso
+              onDragEnd={(event, info) => {
+                // Se l'utente ha trascinato verso il basso per più di 120px o ha dato una sventolata veloce (velocity)
+                if (info.offset.y > 120 || info.velocity.y > 500) {
+                  setSelectedMatch(null);
+                }
+              }}
+              
+              className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] z-10 overflow-hidden pb-6 touch-none"
             >
               
-              {/* HEADER FISSO DELLA MODALE */}
-              <div className="w-full flex items-center justify-between px-5 pt-4 pb-2 shrink-0 z-20 relative">
+              {/* HEADER FISSO DELLA MODALE (La zona della maniglia ora è la zona di "aggancio" ideale) */}
+              <div className="w-full flex items-center justify-between px-5 pt-4 pb-2 shrink-0 z-20 relative cursor-grab active:cursor-grabbing">
                 <div className="w-9 h-1 shrink-0"></div> 
                 <div className="w-12 h-1.5 bg-neutral-800 rounded-full"></div>
                 <button 
                   onClick={() => setSelectedMatch(null)}
-                  className="p-2 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-400 hover:text-white active:scale-90 transition-transform shrink-0 flex items-center justify-center shadow-md"
+                  className="p-2 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-400 hover:text-white active:scale-90 transition-transform shrink-0 flex items-center justify-center shadow-md pointer-events-auto"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               {/* CONTENUTO DELLA MODALE SCROLLABILE INTERNAMENTE */}
-              <div className="flex-1 overflow-y-auto px-5 space-y-6 [&::-webkit-scrollbar]:hidden">
+              {/* Nota: 'pointer-events-auto' assicura che lo scroll interno dei giocatori funzioni senza triggerare il drag del pannello */}
+              <div className="flex-1 overflow-y-auto px-5 space-y-6 [&::-webkit-scrollbar]:hidden pointer-events-auto">
                 
                 {/* INTESTAZIONE: SQUADRE E PUNTEGGI */}
                 <div className="text-center pt-1">
