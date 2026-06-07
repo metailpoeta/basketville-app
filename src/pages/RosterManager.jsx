@@ -39,6 +39,7 @@ export default function RosterManager() {
   const [editingEnrollId, setEditingEnrollId] = useState(null);
   const [editCoach, setEditCoach] = useState('');
   const [editAssistantCoach, setEditAssistantCoach] = useState('');
+  const [editGroupName, setEditGroupName] = useState('');
 
   useEffect(() => {
     async function loadInitialData() {
@@ -125,12 +126,14 @@ export default function RosterManager() {
     setEditingEnrollId(enroll.id);
     setEditCoach(enroll.coach || '');
     setEditAssistantCoach(enroll.assistant_coach || '');
+    setEditGroupName(enroll.group_name || '');
   }
 
   async function saveEditEnrollment(id) {
     const { error } = await supabase.from('teams_edition_events').update({
       coach: editCoach.trim(),
-      assistant_coach: editAssistantCoach.trim()
+      assistant_coach: editAssistantCoach.trim(),
+      group_name: editGroupName.toUpperCase().trim()
     }).eq('id', id);
 
     if (!error) {
@@ -311,9 +314,19 @@ export default function RosterManager() {
                       <span className="font-semibold text-neutral-900">{enroll.teams?.name}</span>
                       <span className="ml-2 text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">{enroll.teams?.short_name}</span>
                     </td>
-                    <td className="p-4 text-center">
-                      <span className="font-medium text-neutral-700">{enroll.group_name || '-'}</span>
-                    </td>
+                    <td className="p-4 text-center w-32">
+  {editingEnrollId === enroll.id ? (
+    <input 
+      type="text" 
+      className="w-full p-2 bg-white border border-neutral-300 rounded text-sm text-center uppercase outline-none focus:border-pink-500 focus:ring-1" 
+      placeholder="Girone" 
+      value={editGroupName} 
+      onChange={e => setEditGroupName(e.target.value)} 
+    />
+  ) : (
+    <span className="font-medium text-neutral-700">{enroll.group_name || '-'}</span>
+  )}
+</td>
                     
                     {/* COLONNA STAFF CON EDIT INLINE */}
                     <td className="p-4">

@@ -10,6 +10,9 @@ export default function LiveScoreCenter() {
   const [matchPoints, setMatchPoints] = useState([]);
   const [currentQuarter, setCurrentQuarter] = useState(1);
   const [activeEdition, setActiveEdition] = useState(null);
+  
+  // NUOVO STATO: Gestione della tab della data selezionata
+  const [selectedDateTab, setSelectedDateTab] = useState(null);
 
   useEffect(() => {
     async function init() {
@@ -145,9 +148,8 @@ export default function LiveScoreCenter() {
     }
   }
 
-  // --- FUNZIONE PER MANDARE IN ONDA SU OBS ---
   async function triggerOBSMatch(matchId, graphicType, e = null) {
-    if (e) e.stopPropagation(); // Evita di aprire la partita se clicchi dalla lista
+    if (e) e.stopPropagation();
     const { error } = await supabase.from('broadcast_state').update({
       active_graphic: graphicType,
       payload: { match_id: matchId }
@@ -210,10 +212,47 @@ export default function LiveScoreCenter() {
     );
   };
 
+  // =========================================
+  // LOGICA RAGGRUPPAMENTO DATE PER I TAB
+  // =========================================
+  const getMatchDateStr = (m) => m.calendars?.[0]?.date || 'TBD';
+  
+  // Estrai tutte le date uniche, mettile in ordine cronologico e piazza 'TBD' alla fine
+  const uniqueDates = [...new Set(matches.map(getMatchDateStr))].sort((a, b) => {
+    if (a === 'TBD') return 1;
+    if (b === 'TBD') return -1;
+    return new Date(a) - new Date(b);
+  });
+
+  // Determina quale tab è attivo (di default il primo se non l'hai cliccato)
+  const activeTab = selectedDateTab && uniqueDates.includes(selectedDateTab) ? selectedDateTab : uniqueDates[0];
+  
+// Filtra e ordina le partite SOLO per orario cronologico
+  const filteredMatches = matches
+    .filter(m => getMatchDateStr(m) === activeTab)
+    .sort((a, b) => {
+      // Ordina per orario (le partite senza orario vanno in fondo, assegnandogli un orario fittizio '23:59')
+      const timeA = a.calendars?.[0]?.time || '23:59';
+      const timeB = b.calendars?.[0]?.time || '23:59';
+      
+      return timeA.localeCompare(timeB);
+    });
+
+  // Formattatore per mostrare il Tab a due righe (Stile Calendario)
+  const formatTabDateInfo = (dateStr) => {
+    if (dateStr === 'TBD') return { dayName: 'DATA', dayMonth: 'DA DEF.' };
+    const d = new Date(dateStr);
+    return {
+      dayName: d.toLocaleDateString('it-IT', { weekday: 'short' }).replace(/\./g, '').toUpperCase(),
+      dayMonth: d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }).replace(/\./g, '').toUpperCase()
+    };
+  };
+  // =========================================
+
   if (!selectedMatch) {
     return (
       <div className="max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in">
-        <div className="flex items-center gap-4 mb-8 border-b border-neutral-100 pb-6">
+        <div className="flex items-center gap-4 mb-6 border-b border-neutral-100 pb-6">
           <div className="p-3 bg-pink-50 text-pink-600 rounded-xl"><Activity size={24}/></div>
           <div>
             <h2 className="text-2xl font-semibold text-neutral-800">Regia Live Score</h2>
@@ -221,66 +260,103 @@ export default function LiveScoreCenter() {
           </div>
         </div>
 
-        <div className="grid gap-4">
-          {matches.map(m => {
-            const hasCalendar = m.calendars && m.calendars.length > 0;
-            const status = getStatusInfo(m.status, hasCalendar);
-            const scheduled = m.calendars?.[0];
-
-            return (
-              <div key={m.id} onClick={() => selectMatch(m)} className="bg-white p-5 rounded-2xl border border-neutral-200 flex flex-col md:flex-row items-start md:items-center hover:border-pink-300 hover:shadow-md transition-all group shadow-sm gap-6 w-full text-left cursor-pointer">
-                
-                <div className="flex flex-col items-start gap-2 md:w-48 shrink-0 md:border-r border-neutral-100 md:pr-4">
-                  <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${status.color}`}>
-                    {status.icon} {status.label}
-                  </div>
-                  {scheduled ? (
-                    <div className="flex items-center gap-1.5 text-neutral-500">
-                      <Clock size={14}/>
-                      <span className="text-xs font-medium">
-                        {new Date(scheduled.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })} • {scheduled.time.substring(0, 5)}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-neutral-400 font-medium italic mt-1">Orario da assegnare</p>
+        {/* TABS DATE MIGLIORATI (STILE CALENDARIO SPORTIVO) */}
+        {uniqueDates.length > 0 && (
+          <div className="flex gap-3 overflow-x-auto pb-6 mb-2 pt-2 px-1 no-scrollbar">
+            {uniqueDates.map(dateStr => {
+              const isActive = activeTab === dateStr;
+              const dateInfo = formatTabDateInfo(dateStr);
+              
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => setSelectedDateTab(dateStr)}
+                  className={`relative flex flex-col items-center justify-center min-w-[100px] h-[72px] rounded-2xl transition-all shrink-0 ${
+                    isActive 
+                      ? 'bg-neutral-900 text-white shadow-[0_8px_16px_-6px_rgba(0,0,0,0.4)] border border-neutral-800' 
+                      : 'bg-white text-neutral-500 border border-neutral-200 hover:border-pink-300 hover:bg-pink-50/50 hover:shadow-md'
+                  }`}
+                >
+                  {/* Pallino indicatore sulla data attiva */}
+                  {isActive && (
+                    <div className="absolute -top-1.5 w-1.5 h-1.5 rounded-full bg-pink-500"></div>
                   )}
-                  <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{m.match_types?.name}</p>
-                </div>
+                  
+                  <span className={`text-[11px] font-bold uppercase tracking-widest ${isActive ? 'text-pink-400' : 'text-neutral-400'}`}>
+                    {dateInfo.dayName}
+                  </span>
+                  <span className={`text-[19px] font-black tracking-tight mt-0.5 ${isActive ? 'text-white' : 'text-neutral-800'}`}>
+                    {dateInfo.dayMonth}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-                <div className="flex-1 flex items-center gap-4 min-w-0 w-full">
-                  <span className="text-lg font-semibold text-neutral-800 truncate text-right flex-1">{m.team_a?.teams?.name}</span>
-                  <span className="text-neutral-300 font-bold text-sm shrink-0">VS</span>
-                  <span className="text-lg font-semibold text-neutral-800 truncate flex-1">{m.team_b?.teams?.name}</span>
-                </div>
+        {/* LISTA PARTITE FILTRATE */}
+        <div className="grid gap-4">
+          {filteredMatches.length === 0 ? (
+            <div className="text-center p-8 bg-white border border-neutral-200 rounded-2xl text-neutral-500">
+              Nessuna partita in questa data
+            </div>
+          ) : (
+            filteredMatches.map(m => {
+              const hasCalendar = m.calendars && m.calendars.length > 0;
+              const status = getStatusInfo(m.status, hasCalendar);
+              const scheduled = m.calendars?.[0];
 
-                <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-end mt-4 md:mt-0 border-t border-neutral-100 md:border-t-0 pt-4 md:pt-0">
-                  <div className="flex items-center gap-3 bg-neutral-50 px-5 py-2.5 rounded-xl border border-neutral-200">
-                    <span className="text-2xl font-bold text-neutral-900 w-8 text-center">{m.score_a}</span>
-                    <span className="text-neutral-400 font-medium text-sm">-</span>
-                    <span className="text-2xl font-bold text-neutral-900 w-8 text-center">{m.score_b}</span>
+              return (
+                <div key={m.id} onClick={() => selectMatch(m)} className="bg-white p-5 rounded-2xl border border-neutral-200 flex flex-col md:flex-row items-start md:items-center hover:border-pink-300 hover:shadow-md transition-all group shadow-sm gap-6 w-full text-left cursor-pointer">
+                  
+                  <div className="flex flex-col items-start gap-2 md:w-48 shrink-0 md:border-r border-neutral-100 md:pr-4">
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${status.color}`}>
+                      {status.icon} {status.label}
+                    </div>
+                    {scheduled ? (
+                      <div className="flex items-center gap-1.5 text-neutral-500">
+                        <Clock size={14}/>
+                        <span className="text-xs font-medium">
+                          {scheduled.time.substring(0, 5)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400 font-medium italic mt-1">Orario da assegnare</p>
+                    )}
+                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{m.match_types?.name}</p>
                   </div>
 
-                  {/* TASTI OBS NELLA LISTA (CON TERZO PULSANTE BT OVERLAY) */}
-                  <div className="flex flex-col gap-2">
-                    <button onClick={(e) => triggerOBSMatch(m.id, 'match_lite', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-neutral-800 transition-all shadow-sm" title="Mostra punteggio e parziali">
-                      <Tv size={12}/> Lite
-                    </button>
-                    <button onClick={(e) => triggerOBSMatch(m.id, 'match_full', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-pink-600 transition-all shadow-sm" title="Mostra punteggio, parziali e roster">
-                      <Tv size={12}/> Full
-                    </button>
-                    <button onClick={(e) => triggerOBSMatch(m.id, 'bt_overlay', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-purple-700 transition-all shadow-sm" title="Mostra Overlay BT Scoreboard">
-                      <Tv size={12}/> BT Ov.
-                    </button>
+                  <div className="flex-1 flex items-center gap-4 min-w-0 w-full">
+                    <span className="text-lg font-semibold text-neutral-800 truncate text-right flex-1">{m.team_a?.teams?.name}</span>
+                    <span className="text-neutral-300 font-bold text-sm shrink-0">VS</span>
+                    <span className="text-lg font-semibold text-neutral-800 truncate flex-1">{m.team_b?.teams?.name}</span>
                   </div>
 
-                  <div className="p-3 rounded-full bg-neutral-50 text-neutral-400 group-hover:bg-pink-50 group-hover:text-pink-600 transition-colors hidden md:block">
-                    <ChevronRight size={20} />
+                  <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-end mt-4 md:mt-0 border-t border-neutral-100 md:border-t-0 pt-4 md:pt-0">
+                    <div className="flex items-center gap-3 bg-neutral-50 px-5 py-2.5 rounded-xl border border-neutral-200">
+                      <span className="text-2xl font-bold text-neutral-900 w-8 text-center">{m.score_a}</span>
+                      <span className="text-neutral-400 font-medium text-sm">-</span>
+                      <span className="text-2xl font-bold text-neutral-900 w-8 text-center">{m.score_b}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <button onClick={(e) => triggerOBSMatch(m.id, 'match_lite', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-neutral-800 transition-all shadow-sm" title="Mostra punteggio e parziali">
+                        <Tv size={12}/> Lite
+                      </button>
+                      <button onClick={(e) => triggerOBSMatch(m.id, 'match_full', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-pink-600 transition-all shadow-sm" title="Mostra punteggio, parziali e roster">
+                        <Tv size={12}/> Full
+                      </button>
+                    </div>
+
+                    <div className="p-3 rounded-full bg-neutral-50 text-neutral-400 group-hover:bg-pink-50 group-hover:text-pink-600 transition-colors hidden md:block">
+                      <ChevronRight size={20} />
+                    </div>
                   </div>
+
                 </div>
-
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     );
@@ -325,16 +401,13 @@ export default function LiveScoreCenter() {
             <RotateCcw size={16} /> Reset
           </button>
 
-          {/* TASTI OBS NEL DETTAGLIO PARTITA (CON TERZO PULSANTE BT OVERLAY) */}
+          {/* TASTI OBS NEL DETTAGLIO PARTITA */}
           <div className="flex items-center gap-2 border-l border-neutral-200 pl-3 ml-1">
              <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_lite')} className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-neutral-800 transition-colors shadow-sm" title="Mostra su OBS (Solo Punteggio)">
                <Tv size={14}/> Lite
              </button>
              <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_full')} className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-pink-600 transition-colors shadow-sm" title="Mostra su OBS (Punteggio + Roster)">
                <Tv size={14}/> Full
-             </button>
-             <button onClick={() => triggerOBSMatch(selectedMatch.id, 'bt_overlay')} className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-purple-700 transition-colors shadow-sm" title="Mostra Overlay BT Scoreboard">
-               <Tv size={14}/> BT Ov.
              </button>
           </div>
         </div>
