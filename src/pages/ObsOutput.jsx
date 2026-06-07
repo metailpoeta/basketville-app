@@ -2360,7 +2360,7 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
     });
 
     groupMatches.forEach(m => {
-      if (m.status !== 'conclusa') return; 
+      if (m.status !== 'finished') return; 
       
       const teamA = standings.find(t => t.id === m.team_a_id);
       const teamB = standings.find(t => t.id === m.team_b_id);
@@ -2388,7 +2388,7 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
       
       if (tiedTeams.length === 2) {
         const headToHead = groupMatches.find(m => 
-          m.status === 'conclusa' &&
+          m.status === 'finished' &&
           ((m.team_a_id === a.id && m.team_b_id === b.id) || (m.team_a_id === b.id && m.team_b_id === a.id))
         );
         if (headToHead) {
@@ -2400,7 +2400,7 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
         let bDiffAvulsa = 0;
         
         groupMatches.forEach(m => {
-          if (m.status === 'conclusa' && tiedTeams.find(t => t.id === m.team_a_id) && tiedTeams.find(t => t.id === m.team_b_id)) {
+          if (m.status === 'finished' && tiedTeams.find(t => t.id === m.team_a_id) && tiedTeams.find(t => t.id === m.team_b_id)) {
             if (m.team_a_id === a.id) aDiffAvulsa += (m.score_a - m.score_b);
             if (m.team_b_id === a.id) aDiffAvulsa += (m.score_b - m.score_a);
             
@@ -2453,7 +2453,7 @@ function RecapGironeGraphic({ matches, teamsEditionEvents, calendar }) {
                     const tA = teamsInThisGroup.find(t => t.id === m.team_a_id)?.teams?.name || "TBD";
                     const tB = teamsInThisGroup.find(t => t.id === m.team_b_id)?.teams?.name || "TBD";
                     const isLive = m.status === 'live';
-                    const isConclusa = m.status === 'conclusa';
+                    const isConclusa = m.status === 'finished';
 
                     const aWon = isConclusa && m.score_a > m.score_b;
                     const bWon = isConclusa && m.score_b > m.score_a;
