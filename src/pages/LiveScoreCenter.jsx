@@ -339,14 +339,19 @@ export default function LiveScoreCenter() {
                       <span className="text-2xl font-bold text-neutral-900 w-8 text-center">{m.score_b}</span>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <button onClick={(e) => triggerOBSMatch(m.id, 'match_lite', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-neutral-800 transition-all shadow-sm" title="Mostra punteggio e parziali">
-                        <Tv size={12}/> Lite
-                      </button>
-                      <button onClick={(e) => triggerOBSMatch(m.id, 'match_full', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-pink-600 transition-all shadow-sm" title="Mostra punteggio, parziali e roster">
-                        <Tv size={12}/> Full
-                      </button>
-                    </div>
+                    {/* Sostituisci il vecchio blocco dei pulsanti con questo aggiornato: */}
+<div className="flex flex-col gap-1.5">
+  <button onClick={(e) => triggerOBSMatch(m.id, 'match_lite', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-neutral-800 transition-all shadow-sm" title="Mostra punteggio e parziali">
+    <Tv size={12}/> Lite
+  </button>
+  {/* ⏱️ NUOVO TASTO TIMEOUT */}
+  <button onClick={(e) => triggerOBSMatch(m.id, 'match_timeout', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-amber-500 text-black text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-amber-600 transition-all shadow-sm" title="Attiva Schermata Timeout">
+    <Clock size={12}/> Timeout
+  </button>
+  <button onClick={(e) => triggerOBSMatch(m.id, 'match_full', e)} className="flex items-center justify-center gap-1 px-3 py-1 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded border border-transparent hover:bg-pink-600 transition-all shadow-sm" title="Mostra punteggio, parziali e roster">
+    <Tv size={12}/> Full
+  </button>
+</div>
 
                     <div className="p-3 rounded-full bg-neutral-50 text-neutral-400 group-hover:bg-pink-50 group-hover:text-pink-600 transition-colors hidden md:block">
                       <ChevronRight size={20} />
@@ -401,15 +406,19 @@ export default function LiveScoreCenter() {
             <RotateCcw size={16} /> Reset
           </button>
 
-          {/* TASTI OBS NEL DETTAGLIO PARTITA */}
-          <div className="flex items-center gap-2 border-l border-neutral-200 pl-3 ml-1">
-             <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_lite')} className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-neutral-800 transition-colors shadow-sm" title="Mostra su OBS (Solo Punteggio)">
-               <Tv size={14}/> Lite
-             </button>
-             <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_full')} className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-pink-600 transition-colors shadow-sm" title="Mostra su OBS (Punteggio + Roster)">
-               <Tv size={14}/> Full
-             </button>
-          </div>
+          {/* TASTI OBS NEL DETTAGLIO PARTITA (Aggiornato con Timeout) */}
+<div className="flex items-center gap-2 border-l border-neutral-200 pl-3 ml-1">
+   <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_lite')} className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-neutral-800 transition-colors shadow-sm" title="Mostra su OBS (Solo Punteggio)">
+     <Tv size={14}/> Lite
+   </button>
+   {/* ⏱️ NUOVO TASTO TIMEOUT */}
+   <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_timeout')} className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 text-black text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-amber-600 transition-colors shadow-sm" title="Mostra su OBS in Modalità Timeout">
+     <Clock size={14}/> Timeout
+   </button>
+   <button onClick={() => triggerOBSMatch(selectedMatch.id, 'match_full')} className="flex items-center gap-1.5 px-3 py-2 bg-pink-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-pink-600 transition-colors shadow-sm" title="Mostra su OBS (Punteggio + Roster)">
+     <Tv size={14}/> Full
+   </button>
+</div>
         </div>
       </div>
 
