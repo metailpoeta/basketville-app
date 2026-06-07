@@ -609,7 +609,9 @@ function MatchLiteGraphic({ match }) {
   );
 }
 
-
+// ==========================================
+// GRAFICA PARTITA COMPLETA (ROSTER + RISULTATO)
+// ==========================================
 function MatchFullGraphic({ match }) {
   const styles = getEventStyles(match.event_name);
 
@@ -619,18 +621,22 @@ function MatchFullGraphic({ match }) {
     subtitle = `GIRONE ${match.team_a.group_name}`;
   }
 
+  // =================================================================
+  // RIGA SINGOLO GIOCATORE
+  // =================================================================
   const renderPlayerRow = (p) => (
-    <div key={p.id} className="flex justify-between items-center bg-white/5 border border-white/5 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-pink-500 font-mono font-bold w-5 text-right text-base shrink-0">
+    <div key={p.id} className="flex justify-between items-center bg-white/5 border border-white/5 px-4 py-2.5 rounded-xl hover:bg-white/10 transition-colors">
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-pink-500 font-black w-8 text-right text-[30px] tracking-wider shrink-0 drop-shadow-md translate-y-[2px]">
           {p.jersey_number}
         </span>
-        <span className="font-bold text-white uppercase text-xs truncate">
-          {p.players?.first_name?.charAt(0)}.{p.players?.last_name}
+        <span className="font-bold text-white uppercase text-[29px] tracking-wider truncate pt-1">
+          {p.players?.first_name?.charAt(0)}. {p.players?.last_name}
         </span>
       </div>
-      <span className="font-black text-lg text-neutral-200 shrink-0 ml-2">
-        {p.match_points} <span className="text-[9px] text-neutral-500 font-normal">pt</span>
+      <span className="font-black text-[32px] tracking-wider text-neutral-200 shrink-0 ml-4 tabular-nums leading-none pt-1 drop-shadow-lg">
+        {p.match_points} 
+        <span className="text-[16px] text-neutral-500 font-normal ml-1">pt</span>
       </span>
     </div>
   );
@@ -640,7 +646,7 @@ function MatchFullGraphic({ match }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-8 pt-[200px]"
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black pb-12 pt-[180px] overflow-hidden"
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
@@ -652,112 +658,153 @@ function MatchFullGraphic({ match }) {
         </h2>
       </div>
 
-      <div className="z-10 w-[95%] max-w-[1500px] flex flex-col items-center gap-5">
+      <div className="z-10 w-full max-w-[1900px] h-full flex flex-col items-center gap-4 px-6">
         
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-2xl flex flex-col items-center w-full shrink-0">
-           <div className="flex items-center justify-between w-full gap-8">
-             <div className="flex-1 text-right">
-               <h2 className="text-[50px] leading-tight font-black uppercase text-white whitespace-nowrap overflow-visible">
-                 {match.team_a?.teams?.name}
-               </h2>
-             </div>
+        {/* ================================================================= */}
+        {/* BOX TOP (SQUADRE E RISULTATO) - COLONNA CENTRALE FISSA */}
+        {/* ================================================================= */}
+        {/* 🎛️ CONTENITORE: Griglia con 1fr (sinistra) - auto/fissa (centro) - 1fr (destra) */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-8 shadow-2xl w-full shrink-0 grid grid-cols-[1fr_auto_1fr] gap-8 items-center min-h-[250px]">
+           
+           {/* COLONNA 1: SQUADRA CASA */}
+           <div className="flex justify-center items-center h-full px-2">
+             <h2 className="text-[100px] leading-none font-black uppercase text-white text-center tracking-wider drop-shadow-lg text-balance">
+               {match.team_a?.teams?.name}
+             </h2>
+           </div>
+           
+           {/* COLONNA 2: BOX PUNTEGGI E QUARTI */}
+           <div className="flex flex-col items-center justify-center gap-4 w-[550px]">
              
-             <div className="shrink-0 flex flex-col items-center">
-               <div className="bg-pink-500/20 border border-pink-500/40 px-10 py-3 rounded-[1.5rem] text-[70px] leading-none font-black text-white shadow-[0_0_30px_rgba(236,72,153,0.3)]">
-                 {match.score_a ?? 0} - {match.score_b ?? 0}
-               </div>
+             {/* Box Punteggio */}
+             <div className="bg-pink-500/20 border border-pink-500/40 w-full py-5 rounded-[1.5rem] flex justify-center items-center shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+               <span className="text-[110px] leading-none font-black text-white tracking-wider tabular-nums drop-shadow-md">
+                 {match.score_a ?? 0} <span className="text-pink-500 mx-2">-</span> {match.score_b ?? 0}
+               </span>
              </div>
 
-             <div className="flex-1 text-left">
-               <h2 className="text-[50px] leading-tight font-black uppercase text-white whitespace-nowrap overflow-visible">
-                 {match.team_b?.teams?.name}
-               </h2>
+             {/* Box Quarti */}
+             <div className="bg-black/40 border border-white/5 w-full py-4 rounded-[1.5rem] flex justify-center gap-8 shadow-inner">
+               {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => (
+                  <div key={q} className="flex flex-col items-center">
+                    <span className="text-sm text-neutral-500 uppercase tracking-wider mb-1">
+                      {q}
+                    </span>
+                    <span className="text-3xl font-black text-white tabular-nums leading-none">
+                      {match[`q${i+1}_a`] ?? 0} - {match[`q${i+1}_b`] ?? 0}
+                    </span>
+                  </div>
+               ))}
+               {((match.ot_a !== null && match.ot_a > 0) || match.ot_b > 0) && (
+                  <div className="flex flex-col items-center text-pink-400 border-l border-white/10 pl-6 ml-2">
+                    <span className="text-sm uppercase tracking-wider mb-1">
+                      OT
+                    </span>
+                    <span className="text-3xl font-black tabular-nums leading-none">
+                      {match.ot_a ?? 0} - {match.ot_b ?? 0}
+                    </span>
+                  </div>
+               )}
              </div>
+
            </div>
 
-           <div className="mt-4 flex justify-center gap-8 text-neutral-300 font-bold bg-black/40 px-8 py-2 rounded-2xl border border-white/5">
-             {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => (
-                <div key={q} className="flex flex-col items-center">
-                  <span className="text-[10px] text-neutral-500 uppercase tracking-widest">
-                    {q}
-                  </span>
-                  <span className="text-lg">
-                    {match[`q${i+1}_a`] ?? 0} - {match[`q${i+1}_b`] ?? 0}
-                  </span>
-                </div>
-             ))}
-             {((match.ot_a !== null && match.ot_a > 0) || match.ot_b > 0) && (
-                <div className="flex flex-col items-center text-pink-400 border-l border-white/10 pl-8">
-                  <span className="text-[10px] uppercase tracking-widest">
-                    OT
-                  </span>
-                  <span className="text-lg">
-                    {match.ot_a ?? 0} - {match.ot_b ?? 0}
-                  </span>
-                </div>
-             )}
+           {/* COLONNA 3: SQUADRA TRASFERTA */}
+           <div className="flex justify-center items-center h-full px-2">
+             <h2 className="text-[100px] leading-none font-black uppercase text-white text-center tracking-wider drop-shadow-lg text-balance">
+               {match.team_b?.teams?.name}
+             </h2>
            </div>
+
         </div>
 
-        <div className="flex w-full gap-5">
-          <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-5 shadow-2xl flex flex-col min-w-0">
-            <h3 className="text-center font-black uppercase text-neutral-400 tracking-[0.2em] mb-4 border-b border-white/10 pb-3 shrink-0 truncate px-2">
-              ROSTER {match.team_a?.teams?.name || 'HOME'}
-            </h3>
-            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 content-start">
+        {/* ================================================================= */}
+        {/* BOX BOTTOM (I DUE ROSTER) */}
+        {/* ================================================================= */}
+        <div className="flex w-full gap-4 flex-1 min-h-0">
+          
+          {/* ----- ROSTER TEAM A ----- */}
+          <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-4 shadow-2xl flex flex-col min-w-0">
+            
+            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-4 content-start overflow-hidden">
               {match.roster_a?.length > 0 ? (
                 match.roster_a.map(renderPlayerRow)
               ) : (
-                <div className="col-span-2 text-center text-neutral-500 mt-4 uppercase font-bold text-xs">
+                <div className="col-span-2 text-center text-neutral-500 mt-6 uppercase font-bold text-[29px] tracking-wider">
                   Nessun giocatore
                 </div>
               )}
             </div>
+
+            {/* STAFF TEAM A IN STILE GIOCATORE */}
             {(match.team_a?.coach || match.team_a?.assistant_coach) && (
-              <div className="mt-4 pt-3 border-t border-white/10 flex justify-center gap-4">
+              <div className="mt-auto -mb-2 pt-2 flex w-full gap-2 shrink-0 items-center">
                 {match.team_a?.coach && (
-                  <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest bg-black/20 px-4 py-1.5 rounded-lg border border-white/5">
-                    Coach: <span className="text-white ml-1">{match.team_a.coach}</span>
+                  <div className="flex-1 flex items-center gap-4 bg-black/40 border border-white/5 px-4 py-2 rounded-xl min-w-0">
+                    <span className="text-pink-500 font-black text-[29px] shrink-0 uppercase drop-shadow-md">
+                      COACH
+                    </span>
+                    <span className="font-bold text-white uppercase text-[29px] tracking-wider truncate pt-0">
+                      {match.team_a.coach}
+                    </span>
                   </div>
                 )}
                 {match.team_a?.assistant_coach && (
-                  <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest bg-black/20 px-4 py-1.5 rounded-lg border border-white/5">
-                    Vice: <span className="text-neutral-300 ml-1">{match.team_a.assistant_coach}</span>
+                  <div className="flex-1 flex items-center gap-4 bg-black/40 border border-white/5 px-4 py-2 rounded-xl min-w-0">
+                    <span className="text-neutral-500 font-black text-[29px] shrink-0 uppercase drop-shadow-md">
+                      VICE
+                    </span>
+                    <span className="font-bold text-neutral-300 uppercase text-[29px] tracking-wider truncate pt-0">
+                      {match.team_a.assistant_coach}
+                    </span>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-5 shadow-2xl flex flex-col min-w-0">
-            <h3 className="text-center font-black uppercase text-neutral-400 tracking-[0.2em] mb-4 border-b border-white/10 pb-3 shrink-0 truncate px-2">
-              ROSTER {match.team_b?.teams?.name || 'AWAY'}
-            </h3>
-            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2 content-start">
+          {/* ----- ROSTER TEAM B ----- */}
+          <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[1.5rem] p-4 shadow-2xl flex flex-col min-w-0">
+            
+            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-4 content-start overflow-hidden">
               {match.roster_b?.length > 0 ? (
                 match.roster_b.map(renderPlayerRow)
               ) : (
-                <div className="col-span-2 text-center text-neutral-500 mt-4 uppercase font-bold text-xs">
+                <div className="col-span-2 text-center text-neutral-500 mt-6 uppercase font-bold text-[25px] tracking-wider">
                   Nessun giocatore
                 </div>
               )}
             </div>
+            
+            {/* STAFF TEAM B IN STILE GIOCATORE */}
             {(match.team_b?.coach || match.team_b?.assistant_coach) && (
-              <div className="mt-4 pt-3 border-t border-white/10 flex justify-center gap-4">
+              <div className="mt-auto -mb-2 pt-2 flex w-full gap-2 shrink-0 items-center">
                 {match.team_b?.coach && (
-                  <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest bg-black/20 px-4 py-1.5 rounded-lg border border-white/5">
-                    Coach: <span className="text-white ml-1">{match.team_b.coach}</span>
+                  <div className="flex-1 flex items-center gap-4 bg-black/40 border border-white/5 px-4 py-2 rounded-xl min-w-0">
+                    <span className="text-pink-500 font-black text-[29px] shrink-0 uppercase drop-shadow-md">
+                      COACH
+                    </span>
+                    <span className="font-bold text-white uppercase text-[29px] tracking-wider truncate pt-0">
+                      {match.team_b.coach}
+                    </span>
                   </div>
                 )}
                 {match.team_b?.assistant_coach && (
-                  <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest bg-black/20 px-4 py-1.5 rounded-lg border border-white/5">
-                    Vice: <span className="text-neutral-300 ml-1">{match.team_b.assistant_coach}</span>
+                  <div className="flex-1 flex items-center gap-4 bg-black/40 border border-white/5 px-4 py-2 rounded-xl min-w-0">
+                    <span className="text-neutral-500 font-black text-[29px] shrink-0 uppercase drop-shadow-md">
+                      VICE
+                    </span>
+                    <span className="font-bold text-neutral-300 uppercase text-[29px] tracking-wider truncate pt-0">
+                      {match.team_b.assistant_coach}
+                    </span>
                   </div>
                 )}
               </div>
             )}
           </div>
+          
         </div>
+
       </div>
     </motion.div>
   );
@@ -1053,7 +1100,7 @@ function ThreePointLiveAndResult({ mode, payload }) {
               </span>
             </div>
             <div className="flex-1 flex items-center justify-center pb-4">
-              <span className="text-[160px] tracking-wider leading-none font-black tabular-nums text-neutral-200">
+              <span className="text-[160px] tracking-wider leading-none font-black tabular-nums text-neutral-200 translate-y-[4px]">
                 {isResultMode ? (lockedPayload.time ? `${lockedPayload.time}s` : '0.0s') : (isLive ? localTime.toFixed(1) : `${lockedPayload.time || '0.0'}s`)}
               </span>
             </div>
@@ -1063,12 +1110,12 @@ function ThreePointLiveAndResult({ mode, payload }) {
           <div className={`bg-white/5 backdrop-blur-xl w-[450px] h-[300px] rounded-[1.5rem] border border-white/10 flex flex-col overflow-hidden transition-all relative ${isResultMode && isScartato && showStamp ? 'opacity-30 grayscale' : 'shadow-2xl'} ${blurClass}`}>
             <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
               <span className="text-[40px] font-bold text-pink-400 uppercase tracking-wider translate-y-[1px]">
-                Punteggio
+                Punti
               </span>
             </div>
             <div className="flex-1 flex items-center justify-center pb-4 relative">
               <div className="absolute top-0 right-0 w-32 h-32 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-              <span className="text-[160px] tracking-wider leading-none font-black z-10 text-white">
+              <span className="text-[160px] tracking-wider leading-none font-black z-10 text-white translate-y-[4px]">
                 {lockedPayload.score || 0}
               </span>
             </div>
@@ -1181,7 +1228,7 @@ function ThreePointWinner({ payload }) {
             </div>
             {/* Numero centrato */}
             <div className="flex-1 flex items-center justify-center pb-4">
-              <span className="text-[160px] tracking-wider leading-none font-black tabular-nums text-yellow-100/90 drop-shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+              <span className="text-[160px] tracking-wider leading-none translate-y-[4px] font-black tabular-nums text-yellow-100/90 drop-shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                 {payload.time ? `${payload.time}s` : '0.0s'}
               </span>
             </div>
@@ -1192,12 +1239,12 @@ function ThreePointWinner({ payload }) {
             {/* Banda scura superiore */}
             <div className="w-full bg-black/40 py-4 border-b border-black/50 flex items-center justify-center shrink-0">
               <span className="text-[40px] font-bold text-yellow-400 uppercase tracking-wider translate-y-[1px] drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">
-                Punteggio
+                Punti
               </span>
             </div>
             {/* Numero centrato */}
             <div className="flex-1 flex items-center justify-center pb-4 relative">
-              <span className="text-[160px] tracking-wider leading-none font-black text-yellow-400 z-10 drop-shadow-[0_0_40px_rgba(234,179,8,0.6)]">
+              <span className="text-[160px] tracking-wider translate-y-[4px] leading-none font-black text-yellow-400 z-10 drop-shadow-[0_0_40px_rgba(234,179,8,0.6)]">
                 {payload.score || 0}
               </span>
             </div>
@@ -1357,7 +1404,7 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
 
   return (
     <div className={`backdrop-blur-xl border rounded-2xl p-4 flex flex-col gap-2 shadow-2xl bg-white/5 border-white/10 ${cardWidth}`}>
-      <div className="text-center text-[18px] font-black uppercase tracking-wider mb-0.5 text-pink-500">
+      <div className="text-center text-[20px] font-black uppercase tracking-wider mb-0.5 text-pink-500">
         {title}
       </div>
       
@@ -1410,7 +1457,7 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
         let displayName = 'TBD';
         if (p && p.player_name) {
           displayName = p.player_name;
-          if (p.player_name.length > 14) {
+          if (p.player_name.length > 12) {
             const parts = p.player_name.trim().split(/\s+/);
             if (parts.length > 1) {
               displayName = `${parts[0].charAt(0).toUpperCase()}. ${parts.slice(1).join(' ')}`;
@@ -1425,24 +1472,26 @@ function MatchupCard({ title, players, maxPlayers = 2, isFinal = false, highligh
             transition={transitionObj} 
             className="flex justify-between items-center px-4 py-3 rounded-xl border relative overflow-hidden"
           >
-            <span className={`font-bold uppercase truncate pr-3 flex-1 ${isFinal ? 'text-[30px]' : 'text-[20px]'} ${textColor}`}>
+            <span className={`font-bold uppercase truncate pr-3 flex-1 ${isFinal ? 'text-[30px] tracking-wider' : 'text-[21px] tracking-wider'} ${textColor}`}>
               {displayName}
             </span>
             
-            <div className="flex items-center gap-1 shrink-0">
-              <span className={`w-[55px] text-center text-[20px] py-0.5 rounded tracking-wider block tabular-nums border ${
-                p && p.time ? 'text-neutral-400 bg-black/40 border-white/5' : 'text-neutral-800 border-transparent'
-              }`}>
-                {p && p.time ? `${p.time}s` : '-'}
-              </span>
-              
-              <span className={`w-[20px] text-right font-black tabular-nums block ${isFinal ? 'text-[25px]' : 'text-[20px]'} ${scoreColor}`}>
-                {p && p.score !== null ? p.score : '-'}
-              </span>
-            </div>
+          <div className={`flex items-center shrink-0 ${isFinal ? 'gap-3' : 'gap-1.5'}`}>
+  
+  {/* Box Tempo con larghezza e font dinamici per la finale */}
+  <span className={`text-center py-0.5 rounded tracking-wider block tabular-nums border ${isFinal ? 'w-[70px] text-[25px]' : 'w-[55px] text-[20px]'} ${
+    p && p.time ? 'text-neutral-400 bg-black/40 border-white/5' : 'text-neutral-800 border-transparent'
+  }`}>
+    {p && p.time ? `${p.time}s` : '-'}
+  </span>
+  
+  <span className={`text-right font-black tabular-nums block ${isFinal ? 'w-[30px] text-[30px] tracking-wider' : 'w-[21px] text-[21px] tracking-wider'} ${scoreColor}`}>
+    {p && p.score !== null ? p.score : '-'}
+  </span>
+</div>
 
             {isChampion && (
-              <span className="text-2xl absolute -right-3 -top-3 drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">👑</span>
+              <span className="text-[18px] absolute right-[5px] -top-1 drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">👑</span>
             )}
           </motion.div>
         );
@@ -1475,7 +1524,7 @@ function ThreePointBracket({ data, highlightedId }) {
         <div className="absolute right-0 top-0 w-[3px] h-full bg-neutral-700/60"></div>
       </div>
       <div className="w-[1216px] h-[3px] bg-neutral-700/60 rounded-full"></div>
-      <div className="h-6 w-[4px] bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)]"></div>
+      <div className="h-6 w-[4px] bg-neutral-700/60"></div>
     </div>
   );
 
