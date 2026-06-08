@@ -39,6 +39,23 @@ export default function SponsorOutput() {
         className="relative flex flex-col justify-center items-center bg-neutral-950 overflow-hidden" 
         style={{ width: '1920px', height: '1080px' }}
       >
+        {/* 👑 LOGO IN ALTO A SINISTRA (Perfettamente specchiato) */}
+        <div className="absolute top-8 left-12 z-50 select-none">
+          <img 
+            src="/Basketville_logo26_vero.png" 
+            alt="Basketville Logo" 
+            className="h-24 w-auto drop-shadow-lg" 
+          />
+        </div>
+
+        {/* 👑 IL SOLITO TITOLO IN ALTO A DESTRA */}
+        <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right select-none">
+          <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">BASKETVILLE 2026</span>
+          <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider">
+            OFFICIAL PARTNERS
+          </h2>
+        </div>
+
         {/* Texture Carbonio in Overlay leggerissima */}
         <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay z-0"></div>
 

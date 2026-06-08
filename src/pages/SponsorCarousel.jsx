@@ -95,6 +95,14 @@ export default function SponsorCarousel() {
         className="flex-none relative flex flex-col justify-center items-center bg-white" 
         style={{ width: '1280px', height: '720px' }}
       >
+        {/* 👑 IL SOLITO TITOLO IN ALTO A DESTRA */}
+        <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right select-none">
+          <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-sm">BASKETVILLE 2026</span>
+          <h2 className="text-4xl font-black uppercase text-neutral-950 tracking-wider">
+            OFFICIAL PARTNERS
+          </h2>
+        </div>
+
         {/* CORNICE BASKETVILLE */}
         <div className="absolute inset-0 pointer-events-none z-20 border-[24px] border-neutral-950">
           <div className="w-full h-full border-[8px] border-pink-500"></div>
