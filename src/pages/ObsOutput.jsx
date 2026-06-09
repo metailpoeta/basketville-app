@@ -926,6 +926,15 @@ function DailyScheduleGraphic({ dateStr, data }) {
     return timeString.substring(0, 5);
   };
 
+  // --- FUNZIONE: ASSOCIA IL LOGO ALL'EVENTO ---
+  const getEventLogo = (tagName) => {
+    const t = (tagName || '').toLowerCase();
+    if (t.includes('vero cup')) return '/Basketville_logo26_vero.png'; 
+    if (t.includes('3-point') || t.includes('3 point')) return '/logo_3point.png'; 
+    if (t.includes('slam dunk')) return '/logo_slamdunk.png'; 
+    return null; 
+  };
+
   const renderMatchCenter = (match) => {
     const status = match.status?.toLowerCase();
     const hasScore = match.score_home !== null && match.score_away !== null;
@@ -935,6 +944,8 @@ function DailyScheduleGraphic({ dateStr, data }) {
     const type = match.match_type?.toLowerCase() || '';
     if ((type.includes('giron') || type.includes('qualificazion')) && match.home_group) {
       topText = `GIRONE ${match.home_group}`;
+    } else if (type.includes('esibizione')) {
+      topText = '';
     } else {
       topText = match.match_type || '';
     }
@@ -945,22 +956,28 @@ function DailyScheduleGraphic({ dateStr, data }) {
     let textClasses = '';
 
     if (status === 'live') {
-      boxClasses = 'bg-red-500/20 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.4)]';
+      boxClasses = 'relative bg-red-500/20 border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)]';
       boxContent = (
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-          <span className="text-2xl font-black text-red-400">
+        <>
+          {/* Badge LIVE ancorato a sinistra */}
+          <div className="absolute left-6 flex items-center gap-2 animate-pulse">
+            <div className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+            <span className="text-[16px] font-black text-red-500 tracking-wider uppercase">Live</span>
+          </div>
+          
+          {/* Punteggio perfettamente centrato */}
+          <span className="text-[50px] leading-none font-black text-red-400 tracking-wider">
             {match.score_home ?? 0} - {match.score_away ?? 0}
           </span>
-        </div>
+        </>
       );
-      bottomText = 'Live';
-      textClasses = 'text-red-400 animate-pulse';
-    } 
+      bottomText = ''; 
+      textClasses = 'text-transparent';
+    }
     else if (status === 'finished' || status === 'completed' || (hasScore && !isZeroZero && status !== 'scheduled')) {
-      boxClasses = 'bg-black/60 border border-neutral-600';
+      boxClasses = 'bg-black/60 border-2 border-neutral-600';
       boxContent = (
-        <span className="text-2xl font-black text-neutral-300">
+        <span className="text-[50px] leading-none font-black text-neutral-300 tracking-wider">
           {match.score_home ?? 0} - {match.score_away ?? 0}
         </span>
       );
@@ -968,9 +985,9 @@ function DailyScheduleGraphic({ dateStr, data }) {
       textClasses = 'text-neutral-500';
     } 
     else {
-      boxClasses = 'bg-white/5 border border-white/10';
+      boxClasses = 'bg-white/5 border-2 border-white/10';
       boxContent = (
-        <span className="text-xl font-bold text-neutral-500 uppercase tracking-widest px-2">
+        <span className="text-3xl font-black text-neutral-500 uppercase tracking-wider px-4">
           VS
         </span>
       );
@@ -979,96 +996,127 @@ function DailyScheduleGraphic({ dateStr, data }) {
     }
 
     return (
-      <div className="w-[180px] flex flex-col items-center justify-center shrink-0">
-        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1.5 h-3 flex items-center justify-center">
+      <div className="w-[280px] flex flex-col items-center justify-center shrink-0">
+        <span className="text-[20px] font-bold text-neutral-400 uppercase tracking-wider mb-2 h-4 flex items-center justify-center">
           {topText}
         </span>
-        <div className={`flex items-center justify-center px-4 py-1.5 rounded-xl ${boxClasses}`}>
+        <div className={`flex items-center justify-center px-6 py-3 rounded-2xl w-full ${boxClasses}`}>
           {boxContent}
         </div>
-        <span className={`text-[9px] font-bold uppercase tracking-[0.2em] mt-1.5 h-3 flex items-center justify-center ${textClasses}`}>
+        <span className={`text-[20px] font-bold uppercase tracking-wider mt-2 h-4 flex items-center justify-center ${textClasses}`}>
           {bottomText || '-'}
         </span>
       </div>
     );
   };
 
-  const containerVariants = { 
-    hidden: { opacity: 0 }, 
-    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.3 } }, 
-    exit: { opacity: 0, transition: { duration: 0.3 } } 
-  };
-  
-  const itemVariants = { 
-    hidden: { opacity: 0, y: 40 }, 
-    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 80, damping: 15 } } 
-  };
-
   return (
     <motion.div 
-      initial="hidden" 
-      animate="visible" 
-      exit="exit" 
-      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black p-12 pt-[200px]" 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-800 via-neutral-950 to-black pt-[240px] pb-12 font-sans tracking-wider" 
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
       {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
       <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-[0.08em] text-sm mb-1 drop-shadow-md">Il Programma</span>
-        <h2 className="text-4xl font-black uppercase text-white drop-shadow-lg tracking-wider capitalize">
+        <span className="text-pink-500 font-bold uppercase tracking-widest text-xl mb-2 drop-shadow-md">Il Programma</span>
+        {/* TITOLO CHE SI ANIMA AD OGNI CAMBIO DATA */}
+        <motion.h2 
+          key={`title-${dateStr}`}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          className="text-6xl font-black uppercase text-white drop-shadow-lg tracking-wider capitalize"
+        >
           {formatDate(dateStr)}
-        </h2>
+        </motion.h2>
       </div>
 
-      <div className="z-10 w-full max-w-5xl flex flex-col items-center">
-        <motion.div variants={containerVariants} className="w-full flex flex-col gap-4">
+      <div className="z-10 w-full max-w-[1700px] flex flex-col items-center flex-1 min-h-0">
+        
+        {/* CONTENITORE PADRE STATICO: non perde mai la sua forma! */}
+        <div className="w-full flex flex-col gap-3 h-full justify-center max-h-[750px]">
           {data.length === 0 ? (
-            <div className="text-center text-neutral-500 text-2xl font-bold uppercase tracking-widest mt-10">
+            <motion.div 
+              key={`empty-${dateStr}`}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-center text-neutral-500 text-4xl font-bold uppercase tracking-wider mt-10"
+            >
               Nessun evento in programma
-            </div>
+            </motion.div>
           ) : (
             data.map((item, index) => {
-              const styles = getEventStyles(item.event_tag);
+              // NOTA: il tuo getEventStyles originale deve trovarsi all'esterno di questo componente!
+              const styles = typeof getEventStyles !== 'undefined' ? getEventStyles(item.event_tag) : { tag: 'bg-neutral-500/20 text-neutral-300 border-neutral-500/30', border: 'bg-neutral-500' };
+              const eventLogo = getEventLogo(item.event_tag); 
+
               return (
-                <motion.div key={item.id || index} variants={itemVariants} className="w-full">
-                  <div className="w-full h-[110px] relative rounded-3xl shadow-2xl">
+                <motion.div 
+                  key={`${dateStr}-${item.id || index}`} 
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 80, damping: 15, delay: 0.3 + (index * 0.15) }}
+                  className="w-full flex-1 max-h-[180px] min-h-[100px]"
+                >
+                  
+                  <div className="w-full h-full relative rounded-[2rem] shadow-2xl">
                     
-                    <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl pointer-events-none"></div>
-                    <div className={`absolute left-0 top-0 bottom-0 w-2 rounded-l-3xl ${styles.border}`}></div>
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-[2rem] pointer-events-none"></div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-3 rounded-l-[2rem] ${styles.border}`}></div>
                     
                     <div className="absolute inset-0 flex items-center px-6 z-10">
-                      <div className="w-28 text-center shrink-0 border-r border-white/10 pr-6 mr-6">
-                        <span className="text-4xl font-black text-white font-mono tracking-tight drop-shadow-md">
+                      
+                      {/* BLOCCO SINISTRO (ORARIO) */}
+                      <div className="w-[280px] h-full flex items-center justify-center shrink-0">
+                        <span className="text-[65px] font-black text-white tracking-wider drop-shadow-md leading-none translate-y-1">
                           {formatTime(item.time)}
                         </span>
                       </div>
                       
-                      <div className="flex-1 flex items-center justify-between min-w-0">
+                      {/* SEPARATORE SINISTRO SFUMATO */}
+                      <div className="w-[4px] h-2/3 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                      
+                      {/* BLOCCO CENTRALE (MATCH/EVENTO) */}
+                      <div className="flex-1 flex items-center justify-between min-w-0 px-8">
                         {item.matchDetails ? (
                           <>
-                            <div className="flex-1 text-right truncate text-[28px] sm:text-3xl font-bold text-white px-4">
+                            <div className="flex-1 text-right truncate text-[45px] font-black text-white px-8 tracking-wider">
                               {item.matchDetails.home_name}
                             </div>
                             {renderMatchCenter(item.matchDetails)}
-                            <div className="flex-1 text-left truncate text-[28px] sm:text-3xl font-bold text-white px-4">
+                            <div className="flex-1 text-left truncate text-[45px] font-black text-white px-8 tracking-wider">
                               {item.matchDetails.away_name}
                             </div>
                           </>
                         ) : (
-                          <div className="flex-1 flex items-center justify-center px-4">
-                            <span className="text-[28px] sm:text-3xl font-bold text-white uppercase tracking-tight truncate text-center w-full">
+                          <div className="flex-1 flex items-center justify-center px-8">
+                            <span className="text-[45px] font-black text-white uppercase tracking-wider truncate text-center w-full">
                               {item.description || item.event_tag}
                             </span>
                           </div>
                         )}
                       </div>
                       
-                      <div className="shrink-0 w-40 flex justify-end">
-                        <span className={`inline-block border px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap ${styles.tag}`}>
-                          {item.event_tag}
-                        </span>
+                      {/* SEPARATORE DESTRO SFUMATO */}
+                      <div className="w-[4px] h-2/3 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+                      
+                      {/* BLOCCO DESTRO (LOGO/TAG) */}
+                      <div className="w-[280px] h-full flex items-center justify-center shrink-0">
+                        {eventLogo ? (
+                          <img 
+                            src={eventLogo} 
+                            alt={item.event_tag} 
+                            className="max-h-[85px] max-w-[220px] object-contain drop-shadow-lg" 
+                          />
+                        ) : (
+                          <span className={`inline-block border-2 px-6 py-3 rounded-2xl text-xl font-bold uppercase tracking-widest whitespace-nowrap text-center ${styles.tag}`}>
+                            {item.event_tag}
+                          </span>
+                        )}
                       </div>
+
                     </div>
 
                   </div>
@@ -1076,7 +1124,7 @@ function DailyScheduleGraphic({ dateStr, data }) {
               );
             })
           )}
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );
@@ -2975,7 +3023,8 @@ function SlamDunkGraphic({ payload }) {
               <h3 className="text-xl font-bold uppercase text-neutral-400 tracking-wider mt-1">{round}</h3>
             </div>
 
-            <div className="flex w-full h-full max-w-[1800px] mx-auto pt-[200px] pb-16 items-center justify-center gap-12 px-8">
+            {/* CONTENITORE GRIGLIA: Allargato il max-w, ridotto il gap a 6 (gap-6 invece di gap-12) */}
+            <div className="flex w-full h-full max-w-[1850px] mx-auto pt-[200px] pb-16 items-center justify-center gap-6 px-8">
               {players.map((player, idx) => {
                 const isWinner = winner === player.player_name;
                 const totalScore = (player.dunk_1 || 0) + (player.dunk_2 || 0);
@@ -2986,64 +3035,83 @@ function SlamDunkGraphic({ payload }) {
                 const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : player.player_name;
 
                 return (
-                  <motion.div
-                    key={player.player_name + idx}
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5, delay: idx * 0.1 }}
-                    className={`relative flex flex-col items-center p-10 transition-all ${
-                      isFinal ? 'w-[650px] h-[750px]' : 'w-[420px] h-[650px]'
-                    } ${
-                      isWinner 
-                        ? 'bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border-[3px] border-yellow-500/80 rounded-[3rem] shadow-[0_0_80px_rgba(234,179,8,0.2)]' 
-                        : 'bg-neutral-900/90 border border-neutral-800 rounded-[3rem] shadow-2xl'
-                    }`}
-                  >
-                    {isPlayerUpdated && (
-                      <motion.div 
-                        animate={{ opacity: [0, 1, 0, 1, 0] }}
-                        transition={{ duration: 3, ease: "easeInOut" }}
-                        className="absolute inset-0 border-[6px] border-pink-500 rounded-[3rem] shadow-[0_0_80px_rgba(236,72,153,0.8)] z-30 pointer-events-none"
-                      />
-                    )}
+                  <React.Fragment key={player.player_name + idx}>
+                    <motion.div
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      transition={{ duration: 0.5, delay: idx * 0.1 }}
+                      // CARD: Aggiunto flex-1 e h-full per occupare tutto lo spazio. Bordo grigio visibile (border-neutral-500)
+                      className={`relative flex flex-col items-center p-8 transition-all ${
+                        isFinal ? 'w-[700px] h-full max-h-[850px]' : 'flex-1 max-w-[450px] h-full max-h-[850px]'
+                      } ${
+                        isWinner 
+                          ? 'bg-gradient-to-br from-yellow-500/10 via-black/80 to-yellow-900/40 border-[3px] border-yellow-500/80 rounded-[3rem] shadow-[0_0_80px_rgba(234,179,8,0.2)]' 
+                          : 'bg-neutral-900/90 border-2 border-neutral-700 rounded-[1.5rem] shadow-2xl'
+                      }`}
+                    >
+                      {isPlayerUpdated && (
+                        <motion.div 
+                          animate={{ opacity: [0, 1, 0, 1, 0] }}
+                          transition={{ duration: 3, ease: "easeInOut" }}
+                          className="absolute inset-0 border-[6px] border-pink-500 rounded-[3rem] shadow-[0_0_80px_rgba(236,72,153,0.8)] z-30 pointer-events-none"
+                        />
+                      )}
 
-                    {isWinner && (
-                      <motion.div animate={{ y: [-10, 5, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-16 text-[100px] drop-shadow-[0_0_30px_rgba(234,179,8,0.8)] z-20">👑</motion.div>
-                    )}
+                      {isWinner && (
+                        <motion.div animate={{ y: [-10, 5, -10] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-16 text-[100px] drop-shadow-[0_0_30px_rgba(234,179,8,0.8)] z-20">👑</motion.div>
+                      )}
 
-                    <div className="flex flex-col items-center text-center w-full mt-2 relative z-40">
-                      {firstName && <span className={`font-bold uppercase tracking-widest ${isFinal ? 'text-3xl' : 'text-xl'} ${isWinner ? 'text-yellow-400' : 'text-neutral-400'} mb-2`}>{firstName}</span>}
-                      <span className={`font-black text-white uppercase tracking-wider leading-none drop-shadow-lg truncate w-full px-4 ${isFinal ? 'text-7xl' : 'text-5xl'}`}>{lastName}</span>
-                    </div>
-
-                    <div className="flex-1 flex items-center justify-center w-full my-6 relative z-40">
-                      <div className={`relative flex flex-col items-center justify-center rounded-full border-4 ${
-                        isWinner ? 'border-yellow-400/50 bg-yellow-900/30 shadow-[0_0_60px_rgba(234,179,8,0.3)]' : 'border-neutral-800 bg-black/60 shadow-inner'
-                        } ${isFinal ? 'w-[280px] h-[280px]' : 'w-[200px] h-[200px]'} transition-all duration-500`}
-                      >
-                        <span className={`absolute ${isFinal ? 'top-12' : 'top-8'} text-xs font-bold ${isWinner ? 'text-yellow-500' : 'text-neutral-500'} uppercase tracking-[0.4em]`}>Score</span>
-                        <span className={`font-black leading-none mt-4 ${isFinal ? 'text-[110px]' : 'text-[80px]'} ${
-                          isWinner ? 'text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.6)]' : (totalScore > 0 ? 'text-white' : 'text-neutral-700')
-                        }`}>
-                          {totalScore > 0 ? totalScore : '-'}
-                        </span>
+                      <div className="flex flex-col items-center text-center w-full mt-2 relative z-40">
+                        {firstName && <span className={`font-bold uppercase tracking-wider ${isFinal ? 'text-3xl' : 'text-[40px]'} ${isWinner ? 'text-yellow-400' : 'text-neutral-400'} mb-2`}>{firstName}</span>}
+                        <span className={`font-black text-white uppercase tracking-wider leading-none drop-shadow-lg truncate w-full px-4 ${isFinal ? 'text-7xl' : 'text-[70px]'}`}>{lastName}</span>
                       </div>
-                    </div>
 
-                    <div className="w-full flex gap-6 mt-auto relative z-40">
-                      <ScoreBox 
-                        label="DUNK 1" 
-                        score={player.dunk_1} 
-                        isWinner={isWinner} 
-                        isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 1} 
-                      />
-                      <ScoreBox 
-                        label="DUNK 2" 
-                        score={player.dunk_2} 
-                        isWinner={isWinner} 
-                        isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 2} 
-                      />
-                    </div>
-                  </motion.div>
+                      <div className="flex-1 flex items-center justify-center w-full my-6 relative z-40">
+                        {/* CERCHIO PUNTEGGIO: Ingrandito leggermente, bordo più chiaro (border-neutral-600) */}
+                        <div className={`relative flex flex-col items-center justify-center rounded-full border-4 ${
+                          isWinner ? 'border-yellow-400/50 bg-yellow-900/30 shadow-[0_0_60px_rgba(234,179,8,0.3)]' : 'border-neutral-700 bg-black/80 shadow-inner'
+                          } ${isFinal ? 'w-[280px] h-[280px]' : 'w-[300px] h-[300px]'} transition-all duration-500`}
+                        >
+                          {/* LABEL E PUNTEGGIO IN ROSA */}
+                          <span className={`absolute ${isFinal ? 'top-12' : 'top-10'} text-[25px] font-bold ${isWinner ? 'text-yellow-500' : 'text-neutral-400'} uppercase tracking-wider`}>Score</span>
+                          <span className={`font-black leading-none mt-4 ${isFinal ? 'text-[110px]' : 'text-[130px]'} ${
+                            isWinner ? 'text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.6)]' : (totalScore > 0 ? 'text-pink-500' : 'text-neutral-700')
+                          }`}>
+                            {totalScore > 0 ? totalScore : '-'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-full flex gap-4 mt-auto relative z-40">
+                        <ScoreBox 
+                          label="DUNK 1" 
+                          score={player.dunk_1} 
+                          isWinner={isWinner} 
+                          isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 1} 
+                        />
+                        <ScoreBox 
+                          label="DUNK 2" 
+                          score={player.dunk_2} 
+                          isWinner={isWinner} 
+                          isJustUpdated={isPlayerUpdated && lastUpdatedDunk === 2} 
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* ⚔️ IL VS GIGANTE IN FINALE */}
+                    {isFinal && idx === 0 && (
+                      <motion.div 
+                        initial={{ scale: 0, opacity: 0 }} 
+                        animate={{ scale: 1, opacity: 1 }} 
+                        transition={{ delay: 0.6, type: "spring", stiffness: 200, damping: 15 }}
+                        className="flex items-center justify-center shrink-0 z-0 px-12"
+                      >
+                        <span className="text-[180px] translate-x-[8px] font-black text-white uppercase tracking-wider">
+                          VS
+                        </span>
+                      </motion.div>
+                    )}
+
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -3054,10 +3122,9 @@ function SlamDunkGraphic({ payload }) {
     </motion.div>
   );
 }
-
 function ScoreBox({ label, score, isWinner, isJustUpdated }) {
   return (
-    <div className={`flex-1 flex flex-col items-center rounded-3xl p-6 relative overflow-hidden ${isWinner ? 'bg-black/40 border border-yellow-500/20' : 'bg-black/60 border border-neutral-800/80'}`}>
+    <div className={`flex-1 flex flex-col items-center rounded-3xl px-6 pt-6 pb-2 relative overflow-hidden ${isWinner ? 'bg-black/40 border border-yellow-500/20' : 'bg-black/60 border border-neutral-700'}`}>
       
       {isJustUpdated && (
         <motion.div 
@@ -3070,8 +3137,8 @@ function ScoreBox({ label, score, isWinner, isJustUpdated }) {
         />
       )}
 
-      <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-3 relative z-10 drop-shadow-md">{label}</span>
-      <span className={`text-6xl font-black relative z-10 drop-shadow-md ${isWinner ? 'text-yellow-400' : 'text-white'}`}>
+      <span className="text-[20px] font-bold text-neutral-400 uppercase tracking-wider mb-0 relative z-10 drop-shadow-md">{label}</span>
+      <span className={`text-[70px] font-black translate-y-[-4px] relative z-10 drop-shadow-md ${isWinner ? 'text-yellow-400' : 'text-white'}`}>
         {score !== null && score !== undefined && score !== 0 ? score : '-'}
       </span>
     </div>

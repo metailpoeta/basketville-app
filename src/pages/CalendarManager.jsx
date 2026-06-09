@@ -26,6 +26,9 @@ export default function CalendarManager() {
   const [editEventId, setEditEventId] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
+  // --- STATO PER I TAB DELLE DATE ---
+  const [selectedDateTab, setSelectedDateTab] = useState(null);
+
   useEffect(() => {
     async function init() {
       setLoading(true);
@@ -111,6 +114,8 @@ export default function CalendarManager() {
       setCustomEventId('');
       setDescription('');
       setCTime('');
+      // Imposta il tab attivo sulla data appena inserita per comodità
+      setSelectedDateTab(cDate);
       loadData();
     } else {
       alert("Errore: " + error.message);
@@ -144,6 +149,7 @@ export default function CalendarManager() {
 
     if (!error) {
       setEditingId(null);
+      setSelectedDateTab(editDate); // Sposta il tab se la data cambia
       loadData();
     } else {
       alert("Errore salvataggio: " + error.message);
@@ -162,6 +168,20 @@ export default function CalendarManager() {
     acc[curr.date].push(curr);
     return acc;
   }, {});
+
+  // =========================================
+  // LOGICA TAB DINAMICI PER DATE
+  // =========================================
+  const uniqueDates = Object.keys(groupedCalendars).sort((a, b) => new Date(a) - new Date(b));
+  const activeTab = selectedDateTab && uniqueDates.includes(selectedDateTab) ? selectedDateTab : uniqueDates[0];
+
+  const formatTabDateInfo = (dateStr) => {
+    const d = new Date(dateStr);
+    return {
+      dayName: d.toLocaleDateString('it-IT', { weekday: 'short' }).replace(/\./g, '').toUpperCase(),
+      dayMonth: d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }).replace(/\./g, '').toUpperCase()
+    };
+  };
 
   // --- RENDER STATI INIZIALI ---
   if (loading) {
@@ -273,9 +293,10 @@ export default function CalendarManager() {
         </form>
       </div>
 
-      {/* ================= TIMELINE EVENTI ================= */}
+      {/* ================= TIMELINE EVENTI CON TAB ================= */}
       <div className="space-y-6">
-        {Object.keys(groupedCalendars).length === 0 ? (
+        
+        {uniqueDates.length === 0 ? (
            <div className="bg-white p-12 rounded-2xl shadow-sm border border-dashed border-neutral-300 text-center mt-6">
              <div className="w-12 h-12 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-3">
                <Clock size={24} className="text-neutral-400" />
@@ -283,122 +304,155 @@ export default function CalendarManager() {
              <p className="text-sm text-neutral-500">Il calendario è vuoto. Inizia a programmare eventi e partite!</p>
            </div>
         ) : (
-          Object.keys(groupedCalendars).map(date => (
-            <div key={date} className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-              
-              {/* Intestazione Giorno CON TASTO OBS */}
-              <div className="bg-neutral-50/80 px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CalendarIcon size={18} className="text-neutral-400" />
-                  <h3 className="font-semibold text-neutral-800 capitalize">
-                    {new Date(date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                  </h3>
-                </div>
+          <>
+            {/* TABS DATE */}
+            <div className="flex gap-3 overflow-x-auto pb-2 mb-2 pt-2 px-1 no-scrollbar">
+              {uniqueDates.map(dateStr => {
+                const isActive = activeTab === dateStr;
+                const dateInfo = formatTabDateInfo(dateStr);
                 
-                {/* Tasto In Onda - Regia OBS */}
-                <button 
-                  onClick={async () => {
-                    const { error } = await supabase.from('broadcast_state').update({
-                      active_graphic: 'daily_schedule',
-                      payload: { date: date } // Passiamo la stringa della data (es. '2026-07-15')
-                    }).eq('id', 1);
-                    if (error) alert("Errore Regia: " + error.message);
-                  }}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-pink-500 text-white font-bold uppercase tracking-widest text-[10px] rounded-lg hover:bg-pink-600 transition-colors shadow-sm"
-                  title="Manda in onda la programmazione su OBS"
-                >
-                  <Tv size={14} /> In Onda
-                </button>
-              </div>
-
-              {/* Lista Eventi del Giorno */}
-              <div className="divide-y divide-neutral-100">
-                {groupedCalendars[date].map(event => (
-                  <div key={event.id} className="p-4 sm:p-6 flex items-center hover:bg-neutral-50/50 transition-colors group gap-4 min-h-[80px]">
-                    
-                    {editingId === event.id ? (
-                      /* --- MODALITÀ MODIFICA --- */
-                      <div className="flex-1 flex flex-col md:flex-row gap-4 items-start md:items-center bg-pink-50/50 p-4 rounded-xl border border-pink-100/50 w-full animate-in fade-in">
-                        <div className="flex gap-3 shrink-0">
-                          <input type="date" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white" value={editDate} onChange={e => setEditDate(e.target.value)} />
-                          <input type="time" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white" value={editTime} onChange={e => setEditTime(e.target.value)} />
-                        </div>
-
-                        <div className="flex-1 flex flex-col sm:flex-row gap-2 w-full">
-                          {event.match_id ? (
-                            <div className="px-2 self-center">
-                              <p className="text-[10px] font-bold text-pink-600 uppercase tracking-widest mb-0.5">{event.events?.name}</p>
-                              <p className="text-sm font-semibold text-neutral-800">
-                                {event.matches?.team_a?.teams?.name} <span className="text-neutral-400 font-normal px-1">vs</span> {event.matches?.team_b?.teams?.name}
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="flex gap-3 w-full">
-                              <select className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white sm:w-1/3" value={editEventId} onChange={e => setEditEventId(e.target.value)}>
-                                {eventsList.filter(ev => ev.id !== 1).map(ev => (
-                                  <option key={ev.id} value={ev.id}>{ev.name}</option>
-                                ))}
-                              </select>
-                              <input type="text" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white flex-1" value={editDescription} onChange={e => setEditDescription(e.target.value)} />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex gap-2 shrink-0 md:ml-auto self-end md:self-center w-full md:w-auto justify-end mt-2 md:mt-0">
-                          <button onClick={() => saveEditing(event.id, !!event.match_id)} className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"><Check size={18}/></button>
-                          <button onClick={cancelEditing} className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"><X size={18}/></button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* --- MODALITÀ VISUALIZZAZIONE --- */
-                      <>
-                        <div className="w-20 sm:w-24 text-center shrink-0">
-                          <p className="text-xl sm:text-2xl font-bold text-neutral-800 tracking-tight">
-                            {event.time.substring(0, 5)}
-                          </p>
-                        </div>
-
-                        <div className="flex-1 sm:border-l border-neutral-100 sm:pl-6">
-                          {event.match_id ? (
-                            <div>
-                              <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                                <span>{event.events?.name}</span>
-                                <span className="text-neutral-300">•</span>
-                                <span className="text-neutral-500">{event.matches?.match_types?.name}</span>
-                              </p>
-                              <p className="text-base sm:text-lg font-semibold text-neutral-900">
-                                {event.matches?.team_a?.teams?.name} <span className="text-neutral-400 font-normal mx-1 sm:mx-2">vs</span> {event.matches?.team_b?.teams?.name}
-                              </p>
-                            </div>
-                          ) : (
-                            <div>
-                              <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-1">
-                                {event.events?.name}
-                              </p>
-                              <p className="text-base sm:text-lg font-semibold text-neutral-700">
-                                {event.description}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Azioni */}
-                        <div className="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                          <button onClick={() => startEditing(event)} className="p-2 sm:p-3 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-xl transition-colors" title="Modifica">
-                            <Edit2 size={16} />
-                          </button>
-                          <button onClick={() => handleDelete(event.id)} className="p-2 sm:p-3 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors" title="Rimuovi">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </>
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => setSelectedDateTab(dateStr)}
+                    className={`relative flex flex-col items-center justify-center min-w-[100px] h-[72px] rounded-2xl transition-all shrink-0 ${
+                      isActive 
+                        ? 'bg-neutral-900 text-white shadow-[0_8px_16px_-6px_rgba(0,0,0,0.4)] border border-neutral-800' 
+                        : 'bg-white text-neutral-500 border border-neutral-200 hover:border-pink-300 hover:bg-pink-50/50 hover:shadow-md'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute -top-1.5 w-1.5 h-1.5 rounded-full bg-pink-500"></div>
                     )}
-
-                  </div>
-                ))}
-              </div>
+                    <span className={`text-[11px] font-bold uppercase tracking-widest ${isActive ? 'text-pink-400' : 'text-neutral-400'}`}>
+                      {dateInfo.dayName}
+                    </span>
+                    <span className={`text-[19px] font-black tracking-tight mt-0.5 ${isActive ? 'text-white' : 'text-neutral-800'}`}>
+                      {dateInfo.dayMonth}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ))
+
+            {/* CONTENUTO DEL GIORNO SELEZIONATO */}
+            {activeTab && groupedCalendars[activeTab] && (
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden animate-in fade-in">
+                
+                {/* Intestazione Giorno CON TASTO OBS */}
+                <div className="bg-neutral-50/80 px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon size={18} className="text-neutral-400" />
+                    <h3 className="font-semibold text-neutral-800 capitalize">
+                      {new Date(activeTab).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </h3>
+                  </div>
+                  
+                  {/* Tasto In Onda - Regia OBS */}
+                  <button 
+                    onClick={async () => {
+                      const { error } = await supabase.from('broadcast_state').update({
+                        active_graphic: 'daily_schedule',
+                        payload: { date: activeTab }
+                      }).eq('id', 1);
+                      if (error) alert("Errore Regia: " + error.message);
+                    }}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-pink-500 text-white font-bold uppercase tracking-widest text-[10px] rounded-lg hover:bg-pink-600 transition-colors shadow-sm"
+                    title="Manda in onda la programmazione su OBS"
+                  >
+                    <Tv size={14} /> In Onda
+                  </button>
+                </div>
+
+                {/* Lista Eventi del Giorno */}
+                <div className="divide-y divide-neutral-100">
+                  {groupedCalendars[activeTab].map(event => (
+                    <div key={event.id} className="p-4 sm:p-6 flex items-center hover:bg-neutral-50/50 transition-colors group gap-4 min-h-[80px]">
+                      
+                      {editingId === event.id ? (
+                        /* --- MODALITÀ MODIFICA --- */
+                        <div className="flex-1 flex flex-col md:flex-row gap-4 items-start md:items-center bg-pink-50/50 p-4 rounded-xl border border-pink-100/50 w-full animate-in fade-in">
+                          <div className="flex gap-3 shrink-0">
+                            <input type="date" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                            <input type="time" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white" value={editTime} onChange={e => setEditTime(e.target.value)} />
+                          </div>
+
+                          <div className="flex-1 flex flex-col sm:flex-row gap-2 w-full">
+                            {event.match_id ? (
+                              <div className="px-2 self-center">
+                                <p className="text-[10px] font-bold text-pink-600 uppercase tracking-widest mb-0.5">{event.events?.name}</p>
+                                <p className="text-sm font-semibold text-neutral-800">
+                                  {event.matches?.team_a?.teams?.name} <span className="text-neutral-400 font-normal px-1">vs</span> {event.matches?.team_b?.teams?.name}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="flex gap-3 w-full">
+                                <select className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white sm:w-1/3" value={editEventId} onChange={e => setEditEventId(e.target.value)}>
+                                  {eventsList.filter(ev => ev.id !== 1).map(ev => (
+                                    <option key={ev.id} value={ev.id}>{ev.name}</option>
+                                  ))}
+                                </select>
+                                <input type="text" className="p-2 border border-neutral-300 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 bg-white flex-1" value={editDescription} onChange={e => setEditDescription(e.target.value)} />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 shrink-0 md:ml-auto self-end md:self-center w-full md:w-auto justify-end mt-2 md:mt-0">
+                            <button onClick={() => saveEditing(event.id, !!event.match_id)} className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"><Check size={18}/></button>
+                            <button onClick={cancelEditing} className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"><X size={18}/></button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* --- MODALITÀ VISUALIZZAZIONE --- */
+                        <>
+                          <div className="w-20 sm:w-24 text-center shrink-0">
+                            <p className="text-xl sm:text-2xl font-bold text-neutral-800 tracking-tight">
+                              {event.time.substring(0, 5)}
+                            </p>
+                          </div>
+
+                          <div className="flex-1 sm:border-l border-neutral-100 sm:pl-6">
+                            {event.match_id ? (
+                              <div>
+                                <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-1 flex items-center gap-2">
+                                  <span>{event.events?.name}</span>
+                                  <span className="text-neutral-300">•</span>
+                                  <span className="text-neutral-500">{event.matches?.match_types?.name}</span>
+                                </p>
+                                <p className="text-base sm:text-lg font-semibold text-neutral-900">
+                                  {event.matches?.team_a?.teams?.name} <span className="text-neutral-400 font-normal mx-1 sm:mx-2">vs</span> {event.matches?.team_b?.teams?.name}
+                                </p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-1">
+                                  {event.events?.name}
+                                </p>
+                                <p className="text-base sm:text-lg font-semibold text-neutral-700">
+                                  {event.description}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Azioni */}
+                          <div className="flex items-center gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <button onClick={() => startEditing(event)} className="p-2 sm:p-3 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-xl transition-colors" title="Modifica">
+                              <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => handleDelete(event.id)} className="p-2 sm:p-3 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors" title="Rimuovi">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

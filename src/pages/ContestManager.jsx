@@ -35,7 +35,8 @@ export default function ContestManager() {
   // --- STATI PER RICERCA E PAGINAZIONE 3-POINT ---
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const [tpActiveTab, setTpActiveTab] = useState('Qualificazione'); // NUOVO STATO PER TAB 3-POINT
+  const ITEMS_PER_PAGE = 8;
 
   // --- STATI PER MODIFICA INLINE 3-POINT ---
   const [editingId, setEditingId] = useState(null);
@@ -50,7 +51,7 @@ export default function ContestManager() {
 
   const [sdSearchTerm, setSdSearchTerm] = useState('');
   const [sdCurrentPage, setSdCurrentPage] = useState(1);
-  const [sdActiveTab, setSdActiveTab] = useState('Qualificazione'); // NUOVO STATO PER I TAB
+  const [sdActiveTab, setSdActiveTab] = useState('Qualificazione'); 
 
   const [sdEditingId, setSdEditingId] = useState(null);
   const [sdEditDunk1, setSdEditDunk1] = useState('');
@@ -85,7 +86,7 @@ export default function ContestManager() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, tpActiveTab]); // Reset pagina anche al cambio tab
 
   useEffect(() => {
     setSdCurrentPage(1);
@@ -107,7 +108,7 @@ export default function ContestManager() {
       .from('slam_dunk')
       .select('*')
       .eq('edition_id', activeEdition.id)
-      .order('id', { ascending: true }); // BLOCCATO L'ORDINAMENTO ALL'ID
+      .order('id', { ascending: true }); 
       
     if (error) console.error("Errore caricamento Slam Dunk:", error.message);
     if (data) setSlamDunkList(data);
@@ -604,7 +605,6 @@ const generateWinner = async () => {
     alert(`👑 Vincitore decretato: ${winner.player_name}!`);
   };
 
-  // 1. APRE LA CONSOLE E LANCIA IL CARTELLO GIGANTE SU OBS (Ora sa se è Dunk 1 o 2)
   const startSlamDunkLive = (player, dunkNum) => {
     setSdLivePlayer(player);
     setSdDunkNum(dunkNum);
@@ -619,7 +619,6 @@ const generateWinner = async () => {
     });
   };
 
-  // 2. AGGIORNA IL CARTELLO GIGANTE SE CAMBI DA DUNK 1 A DUNK 2
   const handleDunkNumChange = (num) => {
     setSdDunkNum(num);
     const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
@@ -631,20 +630,17 @@ const generateWinner = async () => {
     });
   };
 
-  // 3. CHIUDE LA CONSOLE E RIMANDA ALLA GRIGLIA
   const closeSlamDunkLive = () => {
     const currentRound = sdLivePlayer.round;
     setSdLivePlayer(null);
     handleShowSlamDunkScreen(currentRound);
   };
 
-  // 4. MANDA I VOTI IN DIRETTA E SALVA (IL LAMPEGGIO ENTRA QUI)
   const handleProcessSlamDunkVotes = async () => {
     const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
     const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
     const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
 
-    // A. Manda su OBS la schermata con i voti che girano
     const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
     triggerOBS('slamdunk', {
       round: sdLivePlayer.round,
@@ -658,7 +654,6 @@ const generateWinner = async () => {
       }
     });
 
-    // B. Salva su Supabase in Background
     await supabase.from('slam_dunk').update({ 
       [fieldToUpdate]: total,
       updated_at: new Date().toISOString()
@@ -666,13 +661,12 @@ const generateWinner = async () => {
 
     loadSlamDunk();
 
-    // C. Aspetta gli 8 secondi e richiama la griglia mandandole il comando per lampeggiare solo il box specifico
     setTimeout(async () => {
       const { data } = await supabase
         .from('slam_dunk')
         .select('*')
         .eq('edition_id', activeEdition.id)
-        .order('id', { ascending: true }); // Mantiene l'ordine originale
+        .order('id', { ascending: true }); 
         
       if (data) {
         setSlamDunkList(data);
@@ -698,13 +692,15 @@ const generateWinner = async () => {
     return [];
   };
 
-  const filteredThreePoint = threePointList.filter(item => 
+  // --- FILTRI AGGIORNATI PER I TAB DINAMICI 3-POINT ---
+  const filteredThreePointByTab = threePointList.filter(item => item.round === tpActiveTab);
+  const filteredThreePoint = filteredThreePointByTab.filter(item => 
     item.player_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
   const totalPages = Math.ceil(filteredThreePoint.length / ITEMS_PER_PAGE);
   const currentThreePoint = filteredThreePoint.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  // FILTRI AGGIORNATI PER I TAB DINAMICI SLAM DUNK
+  // --- FILTRI AGGIORNATI PER I TAB DINAMICI SLAM DUNK ---
   const filteredSlamDunkByTab = slamDunkList.filter(item => item.round === sdActiveTab);
   const filteredSlamDunk = filteredSlamDunkByTab.filter(item => 
     item.player_name?.toLowerCase().includes(sdSearchTerm.toLowerCase())
@@ -1009,7 +1005,7 @@ const generateWinner = async () => {
 
                 {/* Lista Partecipanti Paginata e Ricercabile */}
                 <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
                     <h3 className="text-sm font-semibold text-neutral-800">Lista Iscritti 3-Point</h3>
                     <div className="relative w-full sm:w-auto">
                       <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -1023,10 +1019,25 @@ const generateWinner = async () => {
                     </div>
                   </div>
 
+                  {/* TAB DINAMICI PER ROUND (3-POINT) */}
+                  <div className="flex gap-2 mb-6 border-b border-neutral-100 pb-4 overflow-x-auto">
+                    {['Qualificazione', 'Quarti di finale', 'Semifinale', 'Finale', 'Vincitore'].map(tab => (
+                      <button 
+                        key={tab}
+                        onClick={() => { setTpActiveTab(tab); setCurrentPage(1); }}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                          tpActiveTab === tab ? 'bg-pink-50 text-pink-600 border border-pink-200' : 'text-neutral-500 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {tab === 'Vincitore' ? '👑 Vincitore' : tab}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="space-y-3">
                     {currentThreePoint.length === 0 ? (
                       <div className="p-8 border border-dashed border-neutral-200 rounded-xl text-center">
-                        <p className="text-sm text-neutral-500">Nessun iscritto trovato</p>
+                        <p className="text-sm text-neutral-500">Nessun iscritto trovato per questo round</p>
                       </div>
                     ) : currentThreePoint.map(item => (
                       <div 
