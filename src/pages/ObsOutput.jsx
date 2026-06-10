@@ -8,10 +8,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 const getEventStyles = (tagName) => {
   const t = (tagName || '').toLowerCase();
   if (t.includes('vero cup')) return { tag: 'bg-pink-500/20 text-pink-300 border-pink-500/30', border: 'bg-pink-500' };
-  if (t.includes('3-point') || t.includes('3 point')) return { tag: 'bg-purple-500/20 text-purple-300 border-purple-500/30', border: 'bg-purple-500' };
-  if (t.includes('slam dunk')) return { tag: 'bg-orange-500/20 text-orange-300 border-orange-500/30', border: 'bg-orange-500' };
-  if (t.includes('extra') || t.includes('master')) return { tag: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', border: 'bg-emerald-500' };
-  return { tag: 'bg-blue-500/20 text-blue-300 border-blue-500/30', border: 'bg-blue-500' };
+  if (t.includes('3-point') || t.includes('3 point')) return { tag: 'bg-blue-500/20 text-blue-300 border-blue-500/30', border: 'bg-blue-500' };
+  if (t.includes('slam dunk')) return { tag: 'bg-sky-300/10 text-sky-100 border-sky-300/20', border: 'bg-sky-300' };
+  if (t.includes('women')) return { tag: 'bg-orange-500/20 text-orange-300 border-orange-500/30', border: 'bg-orange-500' };
+  // 👇 Ho lasciato solo 'master' qui per evitare il conflitto
+  if (t.includes('master')) return { tag: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', border: 'bg-emerald-500' };
+  
+  // 👇 Così 'extra' o 'dr1' attivano correttamente questo!
+  if (t.includes('extra') || t.includes('dr1')) return { tag: 'bg-emerald-800/30 text-emerald-400 border-emerald-800/50', border: 'bg-emerald-800'};
+  
+  return { tag: 'bg-teal-400/20 text-teal-300 border-teal-400/30', border: 'bg-teal-400' };
 };
 
 export default function ObsOutput() {
@@ -464,16 +470,18 @@ export default function ObsOutput() {
   return (
     <div className="w-[1920px] h-[1080px] overflow-hidden bg-neutral-950 relative font-dimbo text-white origin-top-left">
       
-      {/* ========================================= */}
+     {/* ========================================= */}
       {/* OVERLAY LOGO CENTRALE UNICO (Z-50) */}
       {/* ========================================= */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500">
-        <img 
-  src={currentLogo} 
-  alt="Sponsor Logo" 
-  className="h-[140px] w-auto" 
-/>
-      </div>
+      {localGraphic !== 'daily_schedule' && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500">
+          <img 
+            src={currentLogo} 
+            alt="Sponsor Logo" 
+            className="h-[140px] w-auto" 
+          />
+        </div>
+      )}
 
       {/* ========================================= */}
       {/* GRAFICHE ANIMATE                          */}
@@ -915,10 +923,17 @@ function MatchFullGraphic({ match }) {
 // COMPONENTE: DAILY SCHEDULE (PALINSESTO)
 // ==========================================
 function DailyScheduleGraphic({ dateStr, data }) {
-  const formatDate = (dateString) => {
+  // --- FUNZIONI PER DIVIDERE LA DATA ---
+  const formatWeekday = (dateString) => {
     if (!dateString) return '';
     const d = new Date(dateString);
-    return d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+    return d.toLocaleDateString('it-IT', { weekday: 'long' });
+  };
+
+  const formatDayMonth = (dateString) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
   };
 
   const formatTime = (timeString) => {
@@ -956,13 +971,13 @@ function DailyScheduleGraphic({ dateStr, data }) {
     let textClasses = '';
 
     if (status === 'live') {
-      boxClasses = 'relative bg-red-500/20 border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)]';
+      // 🎯 DOPO: Aggiunto h-[85px] w-full
+      boxClasses = 'h-[85px] w-full relative bg-red-500/20 border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)]';
       boxContent = (
         <>
           {/* Badge LIVE ancorato a sinistra */}
           <div className="absolute left-6 flex items-center gap-2 animate-pulse">
             <div className="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
-            <span className="text-[16px] font-black text-red-500 tracking-wider uppercase">Live</span>
           </div>
           
           {/* Punteggio perfettamente centrato */}
@@ -975,7 +990,8 @@ function DailyScheduleGraphic({ dateStr, data }) {
       textClasses = 'text-transparent';
     }
     else if (status === 'finished' || status === 'completed' || (hasScore && !isZeroZero && status !== 'scheduled')) {
-      boxClasses = 'bg-black/60 border-2 border-neutral-600';
+      // 🎯 DOPO: Aggiunto h-[85px] w-full
+      boxClasses = 'h-[85px] w-full bg-black/60 border-2 border-neutral-600';
       boxContent = (
         <span className="text-[50px] leading-none font-black text-neutral-300 tracking-wider">
           {match.score_home ?? 0} - {match.score_away ?? 0}
@@ -985,9 +1001,10 @@ function DailyScheduleGraphic({ dateStr, data }) {
       textClasses = 'text-neutral-500';
     } 
     else {
-      boxClasses = 'bg-white/5 border-2 border-white/10';
+      // 🎯 DOPO: Aggiunto h-[85px] w-full
+      boxClasses = 'h-[85px] w-full bg-white/5 border-2 border-white/10';
       boxContent = (
-        <span className="text-3xl font-black text-neutral-500 uppercase tracking-wider px-4">
+        <span className="text-[50px] font-black text-neutral-500 uppercase tracking-wider px-4">
           VS
         </span>
       );
@@ -995,20 +1012,39 @@ function DailyScheduleGraphic({ dateStr, data }) {
       textClasses = 'text-transparent';
     }
 
-    return (
-      <div className="w-[280px] flex flex-col items-center justify-center shrink-0">
-        <span className="text-[20px] font-bold text-neutral-400 uppercase tracking-wider mb-2 h-4 flex items-center justify-center">
-          {topText}
-        </span>
-        <div className={`flex items-center justify-center px-6 py-3 rounded-2xl w-full ${boxClasses}`}>
-          {boxContent}
+return (
+  // Il contenitore esterno torna pulito, senza translate strani che sballano le squadre
+  <div className="w-[280px] flex flex-col items-center justify-center shrink-0">
+    
+    {/* CREIAMO UN ANCORAGGIO RELATIVE PER IL MINI-BOX */}
+    <div className="relative w-full flex flex-col items-center translate-y-0">
+      
+     {/* 🏷️ MINI-BOX ASSOLUTO (Sfondo grigio/vetro corretto, bordo e scritta approvati) */}
+      {topText && (
+        <div className="absolute bottom-full bg-white/5 border-t-2 border-x-2 border-neutral-600 px-4 py-0.5 rounded-t-[0.6rem] flex items-center justify-center translate-y-[2px] z-10">
+          
+          {/* TOCCATO SOLO IL COLORE QUI SOTTO 👇 */}
+          <span className={`text-[20px] font-black uppercase tracking-wider whitespace-nowrap ${
+            topText.toUpperCase().includes('GIRONE B') || (topText.toUpperCase().includes('SEMIFINALE') && (topText.toUpperCase().includes('2') || topText.toUpperCase().includes('B') || topText.toUpperCase().includes('SECONDA')))
+              ? 'text-pink-500' 
+              : topText.toUpperCase().includes('FINALE') 
+              ? 'text-[#ffd700]' 
+              : 'text-[#79bce4]'
+          }`}>
+            {topText}
+          </span>
+
         </div>
-        <span className={`text-[20px] font-bold uppercase tracking-wider mt-2 h-4 flex items-center justify-center ${textClasses}`}>
-          {bottomText || '-'}
-        </span>
+      )}
+
+      {/* 🎯 IL TUO BOX ORIGINALE: Invariato, stabile e perfettamente allineato ai nomi delle squadre */}
+      <div className={`flex items-center justify-center px-6 py-3 rounded-[1rem] w-full ${boxClasses}`}>
+        {boxContent}
       </div>
-    );
-  };
+    </div>
+  </div>
+);
+};
 
   return (
     <motion.div 
@@ -1019,24 +1055,40 @@ function DailyScheduleGraphic({ dateStr, data }) {
     >
       <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
       
-      {/* TITOLO SPOSTATO IN ALTO A DESTRA */}
-      <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right">
-        <span className="text-pink-500 font-bold uppercase tracking-widest text-xl mb-2 drop-shadow-md">Il Programma</span>
-        {/* TITOLO CHE SI ANIMA AD OGNI CAMBIO DATA */}
-        <motion.h2 
-          key={`title-${dateStr}`}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-6xl font-black uppercase text-white drop-shadow-lg tracking-wider capitalize"
-        >
-          {formatDate(dateStr)}
-        </motion.h2>
+      {/* NUOVO TITOLO: GIORNO DELLA SETTIMANA ROSA + DATA BIANCA */}
+      <div className="absolute top-12 w-full z-50 flex flex-col items-center text-center">
+        
+{/* NUOVO TITOLO: BOX IDENTICO ALLE CARD SOTTO */}
+      <div className="absolute top-[6px] w-full max-w-[1850px] z-50">
+        
+        {/* BOX IN STILE CARD: Stesso bordo, stesso vetro, stesse ombre, ma alto 190px */}
+        <div className="w-full h-[190px] relative rounded-[1.5rem] shadow-2xl bg-white/5 backdrop-blur-xl border-2 border-white/10 overflow-hidden flex items-center justify-center">
+          
+          <motion.div 
+            key={`date-${dateStr}`}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex items-baseline gap-6 translate-y-2" // translate-y-2 bilancia otticamente i font giganti
+          >
+            {/* Es: VENERDÌ (Bianco ed enorme) */}
+            <h2 className="text-[95px] leading-none font-black uppercase text-white tracking-wider">
+              {formatWeekday(dateStr)}
+            </h2>
+
+            {/* Es: 19 GIUGNO (Rosa brillante) */}
+            <h3 className="text-[95px] leading-none font-black uppercase text-pink-500 tracking-wider">
+              {formatDayMonth(dateStr)}
+            </h3>
+          </motion.div>
+
+        </div>
+      </div>
       </div>
 
-      <div className="z-10 w-full max-w-[1700px] flex flex-col items-center flex-1 min-h-0">
+      <div className="z-10 w-full max-w-[1850px] flex flex-col items-center flex-1 min-h-0 mt-4">
         
-        {/* CONTENITORE PADRE STATICO: non perde mai la sua forma! */}
+        {/* CONTENITORE PADRE STATICO */}
         <div className="w-full flex flex-col gap-3 h-full justify-center max-h-[750px]">
           {data.length === 0 ? (
             <motion.div 
@@ -1048,7 +1100,6 @@ function DailyScheduleGraphic({ dateStr, data }) {
             </motion.div>
           ) : (
             data.map((item, index) => {
-              // NOTA: il tuo getEventStyles originale deve trovarsi all'esterno di questo componente!
               const styles = typeof getEventStyles !== 'undefined' ? getEventStyles(item.event_tag) : { tag: 'bg-neutral-500/20 text-neutral-300 border-neutral-500/30', border: 'bg-neutral-500' };
               const eventLogo = getEventLogo(item.event_tag); 
 
@@ -1061,10 +1112,10 @@ function DailyScheduleGraphic({ dateStr, data }) {
                   className="w-full flex-1 max-h-[180px] min-h-[100px]"
                 >
                   
-                  <div className="w-full h-full relative rounded-[2rem] shadow-2xl">
+                  <div className="w-full h-full relative rounded-[1.5rem] shadow-2xl">
                     
-                    <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-[2rem] pointer-events-none"></div>
-                    <div className={`absolute left-0 top-0 bottom-0 w-3 rounded-l-[2rem] ${styles.border}`}></div>
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border-2 border-white/10 rounded-[1.5rem] pointer-events-none"></div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-6 rounded-l-[1.5rem] ${styles.border}`}></div>
                     
                     <div className="absolute inset-0 flex items-center px-6 z-10">
                       
@@ -1082,17 +1133,17 @@ function DailyScheduleGraphic({ dateStr, data }) {
                       <div className="flex-1 flex items-center justify-between min-w-0 px-8">
                         {item.matchDetails ? (
                           <>
-                            <div className="flex-1 text-right truncate text-[45px] font-black text-white px-8 tracking-wider">
+                            <div className="flex-1 text-right truncate text-[65px] font-black text-white px-8 tracking-wider">
                               {item.matchDetails.home_name}
                             </div>
                             {renderMatchCenter(item.matchDetails)}
-                            <div className="flex-1 text-left truncate text-[45px] font-black text-white px-8 tracking-wider">
+                            <div className="flex-1 text-left truncate text-[65px] font-black text-white px-8 tracking-wider">
                               {item.matchDetails.away_name}
                             </div>
                           </>
                         ) : (
                           <div className="flex-1 flex items-center justify-center px-8">
-                            <span className="text-[45px] font-black text-white uppercase tracking-wider truncate text-center w-full">
+                            <span className="text-[65px] font-black text-white uppercase tracking-wider truncate text-center w-full">
                               {item.description || item.event_tag}
                             </span>
                           </div>
@@ -1103,19 +1154,19 @@ function DailyScheduleGraphic({ dateStr, data }) {
                       <div className="w-[4px] h-2/3 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
                       
                       {/* BLOCCO DESTRO (LOGO/TAG) */}
-                      <div className="w-[280px] h-full flex items-center justify-center shrink-0">
-                        {eventLogo ? (
-                          <img 
-                            src={eventLogo} 
-                            alt={item.event_tag} 
-                            className="max-h-[85px] max-w-[220px] object-contain drop-shadow-lg" 
-                          />
-                        ) : (
-                          <span className={`inline-block border-2 px-6 py-3 rounded-2xl text-xl font-bold uppercase tracking-widest whitespace-nowrap text-center ${styles.tag}`}>
-                            {item.event_tag}
-                          </span>
-                        )}
-                      </div>
+<div className="w-[280px] h-full flex items-center justify-center shrink-0">
+  {eventLogo ? (
+    <img 
+      src={eventLogo} 
+      alt={item.event_tag} 
+      className="max-h-[85px] max-w-[220px] object-contain drop-shadow-lg" 
+    />
+  ) : (
+    <span className={`flex items-center justify-center w-[200px] h-[85px] border-2 rounded-2xl text-[22px] font-bold uppercase tracking-wider whitespace-nowrap ${styles.tag}`}>
+      {item.event_tag}
+    </span>
+  )}
+</div>
 
                     </div>
 
