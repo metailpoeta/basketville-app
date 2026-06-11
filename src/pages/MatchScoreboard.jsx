@@ -213,7 +213,7 @@ export default function MatchScoreboard() {
             </h2>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 blur-3xl rounded-full"></div>
-              <span className="text-[180px] font-black text-white leading-none drop-shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+              <span className="text-[180px] font-black text-white leading-none">
                 {teamA.score}
               </span>
             </div>
@@ -239,7 +239,7 @@ export default function MatchScoreboard() {
             </h2>
             <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
-              <span className="text-[180px] font-black text-white leading-none drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+              <span className="text-[180px] font-black text-white leading-none">
                 {teamB.score}
               </span>
             </div>
