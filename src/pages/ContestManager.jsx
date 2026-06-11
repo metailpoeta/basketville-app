@@ -62,6 +62,10 @@ export default function ContestManager() {
   const [sdDunkNum, setSdDunkNum] = useState(1); 
   const [sdVotes, setSdVotes] = useState(['', '', '', '', '']); 
   const [winnerPrepared, setWinnerPrepared] = useState(false);
+  
+  // --- NUOVI STATI TIMER SLAM DUNK ---
+const [sdLiveTimeLeft, setSdLiveTimeLeft] = useState(60.0);
+const [isSdTimerRunning, setIsSdTimerRunning] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -162,6 +166,22 @@ export default function ContestManager() {
       prev_time: livePlayer.time
     });
   }, [isTimerRunning, liveScore]); 
+
+  // --- NUOVO EFFECT COUNTDOWN SLAM DUNK ---
+useEffect(() => {
+  let interval = null;
+  if (isSdTimerRunning && sdLiveTimeLeft > 0) {
+    interval = setInterval(() => {
+      setSdLiveTimeLeft(prev => {
+        const next = prev - 0.1;
+        return next <= 0 ? 0 : Number(next.toFixed(1));
+      });
+    }, 100);
+  } else if (sdLiveTimeLeft <= 0 && isSdTimerRunning) {
+    setIsSdTimerRunning(false);
+  }
+  return () => clearInterval(interval);
+}, [isSdTimerRunning, sdLiveTimeLeft]);
   
   const handleStartLiveFromRow = (playerItem) => {
     setLivePlayer(playerItem);
@@ -606,18 +626,53 @@ const generateWinner = async () => {
   };
 
   const startSlamDunkLive = (player, dunkNum) => {
-    setSdLivePlayer(player);
-    setSdDunkNum(dunkNum);
-    setSdVotes(['', '', '', '', '']);
-    
-    const players = slamDunkList.filter(p => p.round === player.round);
-    triggerOBS('slamdunk', { 
-      round: player.round, 
-      players, 
-      winner: null,
-      liveDunker: { playerName: player.player_name, dunkNumber: dunkNum, round: player.round }
-    });
-  };
+  setSdLivePlayer(player);
+  setSdDunkNum(dunkNum);
+  setSdVotes(['', '', '', '', '']);
+  
+  // ⏱️ Reset parametri tempo ad ogni avvio di un giocatore
+  setSdLiveTimeLeft(60.0);
+  setIsSdTimerRunning(false);
+  
+  const players = slamDunkList.filter(p => p.round === player.round);
+  triggerOBS('slamdunk', { 
+    round: player.round, 
+    players, 
+    winner: null,
+    command: 'idle', // Inizializza la grafica overlay a 60s ferma
+    time: '60.0',
+    liveDunker: { playerName: player.player_name, dunkNumber: dunkNum, round: player.round }
+  });
+};
+
+// Invia l'input a OBS solo quando cambia lo stato di marcia/pausa
+useEffect(() => {
+  if (!sdLivePlayer) return;
+  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+  triggerOBS('slamdunk', {
+    command: isSdTimerRunning ? 'start' : 'pause',
+    time: sdLiveTimeLeft.toFixed(1),
+    round: sdLivePlayer.round,
+    players,
+    winner: null,
+    liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
+  });
+}, [isSdTimerRunning]);
+
+// Funzione manuale per resettare il tempo a 60.0s stabili
+const handleResetSdTimer = () => {
+  setIsSdTimerRunning(false);
+  setSdLiveTimeLeft(60.0);
+  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+  triggerOBS('slamdunk', {
+    command: 'idle',
+    time: '60.0',
+    round: sdLivePlayer.round,
+    players,
+    winner: null,
+    liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
+  });
+};
 
   const handleDunkNumChange = (num) => {
     setSdDunkNum(num);
@@ -637,15 +692,25 @@ const generateWinner = async () => {
   };
 
   const handleProcessSlamDunkVotes = async () => {
-    const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
-    const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
-    const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
+  const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
+  const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
+  const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
 
-    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+  // 1. Spegniamo SUBITO il timer. In questo modo l'effetto automatico di pausa
+  //    si attiva e si sfoga immediatamente, prima che noi mandiamo i voti.
+  setIsSdTimerRunning(false);
+
+  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+  
+  // 2. Avvolgiamo l'invio dei voti e il salvataggio in un micro-timeout (50ms).
+  //    Questo garantisce al 100% che questo pacchetto sia l'ultimo ad arrivare a OBS,
+  //    sovrascrivendo qualsiasi comando di pausa fantasma.
+  setTimeout(async () => {
     triggerOBS('slamdunk', {
       round: sdLivePlayer.round,
       players: players,
       winner: null,
+      liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round },
       activeVote: {
         playerName: sdLivePlayer.player_name,
         dunkNumber: sdDunkNum,
@@ -654,36 +719,39 @@ const generateWinner = async () => {
       }
     });
 
+    // Salviamo sul database
     await supabase.from('slam_dunk').update({ 
       [fieldToUpdate]: total,
       updated_at: new Date().toISOString()
     }).eq('id', sdLivePlayer.id);
 
     loadSlamDunk();
+  }, 50);
 
-    setTimeout(async () => {
-      const { data } = await supabase
-        .from('slam_dunk')
-        .select('*')
-        .eq('edition_id', activeEdition.id)
-        .order('id', { ascending: true }); 
-        
-      if (data) {
-        setSlamDunkList(data);
-        const updatedPlayers = data.filter(p => p.round === sdLivePlayer.round);
-        
-        triggerOBS('slamdunk', {
-          round: sdLivePlayer.round,
-          players: updatedPlayers,
-          winner: null,
-          lastUpdatedPlayer: sdLivePlayer.player_name, 
-          lastUpdatedDunk: sdDunkNum 
-        });
-      }
+  // 3. Questo timer da 8 secondi rimane invariato: gestisce il ritorno alla griglia generale
+  setTimeout(async () => {
+    const { data } = await supabase
+      .from('slam_dunk')
+      .select('*')
+      .eq('edition_id', activeEdition.id)
+      .order('id', { ascending: true }); 
       
-      setSdLivePlayer(null);
-    }, 8000);
-  };
+    if (data) {
+      setSlamDunkList(data);
+      const updatedPlayers = data.filter(p => p.round === sdLivePlayer.round);
+      
+      triggerOBS('slamdunk', {
+        round: sdLivePlayer.round,
+        players: updatedPlayers,
+        winner: null,
+        lastUpdatedPlayer: sdLivePlayer.player_name, 
+        lastUpdatedDunk: sdDunkNum 
+      });
+    }
+    
+    setSdLivePlayer(null);
+  }, 8000);
+};
 
 
   const getHeatOptions = () => {
@@ -1251,6 +1319,32 @@ const generateWinner = async () => {
                   <button onClick={() => handleDunkNumChange(1)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 1 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 1</button>
                   <button onClick={() => handleDunkNumChange(2)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 2 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 2</button>
                 </div>
+
+                {/* ⏱️ TELECOMANDO TIMER LIVE SLAM DUNK */}
+<div className="flex flex-col items-center bg-white/5 p-4 rounded-xl border border-neutral-800 mb-8 w-full max-w-md animate-in fade-in">
+  <div className="flex items-center justify-between w-full mb-3 px-1">
+    <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+      <Timer size={14} className="text-pink-500"/> Scadenza Schiacciata
+    </span>
+    <span className={`text-2xl font-black tracking-wider tabular-nums ${sdLiveTimeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+      {sdLiveTimeLeft.toFixed(1)}s
+    </span>
+  </div>
+  <div className="flex gap-2 w-full">
+    {!isSdTimerRunning && sdLiveTimeLeft > 0 ? (
+      <button type="button" onClick={() => setIsSdTimerRunning(true)} className="flex-1 bg-green-500 hover:bg-green-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+        <Play fill="currentColor" size={12}/> Avvia Tempo
+      </button>
+    ) : (
+      <button type="button" onClick={() => setIsSdTimerRunning(false)} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+        <Pause fill="currentColor" size={12}/> Metti in Pausa
+      </button>
+    )}
+    <button type="button" onClick={handleResetSdTimer} className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+      <Square fill="currentColor" size={11}/> Reset 60s
+    </button>
+  </div>
+</div>
 
                 {/* I 5 Voti */}
                 <div className="flex gap-4 mb-8 flex-wrap justify-center">

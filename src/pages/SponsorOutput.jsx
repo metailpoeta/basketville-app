@@ -39,14 +39,6 @@ export default function SponsorOutput() {
         className="relative flex flex-col justify-center items-center bg-neutral-950 overflow-hidden" 
         style={{ width: '1920px', height: '1080px' }}
       >
-        {/* 👑 LOGO IN ALTO A SINISTRA (Perfettamente specchiato) */}
-        <div className="absolute top-8 left-12 z-50 select-none">
-          <img 
-            src="/Basketville_logo26_vero.png" 
-            alt="Basketville Logo" 
-            className="h-24 w-auto drop-shadow-lg" 
-          />
-        </div>
 
         {/* 👑 IL SOLITO TITOLO IN ALTO A DESTRA */}
         <div className="absolute top-12 right-12 z-50 flex flex-col items-end text-right select-none">
