@@ -41,7 +41,6 @@ export default function MatchScoreboard() {
     let animationFrameId;
 
     if (isRunning && time > 0) {
-      // Sincronizziamo il valore di partenza
       timeRef.current = time;
       const endTime = Date.now() + timeRef.current * 1000;
 
@@ -49,7 +48,6 @@ export default function MatchScoreboard() {
         const remainingMs = endTime - Date.now();
 
         if (remainingMs <= 0) {
-          // Scaduto!
           if (buzzerRef.current) {
             buzzerRef.current.currentTime = 0;
             buzzerRef.current.play().catch(e => console.log(e));
@@ -61,11 +59,9 @@ export default function MatchScoreboard() {
         } else {
           timeRef.current = remainingMs / 1000;
           
-          // AGGIORNAMENTO DIRETTO NEL BROWSER (Salta React!)
           if (timerDisplayRef.current) {
             timerDisplayRef.current.innerText = formatTime(timeRef.current);
             
-            // Gestione dei colori ultra-leggera
             if (timeRef.current <= 10) {
               timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]";
             } else if (timeRef.current <= 60) {
@@ -74,21 +70,16 @@ export default function MatchScoreboard() {
               timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
             }
           }
-          // Richiama il prossimo frame in modo super efficiente
           animationFrameId = requestAnimationFrame(updateTimer);
         }
       };
 
-      // Fa partire il ciclo
       animationFrameId = requestAnimationFrame(updateTimer);
     }
 
     return () => {
-      // Quando metti in pausa, ferma l'animazione e salva il tempo nello stato di React
+      // Ferma l'animazione, ma NON gestiamo qui il salvataggio
       cancelAnimationFrame(animationFrameId);
-      if (!isRunning) {
-        setTime(timeRef.current);
-      }
     };
   }, [isRunning]);
 
@@ -107,11 +98,37 @@ export default function MatchScoreboard() {
   };
 
   const handleSetTime = () => {
-    setIsRunning(false);
     const m = parseInt(inputMin) || 0;
     const s = parseInt(inputSec) || 0;
     const dec = parseInt(inputTenths) || 0;
-    setTime(m * 60 + s + dec / 10);
+    const newTime = m * 60 + s + dec / 10;
+    
+    setIsRunning(false);
+    setTime(newTime);
+    timeRef.current = newTime; // Sincronizza subito il motore offline
+    
+    // Aggiorna istantaneamente il testo a schermo a bocce ferme
+    if (timerDisplayRef.current) {
+      timerDisplayRef.current.innerText = formatTime(newTime);
+      // Ripristina il colore bianco se imposti un tempo > 60s
+      if (newTime > 60) {
+        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
+      }
+    }
+  };
+
+  // ==========================================
+  // GESTIONE PLAY / PAUSA SICURA
+  // ==========================================
+  const handleToggleTimer = () => {
+    if (isRunning) {
+      // Stiamo mettendo in PAUSA: salviamo il tempo preciso al millesimo
+      setIsRunning(false);
+      setTime(timeRef.current); 
+    } else {
+      // Stiamo avviando
+      setIsRunning(true);
+    }
   };
 
   // ==========================================
@@ -281,7 +298,7 @@ export default function MatchScoreboard() {
             
             {/* AVVIA / PAUSA (Prende tutta la riga) */}
             <button 
-              onClick={() => setIsRunning(!isRunning)} 
+              onClick={handleToggleTimer}
               className={`col-span-3 py-4 rounded-xl font-black uppercase tracking-wider text-xl flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-lg ${
                 isRunning 
                 ? 'bg-yellow-500 hover:bg-yellow-400 text-black shadow-[0_0_15px_rgba(234,179,8,0.3)]' 
