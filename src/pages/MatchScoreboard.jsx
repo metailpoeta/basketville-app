@@ -225,7 +225,7 @@ export default function MatchScoreboard() {
           <div className="w-[420px] flex justify-center items-center mt-16">
             <span 
               ref={timerDisplayRef}
-              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]') : 'text-white drop-shadow-2xl'}`}
+              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500' : 'text-yellow-400') : 'text-white drop-shadow-2xl'}`}
             >
               {formatTime(time)}
             </span>
