@@ -20,6 +20,10 @@ export default function MatchScoreboard() {
   // Riferimento all'elemento audio della sirena
   const buzzerRef = useRef(null);
 
+  // NUOVI RIFERIMENTI PER PRESTAZIONI MASSIME
+  const timeRef = useRef(600.0);
+  const timerDisplayRef = useRef(null);
+
   // ==========================================
   // FUNZIONE SIRENA MANUALE
   // ==========================================
@@ -31,45 +35,61 @@ export default function MatchScoreboard() {
   };
 
   // ==========================================
-  // MOTORE CRONOMETRO (DELTA TIME ASSOLUTO)
+  // MOTORE CRONOMETRO (ZERO IMPATTO SU RAM/CPU)
   // ==========================================
   useEffect(() => {
-    let interval = null;
+    let animationFrameId;
 
     if (isRunning && time > 0) {
-      // 1. Appena premi "Avvia", calcoliamo l'orario ESATTO (in millisecondi) 
-      // in cui il timer dovrà arrivare a zero, basandoci sull'orologio di sistema.
-      const endTime = Date.now() + time * 1000;
+      // Sincronizziamo il valore di partenza
+      timeRef.current = time;
+      const endTime = Date.now() + timeRef.current * 1000;
 
-      // 2. Facciamo aggiornare la grafica molto velocemente (ogni 50ms) per la massima fluidità
-      interval = setInterval(() => {
-        const now = Date.now();
-        const remainingMs = endTime - now;
+      const updateTimer = () => {
+        const remainingMs = endTime - Date.now();
 
         if (remainingMs <= 0) {
-          // TEMPO SCADUTO!
+          // Scaduto!
           if (buzzerRef.current) {
             buzzerRef.current.currentTime = 0;
             buzzerRef.current.play().catch(e => console.log(e));
           }
           setTime(0);
+          timeRef.current = 0;
           setIsRunning(false);
-          clearInterval(interval);
+          if (timerDisplayRef.current) timerDisplayRef.current.innerText = "0.0";
         } else {
-          // Aggiorniamo lo stato convertendo i millisecondi in secondi reali.
-          // Non essendoci operazioni matematiche "+ o -", il tempo non perde mai un colpo.
-          setTime(remainingMs / 1000);
+          timeRef.current = remainingMs / 1000;
+          
+          // AGGIORNAMENTO DIRETTO NEL BROWSER (Salta React!)
+          if (timerDisplayRef.current) {
+            timerDisplayRef.current.innerText = formatTime(timeRef.current);
+            
+            // Gestione dei colori ultra-leggera
+            if (timeRef.current <= 10) {
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]";
+            } else if (timeRef.current <= 60) {
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]";
+            } else {
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
+            }
+          }
+          // Richiama il prossimo frame in modo super efficiente
+          animationFrameId = requestAnimationFrame(updateTimer);
         }
-      }, 50); 
-    } 
+      };
 
-    // Quando premiamo Pausa, il setInterval si spegne e il valore 
-    // di 'time' rimane congelato al punto esatto in cui era.
-    return () => clearInterval(interval);
-    
-  // ⚠️ ATTENZIONE: Abbiamo rimosso 'time' dalle dipendenze! 
-  // L'effetto deve attivarsi SOLO quando premi Start/Pausa (isRunning), 
-  // non ad ogni singolo decimo di secondo. Questo elimina il peso sulla CPU!
+      // Fa partire il ciclo
+      animationFrameId = requestAnimationFrame(updateTimer);
+    }
+
+    return () => {
+      // Quando metti in pausa, ferma l'animazione e salva il tempo nello stato di React
+      cancelAnimationFrame(animationFrameId);
+      if (!isRunning) {
+        setTime(timeRef.current);
+      }
+    };
   }, [isRunning]);
 
   // ==========================================
@@ -159,9 +179,15 @@ export default function MatchScoreboard() {
 
           {/* CRONOMETRO CENTRALE */}
           <div className="w-[420px] flex justify-center items-center mt-16">
-            <span className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 && isRunning ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]') : 'text-white drop-shadow-2xl'}`}>
+            {/* CRONOMETRO CENTRALE SUPER-LEGGERO */}
+          <div className="w-[420px] flex justify-center items-center mt-16">
+            <span 
+              ref={timerDisplayRef}
+              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]' : 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]') : 'text-white drop-shadow-2xl'}`}
+            >
               {formatTime(time)}
             </span>
+          </div>
           </div>
 
           {/* COLONNA TEAM B */}
