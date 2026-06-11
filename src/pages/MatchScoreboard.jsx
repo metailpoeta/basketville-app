@@ -31,32 +31,46 @@ export default function MatchScoreboard() {
   };
 
   // ==========================================
-  // MOTORE CRONOMETRO
+  // MOTORE CRONOMETRO (DELTA TIME ASSOLUTO)
   // ==========================================
   useEffect(() => {
     let interval = null;
+
     if (isRunning && time > 0) {
+      // 1. Appena premi "Avvia", calcoliamo l'orario ESATTO (in millisecondi) 
+      // in cui il timer dovrà arrivare a zero, basandoci sull'orologio di sistema.
+      const endTime = Date.now() + time * 1000;
+
+      // 2. Facciamo aggiornare la grafica molto velocemente (ogni 50ms) per la massima fluidità
       interval = setInterval(() => {
-        setTime(prev => {
-          const next = prev - 0.1;
-          
-          // Se il tempo scade
-          if (next <= 0) {
-            if (buzzerRef.current) {
-              buzzerRef.current.currentTime = 0;
-              buzzerRef.current.play().catch(e => console.log(e));
-            }
-            setIsRunning(false);
-            return 0;
+        const now = Date.now();
+        const remainingMs = endTime - now;
+
+        if (remainingMs <= 0) {
+          // TEMPO SCADUTO!
+          if (buzzerRef.current) {
+            buzzerRef.current.currentTime = 0;
+            buzzerRef.current.play().catch(e => console.log(e));
           }
-          return Number(next.toFixed(1));
-        });
-      }, 100);
-    } else if (time <= 0 && isRunning) {
-      setIsRunning(false);
-    }
+          setTime(0);
+          setIsRunning(false);
+          clearInterval(interval);
+        } else {
+          // Aggiorniamo lo stato convertendo i millisecondi in secondi reali.
+          // Non essendoci operazioni matematiche "+ o -", il tempo non perde mai un colpo.
+          setTime(remainingMs / 1000);
+        }
+      }, 50); 
+    } 
+
+    // Quando premiamo Pausa, il setInterval si spegne e il valore 
+    // di 'time' rimane congelato al punto esatto in cui era.
     return () => clearInterval(interval);
-  }, [isRunning, time]);
+    
+  // ⚠️ ATTENZIONE: Abbiamo rimosso 'time' dalle dipendenze! 
+  // L'effetto deve attivarsi SOLO quando premi Start/Pausa (isRunning), 
+  // non ad ogni singolo decimo di secondo. Questo elimina il peso sulla CPU!
+  }, [isRunning]);
 
   // ==========================================
   // HELPER FORMATTAZIONE TEMPO
