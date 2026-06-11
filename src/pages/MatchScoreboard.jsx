@@ -113,7 +113,7 @@ export default function MatchScoreboard() {
       {/* AREA BROADCAST (Cattura questa con OBS) */}
       {/* ========================================== */}
       <div 
-        className="flex-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 to-neutral-600 relative flex flex-col justify-between" 
+        className="flex-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 to-black relative flex flex-col justify-between" 
         style={{ width: '1280px', height: '720px' }}
       >
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
