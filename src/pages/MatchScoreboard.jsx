@@ -42,7 +42,7 @@ export default function MatchScoreboard() {
     if (timerDisplayRef.current) {
       timerDisplayRef.current.innerText = formatTime(newTime);
       if (newTime > 60) {
-        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
+        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
       }
     }
     // Resetta lo stato di conferma
@@ -88,11 +88,11 @@ export default function MatchScoreboard() {
             timerDisplayRef.current.innerText = formatTime(timeRef.current);
             
             if (timeRef.current <= 10) {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]";
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-red-500";
             } else if (timeRef.current <= 60) {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.3)]";
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-yellow-400";
             } else {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
+              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
             }
           }
           animationFrameId = requestAnimationFrame(updateTimer);
@@ -137,7 +137,7 @@ export default function MatchScoreboard() {
       timerDisplayRef.current.innerText = formatTime(newTime);
       // Ripristina il colore bianco se imposti un tempo > 60s
       if (newTime > 60) {
-        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white drop-shadow-2xl";
+        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
       }
     }
   };
@@ -189,7 +189,7 @@ export default function MatchScoreboard() {
       {/* AREA BROADCAST (Cattura questa con OBS) */}
       {/* ========================================== */}
       <div 
-        className="flex-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-neutral-900 to-black relative flex flex-col justify-between" 
+        className="flex-none bg-neutral-900 relative flex flex-col justify-between" 
         style={{ width: '1280px', height: '720px' }}
       >
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
@@ -199,7 +199,7 @@ export default function MatchScoreboard() {
           <img 
             src="/Basketville_logo.svg" 
             alt="Basketville" 
-            className="h-24 w-auto drop-shadow-2xl" 
+            className="h-24 w-auto" 
           />
         </div>
 
@@ -208,11 +208,10 @@ export default function MatchScoreboard() {
           
           {/* COLONNA TEAM A */}
           <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3 tracking-wider">
+            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white truncate w-full mb-3 tracking-wider">
             {teamA.name}
             </h2>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 blur-3xl rounded-full"></div>
+            <div className="bg-neutral-800 border border-neutral-700 rounded-3xl w-full h-[260px] flex items-center justify-center relative overflow-hidden">
               <span className="text-[180px] font-black text-white leading-none">
                 {teamA.score}
               </span>
@@ -225,7 +224,7 @@ export default function MatchScoreboard() {
           <div className="w-[420px] flex justify-center items-center mt-16">
             <span 
               ref={timerDisplayRef}
-              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500' : 'text-yellow-400') : 'text-white drop-shadow-2xl'}`}
+              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500' : 'text-yellow-400') : 'text-white'}`}
             >
               {formatTime(time)}
             </span>
@@ -234,11 +233,10 @@ export default function MatchScoreboard() {
 
           {/* COLONNA TEAM B */}
           <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white drop-shadow-lg truncate w-full mb-3 tracking-wider">
+            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white truncate w-full mb-3 tracking-wider">
                 {teamB.name}
             </h2>
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl w-full h-[260px] flex items-center justify-center shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>
+            <div className="bg-neutral-800 border border-neutral-700 rounded-3xl w-full h-[260px] flex items-center justify-center relative overflow-hidden">
               <span className="text-[180px] font-black text-white leading-none">
                 {teamB.score}
               </span>
@@ -263,7 +261,7 @@ export default function MatchScoreboard() {
                 <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Timeouts</span>
                 <div className="flex gap-2 mt-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamA.timeouts ? 'bg-pink-500 border-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.8)]' : 'border-neutral-700 bg-transparent'}`}></div>
+                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamA.timeouts ? 'bg-pink-500 border-pink-500' : 'border-neutral-700 bg-transparent'}`}></div>
                   ))}
                 </div>
               </div>
@@ -272,7 +270,7 @@ export default function MatchScoreboard() {
             {/* PERIODO CENTRALE */}
             <div className="flex flex-col items-center px-12 mb-4">
               <span className="text-2xl font-bold text-neutral-400 uppercase tracking-wider mb-2">Period</span>
-              <span className="text-8xl font-black text-white drop-shadow-md">
+              <span className="text-8xl font-black text-white">
                 {period}
               </span>
             </div>
@@ -283,7 +281,7 @@ export default function MatchScoreboard() {
                 <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Timeouts</span>
                 <div className="flex gap-2 mt-4">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamB.timeouts ? 'bg-blue-500 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]' : 'border-neutral-700 bg-transparent'}`}></div>
+                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamB.timeouts ? 'bg-blue-500 border-blue-500' : 'border-neutral-700 bg-transparent'}`}></div>
                   ))}
                 </div>
               </div>
@@ -312,8 +310,7 @@ export default function MatchScoreboard() {
         </div>
 
         {/* REGIA CRONOMETRO & PERIODO */}
-        <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl mb-8 shadow-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-pink-500/5 blur-3xl rounded-full"></div>
+        <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl mb-8 relative overflow-hidden">
           
           <h3 className="text-neutral-400 font-bold uppercase tracking-wider text-[12px] mb-6 flex items-center gap-2">
             <Clock size={16}/> Cronometro & Periodo
@@ -324,10 +321,10 @@ export default function MatchScoreboard() {
             {/* AVVIA / PAUSA (Gigante) */}
             <button 
               onClick={handleToggleTimer} 
-              className={`col-span-3 h-24 rounded-2xl font-black uppercase tracking-wider text-4xl flex items-center justify-center gap-4 transition-transform active:scale-95 shadow-lg ${
+              className={`col-span-3 h-24 rounded-2xl font-black uppercase tracking-wider text-4xl flex items-center justify-center gap-4 transition-transform active:scale-95 ${
                 isRunning 
-                ? 'bg-yellow-500 hover:bg-yellow-400 text-black shadow-[0_0_20px_rgba(234,179,8,0.3)]' 
-                : 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_20px_rgba(34,197,94,0.3)]'
+                ? 'bg-yellow-500 hover:bg-yellow-400 text-black' 
+                : 'bg-green-500 hover:bg-green-400 text-black'
               }`}
             >
               {isRunning ? <><Pause fill="currentColor" size={36}/> Pausa</> : <><Play fill="currentColor" size={36}/> Avvia</>}
@@ -348,15 +345,15 @@ export default function MatchScoreboard() {
                 {/* LOGICA DOPPIO STEP CONFERMA */}
                 {isConfirmingTime ? (
                   <div className="flex flex-1 gap-2 ml-2 h-[72px]">
-                    <button onClick={handleSetTimeConfirm} className="flex-1 bg-green-500 text-black font-black rounded-xl shadow-md flex items-center justify-center transition-colors active:scale-95">
+                    <button onClick={handleSetTimeConfirm} className="flex-1 bg-green-500 text-black font-black rounded-xl flex items-center justify-center transition-colors active:scale-95">
                       <Check size={36} />
                     </button>
-                    <button onClick={() => setIsConfirmingTime(false)} className="w-[72px] bg-neutral-700 text-neutral-400 hover:text-white hover:bg-red-500 font-black rounded-xl shadow-md flex items-center justify-center transition-colors active:scale-95">
+                    <button onClick={() => setIsConfirmingTime(false)} className="w-[72px] bg-neutral-700 text-neutral-400 hover:text-white hover:bg-red-500 font-black rounded-xl flex items-center justify-center transition-colors active:scale-95">
                       <X size={36} />
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setIsConfirmingTime(true)} className="flex-1 ml-2 bg-neutral-700 hover:bg-pink-600 text-white text-2xl font-black uppercase h-[72px] rounded-xl transition-colors shadow-md active:scale-95">
+                  <button onClick={() => setIsConfirmingTime(true)} className="flex-1 ml-2 bg-neutral-700 hover:bg-pink-600 text-white text-2xl font-black uppercase h-[72px] rounded-xl transition-colors active:scale-95">
                     SET
                   </button>
                 )}
@@ -378,7 +375,7 @@ export default function MatchScoreboard() {
             {/* PULSANTE GIGANTE PER LA SIRENA MANUALE */}
             <button 
               onClick={playBuzzer}
-              className="col-span-3 mt-4 h-24 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-wider text-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all active:scale-95 border border-red-400/50"
+              className="col-span-3 mt-4 h-24 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-wider text-2xl flex items-center justify-center gap-3 transition-all active:scale-95 border border-red-400/50"
             >
               <Volume2 size={32} /> Suona Sirena
             </button>
@@ -390,7 +387,7 @@ export default function MatchScoreboard() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           
           {/* TEAM A */}
-          <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl shadow-md border-t-8 border-t-pink-500">
+          <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl border-t-8 border-t-pink-500">
             <input 
               type="text" 
               value={teamA.name}
@@ -403,7 +400,7 @@ export default function MatchScoreboard() {
               <div className="flex gap-4 w-full justify-center mb-4">
                 <button onClick={() => adjustScore('A', 1)} className="flex-1 h-20 bg-neutral-800 rounded-xl font-black text-3xl active:scale-95 transition-transform">+1</button>
                 <button onClick={() => adjustScore('A', 2)} className="flex-1 h-20 bg-neutral-800 rounded-xl font-black text-3xl active:scale-95 transition-transform">+2</button>
-                <button onClick={() => adjustScore('A', 3)} className="flex-1 h-20 bg-pink-600 rounded-xl font-black text-3xl shadow-lg active:scale-95 transition-transform">+3</button>
+                <button onClick={() => adjustScore('A', 3)} className="flex-1 h-20 bg-pink-600 rounded-xl font-black text-3xl active:scale-95 transition-transform">+3</button>
               </div>
               <div className="flex w-full gap-4">
                 <button onClick={() => adjustScore('A', -1)} className="px-6 h-16 bg-neutral-800 rounded-xl font-bold text-xl active:scale-95 transition-transform">-1 pt</button>
@@ -430,7 +427,7 @@ export default function MatchScoreboard() {
           </div>
 
           {/* TEAM B */}
-          <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl shadow-md border-t-8 border-t-blue-500">
+          <div className="bg-black/50 border border-neutral-800 p-6 rounded-3xl border-t-8 border-t-blue-500">
             <input 
               type="text" 
               value={teamB.name}
@@ -443,7 +440,7 @@ export default function MatchScoreboard() {
               <div className="flex gap-4 w-full justify-center mb-4">
                 <button onClick={() => adjustScore('B', 1)} className="flex-1 h-20 bg-neutral-800 rounded-xl font-black text-3xl active:scale-95 transition-transform">+1</button>
                 <button onClick={() => adjustScore('B', 2)} className="flex-1 h-20 bg-neutral-800 rounded-xl font-black text-3xl active:scale-95 transition-transform">+2</button>
-                <button onClick={() => adjustScore('B', 3)} className="flex-1 h-20 bg-blue-600 rounded-xl font-black text-3xl shadow-lg active:scale-95 transition-transform">+3</button>
+                <button onClick={() => adjustScore('B', 3)} className="flex-1 h-20 bg-blue-600 rounded-xl font-black text-3xl active:scale-95 transition-transform">+3</button>
               </div>
               <div className="flex w-full gap-4">
                 <button onClick={() => adjustScore('B', -1)} className="px-6 h-16 bg-neutral-800 rounded-xl font-bold text-xl active:scale-95 transition-transform">-1 pt</button>
