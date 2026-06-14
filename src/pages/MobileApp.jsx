@@ -1140,7 +1140,7 @@ useEffect(() => {
             {/* INTESTAZIONE PAGINA */}
             <div className="mb-6 mt-2">
                <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">Social Hub</h2>
-               <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-widest mt-2">
+               <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-wider mt-2">
                  Resta connesso con il mondo Basketville dentro e fuori dal campo
                </p>
             </div>
@@ -1166,13 +1166,13 @@ useEffect(() => {
 
                     {/* Testi e Descrizioni informativi */}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[18px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[15px] font-black text-white uppercase tracking-wider">
                         {social.name}
                       </span>
-                      <span className="text-[15px] font-mono text-neutral-400 mt-1 truncate">
+                      <span className="text-[12px] font-mono text-neutral-400 mt-1 truncate">
                         {social.handle}
                       </span>
-                      <span className="text-[15px] font-bold tracking-wide text-neutral-500 mt-1.5 line-clamp-1">
+                      <span className="text-[12px] font-bold tracking-wide text-neutral-500 mt-1.5 line-clamp-1">
                         {social.sub}
                       </span>
                     </div>
@@ -1180,7 +1180,7 @@ useEffect(() => {
                   </div>
 
                   {/* Bottone d'azione minimal sulla destra */}
-                  <div className="text-[15px] font-black text-pink-500 bg-pink-500/10 px-4 py-2.5 rounded-xl border border-pink-500/20 uppercase tracking-widest shrink-0 ml-3 shadow-sm">
+                  <div className="text-[15px] font-black text-pink-500 bg-pink-500/10 px-4 py-2.5 rounded-xl border border-pink-500/20 uppercase tracking-wider shrink-0 ml-3 shadow-sm">
                     Apri ➔
                   </div>
                 </a>
@@ -1189,7 +1189,7 @@ useEffect(() => {
 
             {/* INFO BANNER REGOLAMENTO / CONTATTI STATICO */}
             <div className="mt-8 p-5 bg-neutral-900/40 border border-neutral-900 rounded-2xl text-center">
-              <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">
+              <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-wider leading-relaxed">
                 Problemi con i tabellini o segnalazione errori?<br/>
                 Rivolgiti direttamente al nostro Staff.
               </p>
