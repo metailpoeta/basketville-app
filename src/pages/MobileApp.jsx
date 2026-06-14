@@ -1169,10 +1169,10 @@ useEffect(() => {
                       <span className="text-[15px] font-black text-white uppercase tracking-wider">
                         {social.name}
                       </span>
-                      <span className="text-[12px] font-mono text-neutral-400 mt-1 truncate">
+                      <span className="text-[10px] font-mono text-neutral-400 mt-1 truncate">
                         {social.handle}
                       </span>
-                      <span className="text-[12px] font-bold tracking-wide text-neutral-500 mt-1.5 line-clamp-1">
+                      <span className="text-[10px] font-bold tracking-wide text-neutral-500 mt-1.5 line-clamp-1">
                         {social.sub}
                       </span>
                     </div>
@@ -1180,7 +1180,7 @@ useEffect(() => {
                   </div>
 
                   {/* Bottone d'azione minimal sulla destra */}
-                  <div className="text-[15px] font-black text-pink-500 bg-pink-500/10 px-4 py-2.5 rounded-xl border border-pink-500/20 uppercase tracking-wider shrink-0 ml-3 shadow-sm">
+                  <div className="text-[12px] font-black text-pink-500 bg-pink-500/10 px-4 py-2.5 rounded-xl border border-pink-500/20 uppercase tracking-wider shrink-0 ml-3 shadow-sm">
                     Apri ➔
                   </div>
                 </a>
