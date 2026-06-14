@@ -1138,9 +1138,9 @@ useEffect(() => {
           <div className="animate-in fade-in duration-300 flex flex-col h-full pb-6">
             
             {/* INTESTAZIONE PAGINA */}
-            <div className="mb-6 mt-2">
+            <div className="mb-4">
                <h2 className="text-2xl font-black text-pink-500 uppercase tracking-wider">Social Hub</h2>
-               <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-wider mt-2">
+               <p className="text-[15px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
                  Resta connesso con il mondo Basketville dentro e fuori dal campo
                </p>
             </div>
