@@ -439,7 +439,7 @@ useEffect(() => {
                                m?.team_a?.group_name ? ` • Girone ${m.team_a.group_name}` : ''}
                             </span>
                             {isMatch && (
-                              <span className="text-[12px] text-neutral-500 font-bold uppercase tracking-widest">
+                              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest translate-y-[-1px]">
                                 vedi dettagli ➔
                               </span>
                             )}
