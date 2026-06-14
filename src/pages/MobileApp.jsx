@@ -186,6 +186,20 @@ useEffect(() => {
   }, [selectedMatch]); // <--- Questo si attiva ogni volta che apri/chiudi un tabellino
 
   // ==========================================
+  // RIPORTA LO SCROLL IN ALTO AL CAMBIO TAB
+  // ==========================================
+  useEffect(() => {
+    // Riporta in alto lo scroll della finestra (browser)
+    window.scrollTo(0, 0);
+    
+    // Per sicurezza, se lo scroll viene gestito internamente dal contenitore <main>
+    const mainContainer = document.querySelector('main');
+    if (mainContainer) {
+      mainContainer.scrollTop = 0;
+    }
+  }, [activeTab]);
+
+  // ==========================================
   // FETCH DETTAGLIO MATCH (TABELLINO LIVE)
   // ==========================================
   const openMatchDetail = async (matchId) => {
