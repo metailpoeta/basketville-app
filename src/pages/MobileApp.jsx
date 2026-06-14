@@ -421,16 +421,16 @@ useEffect(() => {
                        <div className="flex flex-col items-center justify-center shrink-0 w-[50px] border-r border-neutral-800/80 pr-4">
                          <span className="text-xl font-black text-white tabular-nums tracking-wider">{item.time?.substring(0,5)}</span>
                          {isLive && (
-                           <span className="text-[15px] text-red-500 font-black uppercase tracking-widest mt-1 flex items-center gap-1">
+                           <span className="text-[12px] text-red-500 font-black uppercase tracking-widest mt-1 flex items-center gap-1">
                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>LIVE
                            </span>
                          )}
-                         {isConclusa && <span className="text-[15px] text-neutral-500 font-bold uppercase tracking-widest mt-1">FINALE</span>}
+                         {isConclusa && <span className="text-[12px] text-neutral-500 font-bold uppercase tracking-widest mt-1">FINALE</span>}
                        </div>
                        
                        <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[15px] text-pink-500 font-bold uppercase tracking-widest truncate drop-shadow-sm">
+                            <span className="text-[12px] text-pink-500 font-bold uppercase tracking-widest truncate drop-shadow-sm">
                               {item.events?.name || 'Evento Basketville'} 
                               {/* Mostra il girone solo se è Vero Cup E il tipo match contiene "gironi" o ha ID 1 */}
                               {isMatch && 
@@ -439,7 +439,7 @@ useEffect(() => {
                                m?.team_a?.group_name ? ` • Girone ${m.team_a.group_name}` : ''}
                             </span>
                             {isMatch && (
-                              <span className="text-[15px] text-neutral-500 font-bold uppercase tracking-widest">
+                              <span className="text-[12px] text-neutral-500 font-bold uppercase tracking-widest">
                                 vedi dettagli ➔
                               </span>
                             )}
