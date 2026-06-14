@@ -356,7 +356,7 @@ useEffect(() => {
             </div>
             
             {/* NUOVO CALENDAR STRIP HUB - STILE PREMIUM NBA */}
-            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 px-1 scrollbar-none whitespace-nowrap w-full">
+            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 px-1 mb-6 scrollbar-none whitespace-nowrap w-full">
               {availableDates.map((dateStr) => {
                 const isActive = selectedDate === dateStr;
                 const { weekday, dayNum } = getFormattedDateParts(dateStr);
@@ -365,21 +365,21 @@ useEffect(() => {
                   <button
                     key={dateStr}
                     onClick={() => setSelectedDate(dateStr)}
-                    className={`appearance-none outline-none focus:ring-0 flex flex-col items-center justify-center w-16 h-20 shrink-0 rounded-2xl border transition-all duration-300 ${
+                    className={`appearance-none outline-none focus:ring-0 flex flex-col items-center justify-center w-[76px] h-[92px] shrink-0 rounded-2xl border transition-all duration-300 ${
                       isActive
                         ? 'bg-gradient-to-b from-neutral-800 to-neutral-900 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.25)] scale-105'
                         : 'bg-neutral-950/60 border-neutral-800/80 hover:border-neutral-700'
                     }`}
                   >
                     {/* Giorno della settimana (LUN, MAR...) */}
-                    <span className={`text-[15px] font-black tracking-widest uppercase transition-colors ${
+                    <span className={`text-[16px] font-black tracking-widest uppercase transition-colors ${
                       isActive ? 'text-pink-500' : 'text-neutral-500'
                     }`}>
                       {weekday}
                     </span>
                     
                     {/* Numero del giorno (15, 16...) */}
-                    <span className={`text-2xl font-black tabular-nums tracking-wide mt-1 transition-colors ${
+                    <span className={`text-3xl font-black tabular-nums tracking-wide mt-1 transition-colors ${
                       isActive ? 'text-white' : 'text-neutral-400'
                     }`}>
                       {dayNum}
@@ -387,7 +387,7 @@ useEffect(() => {
                     
                     {/* Indicatorino minimal a fondo card solo per l'attivo */}
                     {isActive && (
-                      <div className="w-4 h-0.5 bg-pink-500 rounded-full mt-1.5 shadow-[0_0_8px_rgba(236,72,153,1)]"></div>
+                      <div className="w-4 h-0.5 bg-pink-500 rounded-full mt-2 shadow-[0_0_8px_rgba(236,72,153,1)]"></div>
                     )}
                   </button>
                 );
@@ -802,7 +802,7 @@ useEffect(() => {
             </div>
 
             {/* MAIN SWITCHER CONTEST */}
-            <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mb-4 shadow-inner">
+            <div className="flex bg-neutral-900/80 border border-neutral-800 rounded-xl p-1 mb-2 shadow-inner">
               <button
                 onClick={() => setActiveContestTab('3pt')}
                 className={`appearance-none outline-none focus:ring-0 flex-1 py-2.5 text-[15px] font-black uppercase tracking-widest rounded-lg transition-all border ${
@@ -827,7 +827,7 @@ useEffect(() => {
             {activeContestTab === '3pt' && (
               <div className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-300 pb-6">
                 
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x [&::-webkit-scrollbar]:hidden">
+                <div className="flex gap-2 overflow-x-auto pb-2 mt-6 mb-6 snap-x [&::-webkit-scrollbar]:hidden">
                   <button onClick={() => setThreePtTab('qualificazioni')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-6 py-2.5 rounded-full font-black uppercase tracking-widest text-[15px] border transition-all snap-start ${threePtTab === 'qualificazioni' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
                     Qualificazioni
                   </button>
@@ -873,10 +873,10 @@ useEffect(() => {
                 )}
 
                 {threePtTab === 'playoff' && (
-                  <div className="flex flex-col mt-2">
-                    
-                    {/* 🎯 TABS FASI PLAYOFF RITROVATI (Senza Batterie/Quarti) */}
-                    <div className="flex bg-neutral-900/50 border border-neutral-800 rounded-lg p-1 mb-5 shadow-inner">
+  <div className="flex flex-col">
+    
+    {/* 🎯 TABS FASI PLAYOFF RITROVATI (Senza Batterie/Quarti) */}
+    <div className="flex bg-neutral-900/50 border border-neutral-800 rounded-lg p-1 mb-6 shadow-inner">
                       {['semifinali', 'finale'].map((fase) => (
                         <button
                           key={fase}
@@ -965,7 +965,7 @@ useEffect(() => {
                 ========================================= */}
             {activeContestTab === 'dunk' && (
               <div className="flex flex-col animate-in fade-in slide-in-from-right-4 duration-300 pb-6">
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x [&::-webkit-scrollbar]:hidden">
+                <div className="flex gap-2 overflow-x-auto pb-2 mt-6 mb-6 snap-x [&::-webkit-scrollbar]:hidden">
                   <button onClick={() => setDunkTab('qualificazioni')} className={`outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] shrink-0 px-6 py-2.5 rounded-full font-black uppercase tracking-widest text-[15px] border transition-all snap-start ${dunkTab === 'qualificazioni' ? 'bg-pink-500 text-white border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-white'}`}>
                     Qualificazioni
                   </button>
