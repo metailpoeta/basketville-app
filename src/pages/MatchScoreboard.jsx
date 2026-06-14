@@ -25,9 +25,11 @@ export default function MatchScoreboard() {
   const timerDisplayRef = useRef(null);
   // STATO PER LA CONFERMA DEL TEMPO
   const [isConfirmingTime, setIsConfirmingTime] = useState(false);
+  // 🎯 NUOVO: STATO PER IL RITARDO DELLA SIRENA IN SECONDI
+  const [buzzerDelay, setBuzzerDelay] = useState(0);
 
   // ==========================================
-  // LOGICA DOPPIO-STEP TEMPO
+  // LOGICA DOPPIO-STEP TEMPO (AGGIORNATA PER LED WALL)
   // ==========================================
   const handleSetTimeConfirm = () => {
     const m = parseInt(inputMin) || 0;
@@ -42,7 +44,7 @@ export default function MatchScoreboard() {
     if (timerDisplayRef.current) {
       timerDisplayRef.current.innerText = formatTime(newTime);
       if (newTime > 60) {
-        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
+        timerDisplayRef.current.className = "text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-[4px] text-white";
       }
     }
     // Resetta lo stato di conferma
@@ -60,7 +62,7 @@ export default function MatchScoreboard() {
   };
 
   // ==========================================
-  // MOTORE CRONOMETRO (ZERO IMPATTO SU RAM/CPU)
+  // MOTORE CRONOMETRO (AGGIORNATO PER LED WALL)
   // ==========================================
   useEffect(() => {
     let animationFrameId;
@@ -73,14 +75,25 @@ export default function MatchScoreboard() {
         const remainingMs = endTime - Date.now();
 
         if (remainingMs <= 0) {
-          if (buzzerRef.current) {
-            buzzerRef.current.currentTime = 0;
-            buzzerRef.current.play().catch(e => console.log(e));
-          }
           setTime(0);
           timeRef.current = 0;
           setIsRunning(false);
           if (timerDisplayRef.current) timerDisplayRef.current.innerText = "0.0";
+
+          // Esegue la sirena tenendo conto del ritardo (convertito in millisecondi)
+          if (buzzerDelay > 0) {
+            setTimeout(() => {
+              if (buzzerRef.current) {
+                buzzerRef.current.currentTime = 0;
+                buzzerRef.current.play().catch(e => console.log(e));
+              }
+            }, buzzerDelay); // <-- LEGGE DIRETTAMENTE I MS (es. 800)
+          } else {
+            if (buzzerRef.current) {
+              buzzerRef.current.currentTime = 0;
+              buzzerRef.current.play().catch(e => console.log(e));
+            }
+          }
         } else {
           timeRef.current = remainingMs / 1000;
           
@@ -88,11 +101,11 @@ export default function MatchScoreboard() {
             timerDisplayRef.current.innerText = formatTime(timeRef.current);
             
             if (timeRef.current <= 10) {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-red-500";
+              timerDisplayRef.current.className = "text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-[4px] text-red-500";
             } else if (timeRef.current <= 60) {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-yellow-400";
+              timerDisplayRef.current.className = "text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-[4px] text-yellow-400";
             } else {
-              timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
+              timerDisplayRef.current.className = "text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-[4px] text-white";
             }
           }
           animationFrameId = requestAnimationFrame(updateTimer);
@@ -137,7 +150,7 @@ export default function MatchScoreboard() {
       timerDisplayRef.current.innerText = formatTime(newTime);
       // Ripristina il colore bianco se imposti un tempo > 60s
       if (newTime > 60) {
-        timerDisplayRef.current.className = "text-[160px] font-black tabular-nums leading-none tracking-[4px] text-white";
+        timerDisplayRef.current.className = "text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-[4px] text-white";
       }
     }
   };
@@ -192,52 +205,50 @@ export default function MatchScoreboard() {
         className="flex-none bg-neutral-900 relative flex flex-col justify-between" 
         style={{ width: '1280px', height: '720px' }}
       >
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+        {/* Aumentata leggermente l'opacità del pattern per non farlo sparire sui LED Wall */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-15 pointer-events-none mix-blend-overlay"></div>
 
-        {/* HEADER: LOGO BASKETVILLE OFFLINE */}
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-0 pointer-events-none">
+        {/* HEADER: LOGO BASKETVILLE OFFLINE (Scalato h-24 -> h-32) */}
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-0 pointer-events-none drop-shadow-lg">
           <img 
             src="/Basketville_logo.svg" 
             alt="Basketville" 
-            className="h-24 w-auto" 
+            className="h-32 w-auto" 
           />
         </div>
 
         {/* CORPO CENTRALE */}
-        <div className="flex-1 flex items-center justify-center w-full px-12 z-10 gap-8 mt-12">
+        <div className="flex-1 flex items-center justify-center w-full px-10 z-10 gap-12 mt-16">
           
           {/* COLONNA TEAM A */}
-          <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white truncate w-full mb-3 tracking-wider">
+          <div className="flex flex-col items-center w-[400px]">
+            <h2 className="text-[75px] drop-shadow-md leading-tight font-black uppercase text-center text-white truncate w-full mb-4 tracking-wider">
             {teamA.name}
             </h2>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-3xl w-full h-[260px] flex items-center justify-center relative overflow-hidden">
-              <span className="text-[180px] font-black text-white leading-none">
+            <div className="bg-neutral-900 border-4 border-neutral-600 rounded-[2rem] w-full h-[300px] flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <span className="text-[220px] font-black tracking-wider text-white leading-none drop-shadow-lg translate-x-1 translate-y-1">
                 {teamA.score}
               </span>
             </div>
           </div>
 
-          {/* CRONOMETRO CENTRALE */}
-          <div className="w-[420px] flex justify-center items-center mt-16">
-            {/* CRONOMETRO CENTRALE SUPER-LEGGERO */}
-          <div className="w-[420px] flex justify-center items-center mt-16">
+          {/* CRONOMETRO CENTRALE SUPER-LEGGERO */}
+          <div className="w-[480px] flex justify-center items-center mt-20">
             <span 
               ref={timerDisplayRef}
-              className={`text-[160px] font-black tabular-nums leading-none tracking-[4px] ${time <= 60 ? (time <= 10 ? 'text-red-500' : 'text-yellow-400') : 'text-white'}`}
+              className={`text-[200px] drop-shadow-xl font-black tabular-nums leading-none tracking-wider ${time <= 60 ? (time <= 10 ? 'text-red-500' : 'text-yellow-400') : 'text-white'}`}
             >
               {formatTime(time)}
             </span>
           </div>
-          </div>
 
           {/* COLONNA TEAM B */}
-          <div className="flex flex-col items-center w-[340px]">
-            <h2 className="text-[60px] leading-tight font-black uppercase text-center text-white truncate w-full mb-3 tracking-wider">
+          <div className="flex flex-col items-center w-[400px]">
+            <h2 className="text-[75px] drop-shadow-md leading-tight font-black uppercase text-center text-white truncate w-full mb-4 tracking-wider">
                 {teamB.name}
             </h2>
-            <div className="bg-neutral-800 border border-neutral-700 rounded-3xl w-full h-[260px] flex items-center justify-center relative overflow-hidden">
-              <span className="text-[180px] font-black text-white leading-none">
+            <div className="bg-neutral-900 border-4 border-neutral-600 rounded-[2rem] w-full h-[300px] flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <span className="text-[220px] font-black tracking-wider text-white leading-none drop-shadow-lg translate-x-1 translate-y-1">
                 {teamB.score}
               </span>
             </div>
@@ -246,22 +257,22 @@ export default function MatchScoreboard() {
         </div>
 
         {/* BOTTOM BAR (FALLI, PERIODO, TIMEOUT) */}
-        <div className="h-[200px] w-full flex items-end justify-center pb-12 px-20 z-10">
+        <div className="h-[240px] w-full flex items-end justify-center pb-10 px-12 z-10">
           <div className="w-full flex justify-between items-end">
             
             {/* STATS TEAM A */}
-            <div className="flex gap-8">
+            <div className="flex gap-10">
               <div className="flex flex-col items-center">
-                <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Fouls</span>
-                <div className="bg-black/60 border border-neutral-800 rounded-2xl w-24 h-24 flex items-center justify-center">
-                  <span className={`text-6xl font-black ${teamA.fouls >= 5 ? 'text-red-500' : 'text-yellow-500'}`}>{teamA.fouls}</span>
+                <span className="text-3xl font-black text-white drop-shadow-md uppercase tracking-wider mb-3">Fouls</span>
+                <div className="bg-black border-4 border-neutral-600 shadow-xl rounded-2xl w-32 h-32 flex items-center justify-center">
+                  <span className={`text-[80px] translate-y-1 font-black ${teamA.fouls >= 5 ? 'text-red-500' : 'text-yellow-500'}`}>{teamA.fouls}</span>
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Timeouts</span>
-                <div className="flex gap-2 mt-4">
+                <span className="text-3xl font-black text-white drop-shadow-md uppercase tracking-wider mb-3">Timeouts</span>
+                <div className="flex gap-3 mt-6">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamA.timeouts ? 'bg-pink-500 border-pink-500' : 'border-neutral-700 bg-transparent'}`}></div>
+                    <div key={i} className={`w-10 h-10 rounded-full border-4 shadow-sm ${i < teamA.timeouts ? 'bg-pink-500 border-pink-500' : 'border-white/30 bg-black/50'}`}></div>
                   ))}
                 </div>
               </div>
@@ -269,26 +280,26 @@ export default function MatchScoreboard() {
 
             {/* PERIODO CENTRALE */}
             <div className="flex flex-col items-center px-12 mb-4">
-              <span className="text-2xl font-bold text-neutral-400 uppercase tracking-wider mb-2">Period</span>
-              <span className="text-8xl font-black text-white">
+              <span className="text-4xl font-black text-white drop-shadow-md uppercase tracking-wider mb-1 translate-y-[1px]">Period</span>
+              <span className="text-[120px] font-black text-white drop-shadow-xl leading-none translate-y-[14px]">
                 {period}
               </span>
             </div>
 
             {/* STATS TEAM B */}
-            <div className="flex gap-8">
+            <div className="flex gap-10">
               <div className="flex flex-col items-center">
-                <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Timeouts</span>
-                <div className="flex gap-2 mt-4">
+                <span className="text-3xl font-black text-white drop-shadow-md uppercase tracking-wider mb-3">Timeouts</span>
+                <div className="flex gap-3 mt-6">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className={`w-6 h-6 rounded-full border-2 ${i < teamB.timeouts ? 'bg-blue-500 border-blue-500' : 'border-neutral-700 bg-transparent'}`}></div>
+                    <div key={i} className={`w-10 h-10 rounded-full border-4 shadow-sm ${i < teamB.timeouts ? 'bg-blue-500 border-blue-500' : 'border-white/30 bg-black/50'}`}></div>
                   ))}
                 </div>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xl font-bold text-neutral-500 uppercase tracking-wider mb-2">Fouls</span>
-                <div className="bg-black/60 border border-neutral-800 rounded-2xl w-24 h-24 flex items-center justify-center">
-                  <span className={`text-6xl font-black ${teamB.fouls >= 5 ? 'text-red-500' : 'text-yellow-500'}`}>{teamB.fouls}</span>
+                <span className="text-3xl font-black text-white drop-shadow-md uppercase tracking-wider mb-3">Fouls</span>
+                <div className="bg-black border-4 border-neutral-600 shadow-xl rounded-2xl w-32 h-32 flex items-center justify-center">
+                  <span className={`text-[80px] translate-y-1 font-black ${teamB.fouls >= 5 ? 'text-red-500' : 'text-yellow-500'}`}>{teamB.fouls}</span>
                 </div>
               </div>
             </div>
@@ -372,13 +383,27 @@ export default function MatchScoreboard() {
               </div>
             </div>
 
-            {/* PULSANTE GIGANTE PER LA SIRENA MANUALE */}
-            <button 
-              onClick={playBuzzer}
-              className="col-span-3 mt-4 h-24 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-wider text-2xl flex items-center justify-center gap-3 transition-all active:scale-95 border border-red-400/50"
-            >
-              <Volume2 size={32} /> Suona Sirena
-            </button>
+            {/* PULSANTE GIGANTE PER LA SIRENA MANUALE + RITARDO */}
+            <div className="col-span-3 mt-4 flex gap-4">
+              <button 
+                onClick={playBuzzer}
+                className="flex-1 h-24 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-wider text-2xl flex items-center justify-center gap-3 transition-all active:scale-95 border border-red-400/50"
+              >
+                <Volume2 size={32} /> Suona Sirena
+              </button>
+              
+              <div className="w-[180px] bg-neutral-900 border border-neutral-700 rounded-2xl flex flex-col items-center justify-center">
+                <span className="text-[11px] text-white uppercase font-bold tracking-wider mb-2">Ritardo Zero (ms)</span>
+                <input 
+                  type="number" 
+                  step="100"
+                  min="0"
+                  value={buzzerDelay} 
+                  onChange={e => setBuzzerDelay(parseInt(e.target.value) || 0)} 
+                  className="w-28 bg-black text-white text-center h-12 text-2xl rounded-xl font-black outline-none focus:ring-2 focus:ring-red-500" 
+                />
+              </div>
+            </div>
             
           </div>
         </div>

@@ -35,7 +35,7 @@ export default function ContestManager() {
   // --- STATI PER RICERCA E PAGINAZIONE 3-POINT ---
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [tpActiveTab, setTpActiveTab] = useState('Qualificazione'); // NUOVO STATO PER TAB 3-POINT
+  const [tpActiveTab, setTpActiveTab] = useState('Qualificazione'); 
   const ITEMS_PER_PAGE = 8;
 
   // --- STATI PER MODIFICA INLINE 3-POINT ---
@@ -64,8 +64,8 @@ export default function ContestManager() {
   const [winnerPrepared, setWinnerPrepared] = useState(false);
   
   // --- NUOVI STATI TIMER SLAM DUNK ---
-const [sdLiveTimeLeft, setSdLiveTimeLeft] = useState(60.0);
-const [isSdTimerRunning, setIsSdTimerRunning] = useState(false);
+  const [sdLiveTimeLeft, setSdLiveTimeLeft] = useState(60.0);
+  const [isSdTimerRunning, setIsSdTimerRunning] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -90,7 +90,7 @@ const [isSdTimerRunning, setIsSdTimerRunning] = useState(false);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, tpActiveTab]); // Reset pagina anche al cambio tab
+  }, [searchTerm, tpActiveTab]); 
 
   useEffect(() => {
     setSdCurrentPage(1);
@@ -168,21 +168,21 @@ const [isSdTimerRunning, setIsSdTimerRunning] = useState(false);
   }, [isTimerRunning, liveScore]); 
 
   // --- NUOVO EFFECT COUNTDOWN SLAM DUNK ---
-useEffect(() => {
-  let interval = null;
-  if (isSdTimerRunning && sdLiveTimeLeft > 0) {
-    interval = setInterval(() => {
-      setSdLiveTimeLeft(prev => {
-        const next = prev - 0.1;
-        return next <= 0 ? 0 : Number(next.toFixed(1));
-      });
-    }, 100);
-  } else if (sdLiveTimeLeft <= 0 && isSdTimerRunning) {
-    setIsSdTimerRunning(false);
-  }
-  return () => clearInterval(interval);
-}, [isSdTimerRunning, sdLiveTimeLeft]);
-  
+  useEffect(() => {
+    let interval = null;
+    if (isSdTimerRunning && sdLiveTimeLeft > 0) {
+      interval = setInterval(() => {
+        setSdLiveTimeLeft(prev => {
+          const next = prev - 0.1;
+          return next <= 0 ? 0 : Number(next.toFixed(1));
+        });
+      }, 100);
+    } else if (sdLiveTimeLeft <= 0 && isSdTimerRunning) {
+      setIsSdTimerRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [isSdTimerRunning, sdLiveTimeLeft]);
+    
   const handleStartLiveFromRow = (playerItem) => {
     setLivePlayer(playerItem);
     setLiveScore(0);
@@ -220,8 +220,12 @@ useEffect(() => {
     setLivePlayer(null);
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    const isPlayoff = ['Quarti di finale', 'Semifinale', 'Finale'].includes(currentPlayer.round);
-    const nextScreen = isPlayoff ? '3point_bracket' : '3point_leaderboard';
+    let nextScreen = '3point_leaderboard';
+if (currentPlayer.round === 'Semifinale') {
+  nextScreen = '3point_semifinal_leaderboard';
+} else if (currentPlayer.round === 'Finale' || currentPlayer.round === 'Vincitore') {
+  nextScreen = '3point_final_leaderboard';
+}
     const isRecord = isBetterPerformance(oldScore, oldTime, finalScore, finalTimeStr);
 
     await triggerOBS('3point_result', { 
@@ -250,13 +254,8 @@ useEffect(() => {
   };
 
   const handleRoundChange = (e) => {
-    const selectedRound = e.target.value;
-    setRound(selectedRound);
-    if (selectedRound === 'Quarti di finale' || selectedRound === 'Semifinale') {
-      setHeat('Batteria 1');
-    } else {
-      setHeat('');
-    }
+    setRound(e.target.value);
+    setHeat('');
   };
 
   const getWinner = (roundName, heatName = null) => {
@@ -310,17 +309,18 @@ useEffect(() => {
   };
 
   const handleGenResult = (errors) => {
-    setIsGenerating(false);
-    if (errors > 0) alert(`Fatto con ${errors} errori. Controlla la lista.`);
-    else {
-      triggerOBS('3point_bracket'); 
-      alert("🪄 Magia completata! Tabellone aggiornato su OBS.");
-    }
-    loadThreePoint();
-  };
+  setIsGenerating(false);
+  if (errors > 0) alert(`Fatto con ${errors} errori. Controlla la lista.`);
+  else {
+    // Rimosso il triggerOBS: adesso i dati vengono calcolati in background senza toccare OBS
+    alert("🪄 Generazione completata con successo!");
+  }
+  loadThreePoint(); // Aggiorna solo la lista della regia del backend
+};
 
-  const generateQuarters = async () => {
-    if (!window.confirm("Generare i Quarti di finale prendendo i Top 12 dalle Qualificazioni? I punteggi ripartiranno da 0.")) return;
+  // --- NUOVA LOGICA: GENERA SEMIFINALE (TOP 10 TURNO UNICO) ---
+  const generateSemifinals = async () => {
+    if (!window.confirm("Generare le Semifinali prendendo i Top 10 dalle Qualificazioni? I punteggi ripartiranno da 0.")) return;
     setIsGenerating(true);
 
     const qualies = threePointList
@@ -331,81 +331,56 @@ useEffect(() => {
         const timeB = parseFloat(b.time) || 999;
         return timeA - timeB;
       })
-      .slice(0, 12);
+      .slice(0, 10);
 
-    if (qualies.length < 12 && !window.confirm(`Hai solo ${qualies.length} qualificati. Continuare?`)) {
+    if (qualies.length < 10 && !window.confirm(`Hai solo ${qualies.length} qualificati dei 10 richiesti. Continuare?`)) {
       setIsGenerating(false); 
       return;
     }
 
-    const matchups = [
-      { heat: 'Batteria 1', p1: qualies[0], p2: qualies[11] },
-      { heat: 'Batteria 2', p1: qualies[5], p2: qualies[6] },
-      { heat: 'Batteria 3', p1: qualies[2], p2: qualies[9] },
-      { heat: 'Batteria 4', p1: qualies[3], p2: qualies[8] },
-      { heat: 'Batteria 5', p1: qualies[4], p2: qualies[7] },
-      { heat: 'Batteria 6', p1: qualies[1], p2: qualies[10] },
-    ];
-
-    const playersToProcess = [];
-    const heatMap = new Map();
-
-    matchups.forEach(m => {
-      if (m.p1) { playersToProcess.push(m.p1); heatMap.set(m.p1.player_name, m.heat); }
-      if (m.p2) { playersToProcess.push(m.p2); heatMap.set(m.p2.player_name, m.heat); }
-    });
-
-    const errors = await upsertPlayersToRound(playersToProcess, 'Quarti di finale', (p) => heatMap.get(p.player_name), false);
+    const errors = await upsertPlayersToRound(qualies, 'Semifinale', () => null, false);
     handleGenResult(errors);
   };
 
-  const generateSemifinals = async () => {
-    if (!window.confirm("Passare i 6 vincitori dei Quarti alle Semifinali? I punteggi ripartiranno da 0.")) return;
-    setIsGenerating(true);
-
-    const wQ1 = getWinner('Quarti di finale', 'Batteria 1');
-    const wQ2 = getWinner('Quarti di finale', 'Batteria 2');
-    const wQ3 = getWinner('Quarti di finale', 'Batteria 3');
-    const wQ4 = getWinner('Quarti di finale', 'Batteria 4');
-    const wQ5 = getWinner('Quarti di finale', 'Batteria 5');
-    const wQ6 = getWinner('Quarti di finale', 'Batteria 6');
-
-    const playersToProcess = [wQ1, wQ2, wQ3, wQ4, wQ5, wQ6].filter(Boolean);
-
-    const getHeat = (p) => {
-      if (p === wQ1 || p === wQ2) return 'Batteria 1';
-      if (p === wQ3 || p === wQ4) return 'Batteria 2';
-      if (p === wQ5 || p === wQ6) return 'Batteria 3';
-      return null;
-    };
-
-    const errors = await upsertPlayersToRound(playersToProcess, 'Semifinale', getHeat, false);
-    handleGenResult(errors);
-  };
-
+  // --- NUOVA LOGICA: GENERA FINALE (TOP 3 DA SEMIFINALE TURNO UNICO) ---
   const generateFinal = async () => {
-    if (!window.confirm("Passare i 3 vincitori delle Semifinali alla Finale a tre? I punteggi ripartiranno da 0.")) return;
+    if (!window.confirm("Passare i Top 3 delle Semifinali alla Finale? I punteggi ripartiranno da 0.")) return;
     setIsGenerating(true);
 
-    const wS1 = getWinner('Semifinale', 'Batteria 1');
-    const wS2 = getWinner('Semifinale', 'Batteria 2');
-    const wS3 = getWinner('Semifinale', 'Batteria 3');
+    // 🎯 MODIFICA PUNTUALE: Sbianca e cancella i vecchi finalisti prima di inserire i nuovi 3
+    await supabase
+      .from('three_point')
+      .delete()
+      .eq('edition_id', activeEdition.id)
+      .eq('round', 'Finale');
 
-    const playersToProcess = [wS1, wS2, wS3].filter(Boolean);
-    const errors = await upsertPlayersToRound(playersToProcess, 'Finale', () => null, false);
+    const semifinalists = threePointList
+      .filter(p => p.round === 'Semifinale')
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const timeA = parseFloat(a.time) || 999;
+        const timeB = parseFloat(b.time) || 999;
+        return timeA - timeB;
+      })
+      .slice(0, 3);
+
+    if (semifinalists.length < 3 && !window.confirm(`Hai solo ${semifinalists.length} finalisti dei 3 richiesti. Continuare?`)) {
+      setIsGenerating(false); 
+      return;
+    }
+
+    const errors = await upsertPlayersToRound(semifinalists, 'Finale', () => null, false);
     handleGenResult(errors);
   };
 
 const generateWinner = async () => {
-    // === PRIMO CLICK: SPEGNE LO SCHERMO ===
     if (!winnerPrepared) {
-      await triggerOBS('none', {}); // Manda OBS a schermo nero/vuoto per nascondere il tabellone
-      setWinnerPrepared(true);     // Prepara il secondo click di attivazione
+      await triggerOBS('none', {}); 
+      setWinnerPrepared(true);     
       return;
     }
 
-    // === SECONDO CLICK: SALVA I DATI E LANCIA LA GRAFICA ORO ===
-    if (!window.confirm("Confermi l'Incoronazione del Vincitore Assoluto? Verranno salvati i dati e lanciata la grafica oro.")) {
+    if (!window.confirm("Confermi l'Incoronazione del Vincitore Assoluto? Verranno salvati i dati e lanciata la classifica finale con la riga oro.")) {
       return;
     }
     
@@ -419,23 +394,22 @@ const generateWinner = async () => {
       return;
     }
 
-    // Salva sul database (Upsert)
     const errors = await upsertPlayersToRound([winner], 'Vincitore', () => null, true);
     setIsGenerating(false);
-    setWinnerPrepared(false); // Resetta lo stato di sicurezza
+    setWinnerPrepared(false); 
 
     if (errors > 0) {
-      alert(`Generazione completata con ${errors} errori. Controlla la lista.`);
+      alert(`Generazione completata con ${errors} errors. Controlla la lista.`);
     } else {
-      // Invia la splendida grafica oro personalizzata
+      // 🎯 ADATTATO: Manda in onda la leaderboard finale dove si accenderà la riga oro
       triggerOBS('3point_winner', { 
-        id: winner.id, 
-        player_name: winner.player_name, 
-        score: winner.score, 
-        time: winner.time, 
-        round: 'Vincitore' 
-      });
-      alert("👑 Campione decretato! Grafica Oro mandata in onda su OBS.");
+  id: winner.id, 
+  player_name: winner.player_name, 
+  score: winner.score, 
+  time: winner.time, 
+  round: 'Vincitore' 
+});
+      alert("👑 Campione decretato! Classifica Finale mandata in onda con il Vincitore d'Oro.");
     }
     
     loadThreePoint();
@@ -475,7 +449,7 @@ const generateWinner = async () => {
         edition_id: activeEdition.id,
         player_name: tName,
         round: round,
-        heat: heat || null,
+        heat: null,
         score: newScore,
         time: newTime,
         updated_at: new Date().toISOString()
@@ -626,53 +600,49 @@ const generateWinner = async () => {
   };
 
   const startSlamDunkLive = (player, dunkNum) => {
-  setSdLivePlayer(player);
-  setSdDunkNum(dunkNum);
-  setSdVotes(['', '', '', '', '']);
-  
-  // ⏱️ Reset parametri tempo ad ogni avvio di un giocatore
-  setSdLiveTimeLeft(60.0);
-  setIsSdTimerRunning(false);
-  
-  const players = slamDunkList.filter(p => p.round === player.round);
-  triggerOBS('slamdunk', { 
-    round: player.round, 
-    players, 
-    winner: null,
-    command: 'idle', // Inizializza la grafica overlay a 60s ferma
-    time: '60.0',
-    liveDunker: { playerName: player.player_name, dunkNumber: dunkNum, round: player.round }
-  });
-};
+    setSdLivePlayer(player);
+    setSdDunkNum(dunkNum);
+    setSdVotes(['', '', '', '', '']);
+    setSdLiveTimeLeft(60.0);
+    setIsSdTimerRunning(false);
+    
+    const players = slamDunkList.filter(p => p.round === player.round);
+    triggerOBS('slamdunk', { 
+      round: player.round, 
+      players, 
+      winner: null,
+      command: 'idle', 
+      time: '60.0',
+      liveDunker: { playerName: player.player_name, dunkNumber: dunkNum, round: player.round }
+    });
+  };
 
-// Invia l'input a OBS solo quando cambia lo stato di marcia/pausa
-useEffect(() => {
-  if (!sdLivePlayer) return;
-  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
-  triggerOBS('slamdunk', {
-    command: isSdTimerRunning ? 'start' : 'pause',
-    time: sdLiveTimeLeft.toFixed(1),
-    round: sdLivePlayer.round,
-    players,
-    winner: null,
-    liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
-  });
-}, [isSdTimerRunning]);
+  useEffect(() => {
+    if (!sdLivePlayer) return;
+    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+    triggerOBS('slamdunk', {
+      command: isSdTimerRunning ? 'start' : 'pause',
+      time: sdLiveTimeLeft.toFixed(1),
+      round: sdLivePlayer.round,
+      players,
+      winner: null,
+      liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
+    });
+  }, [isSdTimerRunning]);
 
-// Funzione manuale per resettare il tempo a 60.0s stabili
-const handleResetSdTimer = () => {
-  setIsSdTimerRunning(false);
-  setSdLiveTimeLeft(60.0);
-  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
-  triggerOBS('slamdunk', {
-    command: 'idle',
-    time: '60.0',
-    round: sdLivePlayer.round,
-    players,
-    winner: null,
-    liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
-  });
-};
+  const handleResetSdTimer = () => {
+    setIsSdTimerRunning(false);
+    setSdLiveTimeLeft(60.0);
+    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+    triggerOBS('slamdunk', {
+      command: 'idle',
+      time: '60.0',
+      round: sdLivePlayer.round,
+      players,
+      winner: null,
+      liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round }
+    });
+  };
 
   const handleDunkNumChange = (num) => {
     setSdDunkNum(num);
@@ -692,75 +662,60 @@ const handleResetSdTimer = () => {
   };
 
   const handleProcessSlamDunkVotes = async () => {
-  const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
-  const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
-  const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
+    const parsedVotes = sdVotes.map(v => parseInt(v) || 0);
+    const total = parsedVotes.reduce((acc, curr) => acc + curr, 0);
+    const fieldToUpdate = sdDunkNum === 1 ? 'dunk_1' : 'dunk_2';
 
-  // 1. Spegniamo SUBITO il timer. In questo modo l'effetto automatico di pausa
-  //    si attiva e si sfoga immediatamente, prima che noi mandiamo i voti.
-  setIsSdTimerRunning(false);
-
-  const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
-  
-  // 2. Avvolgiamo l'invio dei voti e il salvataggio in un micro-timeout (50ms).
-  //    Questo garantisce al 100% che questo pacchetto sia l'ultimo ad arrivare a OBS,
-  //    sovrascrivendo qualsiasi comando di pausa fantasma.
-  setTimeout(async () => {
-    triggerOBS('slamdunk', {
-      round: sdLivePlayer.round,
-      players: players,
-      winner: null,
-      liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round },
-      activeVote: {
-        playerName: sdLivePlayer.player_name,
-        dunkNumber: sdDunkNum,
-        votes: parsedVotes,
-        total: total
-      }
-    });
-
-    // Salviamo sul database
-    await supabase.from('slam_dunk').update({ 
-      [fieldToUpdate]: total,
-      updated_at: new Date().toISOString()
-    }).eq('id', sdLivePlayer.id);
-
-    loadSlamDunk();
-  }, 50);
-
-  // 3. Questo timer da 8 secondi rimane invariato: gestisce il ritorno alla griglia generale
-  setTimeout(async () => {
-    const { data } = await supabase
-      .from('slam_dunk')
-      .select('*')
-      .eq('edition_id', activeEdition.id)
-      .order('id', { ascending: true }); 
-      
-    if (data) {
-      setSlamDunkList(data);
-      const updatedPlayers = data.filter(p => p.round === sdLivePlayer.round);
-      
+    setIsSdTimerRunning(false);
+    const players = slamDunkList.filter(p => p.round === sdLivePlayer.round);
+    
+    setTimeout(async () => {
       triggerOBS('slamdunk', {
         round: sdLivePlayer.round,
-        players: updatedPlayers,
+        players: players,
         winner: null,
-        lastUpdatedPlayer: sdLivePlayer.player_name, 
-        lastUpdatedDunk: sdDunkNum 
+        liveDunker: { playerName: sdLivePlayer.player_name, dunkNumber: sdDunkNum, round: sdLivePlayer.round },
+        activeVote: {
+          playerName: sdLivePlayer.player_name,
+          cyberDunkNumber: sdDunkNum,
+          votes: parsedVotes,
+          total: total
+        }
       });
-    }
-    
-    setSdLivePlayer(null);
-  }, 8000);
-};
 
+      await supabase.from('slam_dunk').update({ 
+        [fieldToUpdate]: total,
+        updated_at: new Date().toISOString()
+      }).eq('id', sdLivePlayer.id);
 
-  const getHeatOptions = () => {
-    if (round === 'Quarti di finale') return [1, 2, 3, 4, 5, 6];
-    if (round === 'Semifinale') return [1, 2, 3];
-    return [];
+      loadSlamDunk();
+    }, 50);
+
+    setTimeout(async () => {
+      const { data } = await supabase
+        .from('slam_dunk')
+        .select('*')
+        .eq('edition_id', activeEdition.id)
+        .order('id', { ascending: true }); 
+        
+      if (data) {
+        setSlamDunkList(data);
+        const updatedPlayers = data.filter(p => p.round === sdLivePlayer.round);
+        
+        triggerOBS('slamdunk', {
+          round: sdLivePlayer.round,
+          players: updatedPlayers,
+          winner: null,
+          lastUpdatedPlayer: sdLivePlayer.player_name, 
+          lastUpdatedDunk: sdDunkNum 
+        });
+      }
+      
+      setSdLivePlayer(null);
+    }, 8000);
   };
 
-  // --- FILTRI AGGIORNATI PER I TAB DINAMICI 3-POINT ---
+  // --- FILTRI AGGIORNATI PER I TAB DINAMICI 3-POINT (SENZA QUARTI) ---
   const filteredThreePointByTab = threePointList.filter(item => item.round === tpActiveTab);
   const filteredThreePoint = filteredThreePointByTab.filter(item => 
     item.player_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -800,8 +755,6 @@ const handleResetSdTimer = () => {
       </div>
     );
   }
-
-  const showHeats = round === 'Quarti di finale' || round === 'Semifinale';
 
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in pb-20 space-y-8">
@@ -853,52 +806,53 @@ const handleResetSdTimer = () => {
         {activeSection === 'threepoint' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             
-            {/* SEZIONE AUTOMAZIONI PLAYOFF */}
+            {/* SEZIONE AUTOMAZIONI PLAYOFF (Turni Unici) */}
             <div className="bg-gradient-to-r from-neutral-50 to-neutral-100/50 p-5 rounded-2xl border border-neutral-200">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2">
                   <Wand2 size={18} className="text-purple-500"/>
                   <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-700">
-                    Automazioni Tabellone
+                    Automazioni & Regia Schermi
                   </h3>
                 </div>
-                <div className="flex gap-2">
+                
+                {/* 🎯 NUOVI PULSANTI REGIA: Rimossa la bracket, inseriti i 3 comandi di Classifica */}
+                <div className="flex flex-wrap gap-2">
                   <button 
                     onClick={() => triggerOBS('3point_leaderboard')} 
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white text-neutral-600 rounded-md border border-neutral-200 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-50 transition-colors shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-neutral-600 rounded-md border border-neutral-200 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-50 transition-colors shadow-sm"
                   >
-                    <ListOrdered size={14} /> Classifica
+                    <ListOrdered size={14} /> Classifica Qualifiche
                   </button>
                   <button 
-                    onClick={() => triggerOBS('3point_bracket')} 
-                    className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors shadow-sm"
+                    onClick={() => triggerOBS('3point_semifinal_leaderboard')} 
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-neutral-600 rounded-md border border-neutral-200 text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-50 transition-colors shadow-sm"
                   >
-                    <Trophy size={14} /> Tabellone
+                    <ListOrdered size={14} /> Classifica Semifinale
+                  </button>
+                  <button 
+                    onClick={() => triggerOBS('3point_final_leaderboard')} 
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-neutral-900 text-white rounded-md text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors shadow-sm"
+                  >
+                    <Trophy size={14} /> Classifica Finale (Top 3)
                   </button>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button 
-                  onClick={generateQuarters} 
-                  disabled={isGenerating} 
-                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-purple-300 hover:text-purple-600 transition-all shadow-sm text-center disabled:opacity-50"
-                >
-                  1. Genera Quarti
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button 
                   onClick={generateSemifinals} 
                   disabled={isGenerating} 
                   className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-purple-300 hover:text-purple-600 transition-all shadow-sm text-center disabled:opacity-50"
                 >
-                  2. Genera Semifinali
+                  1. Genera Semifinale (Top 10)
                 </button>
                 <button 
                   onClick={generateFinal} 
                   disabled={isGenerating} 
                   className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-purple-300 hover:text-purple-600 transition-all shadow-sm text-center disabled:opacity-50"
                 >
-                  3. Genera Finale
+                  2. Genera Finale (Top 3)
                 </button>
                 <button 
                   onClick={generateWinner} 
@@ -910,15 +864,13 @@ const handleResetSdTimer = () => {
                   }`}
                 >
                   <Crown size={14} /> 
-                  {winnerPrepared ? "4. Conferma Vincitore Oro" : "4. Decreta Vincitore (Spegni Schermo)"}
+                  {winnerPrepared ? "3. Incorona Vincitore Oro" : "3. Decreta Vincitore (Spegni Schermo)"}
                 </button>
               </div>
             </div>
 
             {livePlayer ? (
-              // ========================================================
-              // CONSOLE REGIA LIVE (ORA AL DECIMO DI SECONDO)
-              // ========================================================
+              /* CONSOLE REGIA LIVE */
               <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-10 text-white flex flex-col items-center relative shadow-2xl animate-in zoom-in-95">
                 <div className="absolute top-0 w-full h-1.5 bg-pink-500 animate-pulse rounded-t-3xl"></div>
                 <button onClick={handleCancelLiveMode} className="absolute top-4 right-4 text-neutral-500 hover:text-white bg-neutral-900 p-2 rounded-lg transition-colors"><X size={20}/></button>
@@ -929,10 +881,9 @@ const handleResetSdTimer = () => {
                 </div>
 
                 <h2 className="text-5xl font-black uppercase tracking-tight text-white mb-1">{livePlayer.player_name}</h2>
-                <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mb-10">{livePlayer.round} {livePlayer.heat ? `| ${livePlayer.heat}` : ''}</p>
+                <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mb-10">{livePlayer.round}</p>
                 
                 <div className="flex flex-col md:flex-row gap-12 w-full justify-center items-center mb-10 max-w-2xl">
-                  {/* CRONOMETRO CON DECIMI */}
                   <div className="flex flex-col items-center bg-white/5 p-6 rounded-2xl border border-neutral-800 min-w-[200px]">
                      <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-2"><Timer size={14}/> Cronometro</span>
                      <span className={`text-7xl font-black tabular-nums ${liveTimeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
@@ -940,7 +891,6 @@ const handleResetSdTimer = () => {
                      </span>
                   </div>
 
-                  {/* PUNTEGGI */}
                   <div className="flex flex-col items-center bg-white/5 p-6 rounded-2xl border border-neutral-800 flex-1 w-full">
                      <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">Incremento Canestri</span>
                      <div className="flex items-center justify-center gap-6 w-full">
@@ -951,7 +901,6 @@ const handleResetSdTimer = () => {
                   </div>
                 </div>
 
-                {/* PULSANTIERA TELECOMANDO */}
                 <div className="flex gap-4 w-full max-w-md">
                    {!isTimerRunning && liveTimeLeft > 0 ? (
                       <button type="button" onClick={() => setIsTimerRunning(true)} className="flex-1 bg-green-500 hover:bg-green-400 text-neutral-950 py-3.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(34,197,94,0.2)]">
@@ -969,7 +918,7 @@ const handleResetSdTimer = () => {
               </div>
             ) : (
               <>
-                {/* Form Inserimento Manuale */}
+                {/* Form Inserimento Manuale (Aggiornato senza Quarti) */}
                 <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
                   <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
                     <h3 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
@@ -978,7 +927,6 @@ const handleResetSdTimer = () => {
                   </div>
                   
                   <form onSubmit={handleAddThreePoint} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                         Nome Partecipante
@@ -992,7 +940,7 @@ const handleResetSdTimer = () => {
                       />
                     </div>
                     
-                    <div className={`space-y-1 ${!showHeats ? 'md:col-span-4' : 'md:col-span-2'}`}>
+                    <div className="space-y-1 md:col-span-4">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                         Fase
                       </label>
@@ -1003,7 +951,6 @@ const handleResetSdTimer = () => {
                           onChange={handleRoundChange}
                         >
                           <option value="Qualificazione">Qualificazione</option>
-                          <option value="Quarti di finale">Quarti di finale</option>
                           <option value="Semifinale">Semifinale</option>
                           <option value="Finale">Finale</option>
                           <option value="Vincitore">👑 Vincitore Assoluto</option>
@@ -1011,28 +958,6 @@ const handleResetSdTimer = () => {
                         <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                       </div>
                     </div>
-                    
-                    {showHeats && (
-                      <div className="space-y-1 md:col-span-2 animate-in fade-in">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                          Batteria
-                        </label>
-                        <div className="relative">
-                          <select 
-                            className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 appearance-none outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                            value={heat} 
-                            onChange={e => setHeat(e.target.value)}
-                          >
-                            {getHeatOptions().map(num => (
-                              <option key={num} value={`Batteria ${num}`}>
-                                Batteria {num}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                        </div>
-                      </div>
-                    )}
 
                     <div className="space-y-1 md:col-span-2">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
@@ -1087,9 +1012,9 @@ const handleResetSdTimer = () => {
                     </div>
                   </div>
 
-                  {/* TAB DINAMICI PER ROUND (3-POINT) */}
+                  {/* TAB ROUND AGGIORNATI (SENZA QUARTI) */}
                   <div className="flex gap-2 mb-6 border-b border-neutral-100 pb-4 overflow-x-auto">
-                    {['Qualificazione', 'Quarti di finale', 'Semifinale', 'Finale', 'Vincitore'].map(tab => (
+                    {['Qualificazione', 'Semifinale', 'Finale', 'Vincitore'].map(tab => (
                       <button 
                         key={tab}
                         onClick={() => { setTpActiveTab(tab); setCurrentPage(1); }}
@@ -1120,17 +1045,15 @@ const handleResetSdTimer = () => {
                             {item.player_name}
                           </span>
                           <span className="text-xs font-medium text-neutral-500 mt-0.5">
-                            {item.round} {item.heat && <span className="text-pink-500 mx-1">•</span>} {item.heat}
+                            {item.round}
                           </span>
                         </div>
 
                         {/* MODALITÀ MODIFICA (Inline Edit) */}
                         {editingId === item.id ? (
-                          <div className="flex items-center gap-3 animate-in fade-in bg-pink-50/50 p-2 rounded-lg border border-pink-100">
+                          <div className="flex items-center gap-3 bg-pink-50/50 p-2 rounded-lg border border-pink-100">
                             <div className="flex flex-col gap-1 w-20">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                                Score
-                              </label>
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">Score</label>
                               <input 
                                 type="number" 
                                 className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
@@ -1139,9 +1062,7 @@ const handleResetSdTimer = () => {
                               />
                             </div>
                             <div className="flex flex-col gap-1 w-20">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                                Time
-                              </label>
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">Time</label>
                               <input 
                                 type="text" 
                                 className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
@@ -1150,18 +1071,8 @@ const handleResetSdTimer = () => {
                               />
                             </div>
                             <div className="flex gap-1 ml-2 mt-5">
-                              <button 
-                                onClick={() => saveEditing(item.id)} 
-                                className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"
-                              >
-                                <Check size={16}/>
-                              </button>
-                              <button 
-                                onClick={cancelEditing} 
-                                className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"
-                              >
-                                <X size={16}/>
-                              </button>
+                              <button onClick={() => saveEditing(item.id)} className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-500 hover:text-white transition-colors"><Check size={16}/></button>
+                              <button onClick={cancelEditing} className="bg-neutral-100 text-neutral-500 p-2 rounded-lg hover:bg-neutral-200 transition-colors"><X size={16}/></button>
                             </div>
                           </div>
                         ) : (
@@ -1176,7 +1087,6 @@ const handleResetSdTimer = () => {
                               <p className="text-xl font-bold text-neutral-900">{item.score}</p>
                             </div>
                             <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                              
                               <button 
                                 onClick={() => handleStartLiveFromRow(item)} 
                                 className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest animate-pulse"
@@ -1209,21 +1119,8 @@ const handleResetSdTimer = () => {
                                 Chiudi
                               </button>
 
-                              <button 
-                                onClick={() => startEditing(item)} 
-                                className="p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-lg transition-colors" 
-                                title="Modifica Punteggio"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              
-                              <button 
-                                onClick={() => handleDelete('three_point', item.id)} 
-                                className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" 
-                                title="Elimina"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              <button onClick={() => startEditing(item)} className="p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-lg transition-colors" title="Modifica Punteggio"><Edit2 size={16} /></button>
+                              <button onClick={() => handleDelete('three_point', item.id)} className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" title="Elimina"><Trash2 size={16} /></button>
                             </div>
                           </div>
                         )}
@@ -1236,20 +1133,8 @@ const handleResetSdTimer = () => {
                     <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100">
                       <p className="text-xs font-semibold text-neutral-500">Pagina {currentPage} di {totalPages}</p>
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                          disabled={currentPage === 1}
-                          className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button 
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                          disabled={currentPage === totalPages}
-                          className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
+                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"><ChevronLeft size={16} /></button>
+                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 border border-neutral-200 rounded-lg text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 transition-colors"><ChevronRight size={16} /></button>
                       </div>
                     </div>
                   )}
@@ -1273,35 +1158,15 @@ const handleResetSdTimer = () => {
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button 
-                  onClick={() => handleShowSlamDunkScreen('Qualificazione')} 
-                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
-                >
-                  Mostra Qualificazioni
-                </button>
-                <button 
-                  onClick={() => handleShowSlamDunkScreen('Spareggio')} 
-                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
-                >
-                  Mostra Spareggio
-                </button>
-                <button 
-                  onClick={() => handleShowSlamDunkScreen('Finale')} 
-                  className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center"
-                >
-                  Mostra Finale
-                </button>
-                <button 
-                  onClick={handleShowSlamDunkWinner} 
-                  className="flex items-center justify-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs font-bold text-yellow-700 hover:bg-yellow-100 transition-all shadow-sm text-center"
-                >
-                  <Crown size={14} /> Incorona Vincitore
-                </button>
+                <button onClick={() => handleShowSlamDunkScreen('Qualificazione')} className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center">Mostra Qualificazioni</button>
+                <button onClick={() => handleShowSlamDunkScreen('Spareggio')} className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center">Mostra Spareggio</button>
+                <button onClick={() => handleShowSlamDunkScreen('Finale')} className="p-3 bg-white border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 hover:border-pink-300 hover:text-pink-600 transition-all shadow-sm text-center">Mostra Finale</button>
+                <button onClick={handleShowSlamDunkWinner} className="flex items-center justify-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-xs font-bold text-yellow-700 hover:bg-yellow-100 transition-all shadow-sm text-center"><Crown size={14} /> Incorona Vincitore</button>
               </div>
             </div>
 
             {sdLivePlayer ? (
-              // CONSOLE LIVE VOTI SLAM DUNK
+              /* CONSOLE LIVE VOTI SLAM DUNK */
               <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-6 md:p-10 text-white flex flex-col items-center relative shadow-2xl animate-in zoom-in-95">
                 <div className="absolute top-0 w-full h-1.5 bg-pink-500 animate-pulse rounded-t-3xl"></div>
                 <button onClick={closeSlamDunkLive} className="absolute top-4 right-4 text-neutral-500 hover:text-white bg-neutral-900 p-2 rounded-lg transition-colors"><X size={20}/></button>
@@ -1314,39 +1179,36 @@ const handleResetSdTimer = () => {
                 <h2 className="text-5xl font-black uppercase tracking-tight text-white mb-1">{sdLivePlayer.player_name}</h2>
                 <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mb-8">{sdLivePlayer.round}</p>
                 
-                {/* Selezione Schiacciata */}
                 <div className="flex gap-4 mb-8 bg-neutral-900 p-2 rounded-xl">
                   <button onClick={() => handleDunkNumChange(1)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 1 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 1</button>
                   <button onClick={() => handleDunkNumChange(2)} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${sdDunkNum === 2 ? 'bg-pink-500 text-white' : 'text-neutral-500 hover:text-white'}`}>DUNK 2</button>
                 </div>
 
-                {/* ⏱️ TELECOMANDO TIMER LIVE SLAM DUNK */}
-<div className="flex flex-col items-center bg-white/5 p-4 rounded-xl border border-neutral-800 mb-8 w-full max-w-md animate-in fade-in">
-  <div className="flex items-center justify-between w-full mb-3 px-1">
-    <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-      <Timer size={14} className="text-pink-500"/> Scadenza Schiacciata
-    </span>
-    <span className={`text-2xl font-black tracking-wider tabular-nums ${sdLiveTimeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
-      {sdLiveTimeLeft.toFixed(1)}s
-    </span>
-  </div>
-  <div className="flex gap-2 w-full">
-    {!isSdTimerRunning && sdLiveTimeLeft > 0 ? (
-      <button type="button" onClick={() => setIsSdTimerRunning(true)} className="flex-1 bg-green-500 hover:bg-green-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
-        <Play fill="currentColor" size={12}/> Avvia Tempo
-      </button>
-    ) : (
-      <button type="button" onClick={() => setIsSdTimerRunning(false)} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
-        <Pause fill="currentColor" size={12}/> Metti in Pausa
-      </button>
-    )}
-    <button type="button" onClick={handleResetSdTimer} className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
-      <Square fill="currentColor" size={11}/> Reset 60s
-    </button>
-  </div>
-</div>
+                <div className="flex flex-col items-center bg-white/5 p-4 rounded-xl border border-neutral-800 mb-8 w-full max-w-md animate-in fade-in">
+                  <div className="flex items-center justify-between w-full mb-3 px-1">
+                    <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                      <Timer size={14} className="text-pink-500"/> Scadenza Schiacciata
+                    </span>
+                    <span className={`text-2xl font-black tracking-wider tabular-nums ${sdLiveTimeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+                      {sdLiveTimeLeft.toFixed(1)}s
+                    </span>
+                  </div>
+                  <div className="flex gap-2 w-full">
+                    {!isSdTimerRunning && sdLiveTimeLeft > 0 ? (
+                      <button type="button" onClick={() => setIsSdTimerRunning(true)} className="flex-1 bg-green-500 hover:bg-green-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+                        <Play fill="currentColor" size={12}/> Avvia Tempo
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setIsSdTimerRunning(false)} className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-neutral-950 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+                        <Pause fill="currentColor" size={12}/> Metti in Pausa
+                      </button>
+                    )}
+                    <button type="button" onClick={handleResetSdTimer} className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2.5 rounded-lg font-bold uppercase text-[11px] tracking-wider flex items-center justify-center gap-1 transition-all">
+                      <Square fill="currentColor" size={11}/> Reset 60s
+                    </button>
+                  </div>
+                </div>
 
-                {/* I 5 Voti */}
                 <div className="flex gap-4 mb-8 flex-wrap justify-center">
                   {sdVotes.map((v, i) => (
                     <div key={i} className="flex flex-col items-center gap-2">
@@ -1366,7 +1228,6 @@ const handleResetSdTimer = () => {
                   ))}
                 </div>
 
-                {/* Totale Calcolato Automaticamente */}
                 <div className="text-center mb-10">
                   <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Totale</span>
                   <div className="text-7xl font-black text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.4)]">
@@ -1374,7 +1235,6 @@ const handleResetSdTimer = () => {
                   </div>
                 </div>
 
-                {/* TASTO UNICO MAGICO: Manda Voti + Salva + Transizione Automatica */}
                 <div className="flex flex-col w-full max-w-md">
                    <button type="button" onClick={handleProcessSlamDunkVotes} className="w-full bg-pink-600 hover:bg-pink-500 text-white py-4 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(236,72,153,0.3)]">
                      <Send size={16}/> Manda Voti in Diretta e Salva (Auto)
@@ -1394,9 +1254,7 @@ const handleResetSdTimer = () => {
                   
                   <form onSubmit={handleAddSlamDunk} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="md:col-span-4 space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                        Nome Partecipante
-                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Nome Partecipante</label>
                       <input 
                         type="text" 
                         placeholder="Es. Zach LaVine" 
@@ -1407,9 +1265,7 @@ const handleResetSdTimer = () => {
                     </div>
                     
                     <div className="md:col-span-4 space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                        Fase
-                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Fase</label>
                       <div className="relative">
                         <select 
                           className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 appearance-none outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
@@ -1425,68 +1281,49 @@ const handleResetSdTimer = () => {
                     </div>
 
                     <div className="space-y-1 md:col-span-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                        Dunk 1 (Max 50)
-                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Dunk 1 (Max 50)</label>
                       <input 
-                        type="number" 
-                        min="0" 
-                        max="50" 
-                        placeholder="Es. 45" 
+                        type="number" min="0" max="50" placeholder="Es. 45" 
                         className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                        value={dunk1} 
-                        onChange={e => setDunk1(e.target.value)} 
+                        value={dunk1} onChange={e => setDunk1(e.target.value)} 
                       />
                     </div>
                     
                     <div className="space-y-1 md:col-span-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                        Dunk 2 (Max 50)
-                      </label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Dunk 2 (Max 50)</label>
                       <input 
-                        type="number" 
-                        min="0" 
-                        max="50" 
-                        placeholder="Es. 50" 
+                        type="number" min="0" max="50" placeholder="Es. 50" 
                         className="w-full p-3 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-800 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm" 
-                        value={dunk2} 
-                        onChange={e => setDunk2(e.target.value)} 
+                        value={dunk2} onChange={e => setDunk2(e.target.value)} 
                       />
                     </div>
 
                     <div className="md:col-span-4 mt-2">
-                      <button 
-                        type="submit" 
-                        className="w-full md:w-auto px-6 py-3 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm"
-                      >
+                      <button type="submit" className="w-full md:w-auto px-6 py-3 bg-neutral-900 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm">
                         Aggiungi / Aggiorna Schiacciatore
                       </button>
                     </div>
                   </form>
                 </div>
 
-                {/* Lista Partecipanti Slam Dunk (CON TAB) */}
+                {/* Lista Partecipanti Slam Dunk */}
                 <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-neutral-200">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
                     <h3 className="text-sm font-semibold text-neutral-800">Lista Iscritti Slam Dunk</h3>
                     <div className="relative w-full sm:w-auto">
                       <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
                       <input 
-                        type="text" 
-                        placeholder="Cerca giocatore..." 
+                        type="text" placeholder="Cerca giocatore..." 
                         className="w-full sm:w-64 pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm"
-                        value={sdSearchTerm}
-                        onChange={(e) => setSdSearchTerm(e.target.value)}
+                        value={sdSearchTerm} onChange={(e) => setSdSearchTerm(e.target.value)}
                       />
                     </div>
                   </div>
 
-                  {/* TAB DINAMICI PER ROUND */}
                   <div className="flex gap-2 mb-6 border-b border-neutral-100 pb-4 overflow-x-auto">
                     {['Qualificazione', 'Spareggio', 'Finale'].map(tab => (
                       <button 
-                        key={tab}
-                        onClick={() => { setSdActiveTab(tab); setSdCurrentPage(1); }}
+                        key={tab} onClick={() => { setSdActiveTab(tab); setSdCurrentPage(1); }}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
                           sdActiveTab === tab ? 'bg-pink-50 text-pink-600 border border-pink-200' : 'text-neutral-500 hover:bg-neutral-50'
                         }`}
@@ -1503,7 +1340,6 @@ const handleResetSdTimer = () => {
                       </div>
                     ) : currentSlamDunk.map(item => (
                       <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-neutral-200 rounded-xl group hover:border-pink-300 hover:shadow-sm transition-all gap-4">
-                        
                         <div className="flex-1 flex flex-col">
                           <span className="text-base font-semibold text-neutral-900">{item.player_name}</span>
                           <span className="text-xs font-medium text-neutral-500 mt-0.5">{item.round}</span>
@@ -1511,29 +1347,21 @@ const handleResetSdTimer = () => {
 
                         {/* MODALITÀ MODIFICA SLAM DUNK (Inline Edit) */}
                         {sdEditingId === item.id ? (
-                          <div className="flex items-center gap-3 animate-in fade-in bg-pink-50/50 p-2 rounded-lg border border-pink-100">
+                          <div className="flex items-center gap-3 bg-pink-50/50 p-2 rounded-lg border border-pink-100">
                             <div className="flex flex-col gap-1 w-20">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                                Dunk 1
-                              </label>
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">Dunk 1</label>
                               <input 
-                                type="number" 
-                                min="0" max="50" 
+                                type="number" min="0" max="50" 
                                 className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
-                                value={sdEditDunk1} 
-                                onChange={e => setSdEditDunk1(e.target.value)} 
+                                value={sdEditDunk1} onChange={e => setSdEditDunk1(e.target.value)} 
                               />
                             </div>
                             <div className="flex flex-col gap-1 w-20">
-                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">
-                                Dunk 2
-                              </label>
+                              <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 text-center">Dunk 2</label>
                               <input 
-                                type="number" 
-                                min="0" max="50" 
+                                type="number" min="0" max="50" 
                                 className="w-full text-center p-2 bg-white border border-neutral-300 rounded-lg text-sm font-semibold outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" 
-                                value={sdEditDunk2} 
-                                onChange={e => setSdEditDunk2(e.target.value)} 
+                                value={sdEditDunk2} onChange={e => setSdEditDunk2(e.target.value)} 
                               />
                             </div>
                             <div className="flex gap-1 ml-2 mt-5">
@@ -1553,23 +1381,8 @@ const handleResetSdTimer = () => {
                               <p className="text-xl font-bold text-neutral-900">{item.dunk_2}</p>
                             </div>
                             <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                              
-                              {/* TASTI LIVE MIRATI: Chiedono subito la dunk giusta */}
-                              <button 
-                                onClick={() => startSlamDunkLive(item, 1)} 
-                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-1"
-                                title="Manda la Grafica Dunk 1"
-                              >
-                                LIVE DUNK 1
-                              </button>
-                              <button 
-                                onClick={() => startSlamDunkLive(item, 2)} 
-                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-2"
-                                title="Manda la Grafica Dunk 2"
-                              >
-                                LIVE DUNK 2
-                              </button>
-
+                              <button onClick={() => startSlamDunkLive(item, 1)} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-1" title="Manda la Grafica Dunk 1">LIVE DUNK 1</button>
+                              <button onClick={() => startSlamDunkLive(item, 2)} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors text-[10px] font-black uppercase tracking-widest mr-2" title="Manda la Grafica Dunk 2">LIVE DUNK 2</button>
                               <button onClick={() => startSdEditing(item)} className="p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 rounded-lg transition-colors" title="Modifica Punteggi"><Edit2 size={16} /></button>
                               <button onClick={() => handleDelete('slam_dunk', item.id)} className="p-2 text-neutral-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" title="Elimina"><Trash2 size={16} /></button>
                             </div>
