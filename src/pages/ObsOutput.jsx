@@ -1536,7 +1536,8 @@ function ThreePointLeaderboard({ data, highlightedId }) {
   // ⏱️ STATO DEL CAROSELLO: 0 = Tutti e 10, 1 = Pos 1-2, 2 = Pos 3-4, 3 = Pos 5-6, 4 = Pos 7-8, 5 = Pos 9-10
   const [viewPhase, setViewPhase] = useState(0);
 
-  const sortedData = [...data]
+  // 1. Estraiamo i dati reali
+  const baseData = [...data]
     .filter(p => p.round === 'Qualificazione')
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
@@ -1545,6 +1546,18 @@ function ThreePointLeaderboard({ data, highlightedId }) {
       return timeA - timeB;
     })
     .slice(0, 10); 
+
+  // 2. RIEMPIMENTO AUTOMATICO A 10 SLOT (Placeholder)
+  const sortedData = [...baseData];
+  while (sortedData.length < 10) {
+    sortedData.push({
+      id: `empty-slot-${sortedData.length}`,
+      isPlaceholder: true,
+      player_name: "POSIZIONE NON ASSEGNATA",
+      time: "-",
+      score: "-"
+    });
+  }
 
   // ==========================================
   // MOTORE TRANSIZIONI AUTOMATICHE (6 SLIDE TOTALI)
@@ -1587,7 +1600,8 @@ function ThreePointLeaderboard({ data, highlightedId }) {
   // RENDER SINGOLA RIGA (Dinamica)
   // ==========================================
   const renderRow = (player, index, startIndex) => {
-    const isHighlighted = player.id && String(player.id) === String(highlightedId);
+    const isHighlighted = player.id && String(player.id) === String(highlightedId) && !player.isPlaceholder;
+    const isPlaceholder = player.isPlaceholder;
     const position = startIndex + index + 1;
 
     return (
@@ -1595,26 +1609,24 @@ function ThreePointLeaderboard({ data, highlightedId }) {
         key={player.id} 
         /* 🎯 ANIMAZIONE AGGIORNATA: Rosa intenso "penzo" + Effetto Neon Glow esterno */
         animate={{ 
-  // 🎯 Sfondo: Passato a Rosa Neon Puro con opacità al 100% (1)
-  backgroundColor: isHighlighted 
-    ? ['rgba(255,255,255,0.05)', 'rgba(255, 0, 110, 1)', 'rgba(255,255,255,0.05)'] 
-    : 'rgba(255, 255, 255, 0.05)', 
-  
-  // 🎯 Bordo: Solidificato in Rosa Neon Puro
-  borderColor: isHighlighted 
-    ? ['rgba(255,255,255,0.1)', 'rgba(255, 0, 110, 1)', 'rgba(255,255,255,0.1)'] 
-    : 'rgba(255, 255, 255, 0.1)', 
-  
-  scale: isHighlighted ? [1, 1.03, 1] : 1,
-  
-  // 🎯 Box Shadow: Raddoppiato il raggio (80px) e stratificato il bagliore per un effetto fari abbaglianti
-  boxShadow: isHighlighted 
-    ? ['0 0 0px rgba(255,0,110,0)', '0 0 80px rgba(255,0,110,1), 0 0 30px rgba(255,0,110,0.6)', '0 0 0px rgba(255,0,110,0)'] 
-    : 'none'
-}}
+          backgroundColor: isHighlighted 
+            ? ['rgba(255,255,255,0.05)', 'rgba(255, 0, 110, 1)', 'rgba(255,255,255,0.05)'] 
+            : (isPlaceholder ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.05)'), 
+          
+          borderColor: isHighlighted 
+            ? ['rgba(255,255,255,0.1)', 'rgba(255, 0, 110, 1)', 'rgba(255,255,255,0.1)'] 
+            : (isPlaceholder ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.1)'), 
+          
+          scale: isHighlighted ? [1, 1.03, 1] : 1,
+          
+          boxShadow: isHighlighted 
+            ? ['0 0 0px rgba(255,0,110,0)', '0 0 80px rgba(255,0,110,1), 0 0 30px rgba(255,0,110,0.6)', '0 0 0px rgba(255,0,110,0)'] 
+            : 'none'
+        }}
         transition={{ duration: 1.2, ease: "easeInOut", repeat: isHighlighted ? 5 : 0 }} 
-        className={`flex items-center w-full overflow-hidden border backdrop-blur-md shadow-2xl transition-all duration-500 
-          ${isGiant ? "px-10 py-5 mb-5 rounded-[2.5rem]" : "flex-1 px-4 py-2.5 mb-3 rounded-[1.5rem]"}`}
+        className={`flex items-center w-full overflow-hidden border backdrop-blur-md transition-all duration-500 
+          ${isGiant ? "px-10 py-5 mb-5 rounded-[2.5rem]" : "flex-1 px-4 py-2.5 mb-3 rounded-[1.5rem]"}
+          ${isPlaceholder ? "shadow-inner border-dashed opacity-60" : "shadow-2xl"}`}
       >
         
         {isGiant ? (
@@ -1624,41 +1636,41 @@ function ThreePointLeaderboard({ data, highlightedId }) {
           <>
             {/* 1. Posizione Fissa */}
             <div className="w-[160px] shrink-0 text-right flex items-center justify-end">
-              <span className="text-[130px] leading-[0.75] tracking-wider font-black text-pink-500 drop-shadow-md translate-y-[4px]">
+              <span className={`text-[130px] leading-[0.75] tracking-wider font-black drop-shadow-md translate-y-[4px] ${isPlaceholder ? 'text-neutral-700' : 'text-pink-500'}`}>
                 {position}.
               </span>
             </div>
 
             {/* 2. NOME A MOLLA (Singola riga, Font Gigante) */}
             <div className="flex-1 min-w-0 flex items-center mx-10">
-              <span className="block w-full text-[130px] font-black uppercase text-white tracking-wider truncate translate-y-[4px]">
+              <span className={`block w-full text-[130px] font-black uppercase tracking-wider truncate translate-y-[4px] ${isPlaceholder ? 'text-neutral-600' : 'text-white'}`}>
                 {player.player_name}
               </span>
             </div>
 
             {/* 3. Box FISSI a Destra */}
             <div className="flex items-center gap-5 shrink-0 translate-x-[20px]">
-              <div className="w-[260px] h-[200px] bg-white/10 rounded-[2rem] border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+              <div className={`w-[260px] h-[200px] rounded-[2rem] flex flex-col overflow-hidden shadow-inner shrink-0 ${isPlaceholder ? 'bg-white/5 border border-white/5' : 'bg-white/10 border border-white/5'}`}>
                 <div className="w-full bg-black/40 py-3 border-b border-black/50 flex items-center justify-center shrink-0">
-                  <span className="text-[36px] tracking-wider font-black uppercase text-[#74BDE2] leading-none translate-y-[2px]">
+                  <span className={`text-[36px] tracking-wider font-black uppercase leading-none translate-y-[2px] ${isPlaceholder ? 'text-neutral-600' : 'text-[#74BDE2]'}`}>
                     Tempo
                   </span>
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-2">
-                  <span className="text-[110px] tracking-wider font-black text-white leading-none translate-y-[4px]">
+                  <span className={`text-[110px] tracking-wider font-black leading-none translate-y-[4px] ${isPlaceholder ? 'text-neutral-700' : 'text-white'}`}>
                     {player.time || '-'}
                   </span>
                 </div>
               </div>
               
-              <div className="w-[220px] h-[200px] bg-white/10 rounded-[2rem] border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+              <div className={`w-[220px] h-[200px] rounded-[2rem] flex flex-col overflow-hidden shadow-inner shrink-0 ${isPlaceholder ? 'bg-white/5 border border-white/5' : 'bg-white/10 border border-white/5'}`}>
                 <div className="w-full bg-black/40 py-3 border-b border-black/50 flex items-center justify-center shrink-0">
-                  <span className="text-[36px] tracking-wider font-black uppercase text-pink-400 leading-none translate-y-[2px]">
+                  <span className={`text-[36px] tracking-wider font-black uppercase leading-none translate-y-[2px] ${isPlaceholder ? 'text-neutral-600' : 'text-pink-400'}`}>
                     Punti
                   </span>
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-2">
-                  <span className="text-[110px] tracking-wider font-black uppercase text-white leading-none translate-x-[2px] translate-y-[4px]">
+                  <span className={`text-[110px] tracking-wider font-black uppercase leading-none translate-x-[2px] translate-y-[4px] ${isPlaceholder ? 'text-neutral-700' : 'text-white'}`}>
                     {player.score}
                   </span>
                 </div>
@@ -1671,39 +1683,39 @@ function ThreePointLeaderboard({ data, highlightedId }) {
              ========================================== */
           <>
             <div className="w-[80px] shrink-0 text-right flex items-center justify-end">
-              <span className="text-[60px] tracking-wider font-black text-pink-500 leading-none drop-shadow-md translate-y-[2px]">
+              <span className={`text-[60px] tracking-wider font-black leading-none drop-shadow-md translate-y-[2px] ${isPlaceholder ? 'text-neutral-700' : 'text-pink-500'}`}>
                 {position}.
               </span>
             </div>
             
             <div className="flex-1 min-w-0 flex flex-col justify-center mx-5">
-              <span className="block w-full text-[60px] tracking-wider font-black uppercase text-white leading-none translate-y-[2px] truncate">
+              <span className={`block w-full text-[60px] tracking-wider font-black uppercase leading-none translate-y-[2px] truncate ${isPlaceholder ? 'text-neutral-600' : 'text-white'}`}>
                 {player.player_name}
               </span>
             </div>
             
             <div className="flex items-center gap-3 shrink-0">
-              <div className="w-[150px] h-[110px] bg-white/10 rounded-[1.2rem] border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+              <div className={`w-[150px] h-[110px] rounded-[1.2rem] flex flex-col overflow-hidden shadow-inner shrink-0 ${isPlaceholder ? 'bg-white/5 border border-white/5' : 'bg-white/10 border border-white/5'}`}>
                 <div className="w-full bg-black/40 py-1.5 border-b border-black/50 flex items-center justify-center shrink-0">
-                  <span className="text-[22px] tracking-wider font-black uppercase text-[#74BDE2] leading-none translate-y-[1px]">
+                  <span className={`text-[22px] tracking-wider font-black uppercase leading-none translate-y-[1px] ${isPlaceholder ? 'text-neutral-600' : 'text-[#74BDE2]'}`}>
                     Tempo
                   </span>
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-1">
-                  <span className="text-[55px] tracking-wider font-black text-white leading-none translate-y-[2px]">
+                  <span className={`text-[55px] tracking-wider font-black leading-none translate-y-[2px] ${isPlaceholder ? 'text-neutral-700' : 'text-white'}`}>
                     {player.time || '-'}
                   </span>
                 </div>
               </div>
               
-              <div className="w-[130px] h-[110px] bg-white/10 rounded-[1.2rem] border border-white/5 flex flex-col overflow-hidden shadow-inner shrink-0">
+              <div className={`w-[130px] h-[110px] rounded-[1.2rem] flex flex-col overflow-hidden shadow-inner shrink-0 ${isPlaceholder ? 'bg-white/5 border border-white/5' : 'bg-white/10 border border-white/5'}`}>
                 <div className="w-full bg-black/40 py-1.5 border-b border-black/50 flex items-center justify-center shrink-0">
-                  <span className="text-[22px] tracking-wider font-black uppercase text-pink-400 leading-none translate-y-[1px]">
+                  <span className={`text-[22px] tracking-wider font-black uppercase leading-none translate-y-[1px] ${isPlaceholder ? 'text-neutral-600' : 'text-pink-400'}`}>
                     Punti
                   </span>
                 </div>
                 <div className="flex-1 flex items-center justify-center pb-1">
-                  <span className="text-[55px] tracking-wider font-black uppercase text-white leading-none translate-x-[2px] translate-y-[2px]">
+                  <span className={`text-[55px] tracking-wider font-black uppercase leading-none translate-x-[2px] translate-y-[2px] ${isPlaceholder ? 'text-neutral-700' : 'text-white'}`}>
                     {player.score}
                   </span>
                 </div>
