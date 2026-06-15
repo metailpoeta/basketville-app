@@ -291,46 +291,44 @@ useEffect(() => {
       <div 
         key={m.id} 
         onClick={() => openMatchDetail(m.id)} 
-        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-sm p-4 transition-all active:scale-[0.98] cursor-pointer [-webkit-tap-highlight-color:transparent]"
+        // 1. ALTEZZA FISSA CARD A 140px
+        className="relative overflow-hidden h-[140px] rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800/80 shadow-sm flex flex-col transition-all active:scale-[0.98] cursor-pointer [-webkit-tap-highlight-color:transparent]"
       >
-        {/* Bordino superiore rosso se è live */}
-        {isLive && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-400"></div>}
+        {isLive && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-400 z-10"></div>}
 
-        {/* HEADER CARD */}
-        <div className="flex justify-between items-center mb-3 border-b border-neutral-800/60 pb-2">
-          <span className="text-[15px] font-black uppercase tracking-widest text-pink-500 drop-shadow-sm truncate pr-2">
+        {/* FASCETTA SUPERIORE */}
+        <div className="bg-neutral-900/80 border-b border-neutral-800/80 px-4 py-2.5 flex items-center justify-between shrink-0 relative z-0">
+          <span className="text-[15px] font-black uppercase tracking-widest text-pink-500 drop-shadow-sm truncate pr-2 leading-none mt-0.5">
             {leftText}
           </span>
           
           {isLive ? (
-            <span className="flex items-center gap-1.5 text-[15px] font-black text-red-500 uppercase tracking-widest shrink-0">
+            <span className="flex items-center gap-1.5 text-[15px] font-black text-red-500 uppercase tracking-widest shrink-0 leading-none mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>LIVE
             </span>
           ) : isConclusa ? (
-            <span className="text-[15px] font-black text-neutral-500 uppercase tracking-widest shrink-0">Finale</span>
+            <span className="text-[15px] font-black text-neutral-500 uppercase tracking-widest shrink-0 leading-none mt-0.5">Finale</span>
           ) : (
-            <span className="text-[15px] font-black text-neutral-500 uppercase tracking-widest shrink-0">Da Giocare</span>
+            <span className="text-[15px] font-black text-neutral-500 uppercase tracking-widest shrink-0 leading-none mt-0.5">Da Giocare</span>
           )}
         </div>
 
-        {/* SQUADRE E PUNTEGGI RAVVICINATI */}
-        <div className="flex flex-col gap-2">
-          {/* Squadra A: Aumentato a text-[18px] */}
+        {/* CORPO MATCH: flex-1 e justify-center bilanciano i padding sopra e sotto in modo millimetrico */}
+        <div className="flex-1 flex flex-col justify-center gap-2 p-4">
           <div className="flex justify-between items-center">
-            <span className={`text-[18px] font-black tracking-wider uppercase truncate pr-2 ${isConclusa && bWon ? 'text-neutral-500' : 'text-white'}`}>
+            <span className={`text-[18px] font-black tracking-wider uppercase truncate pr-2 leading-none ${isConclusa && bWon ? 'text-neutral-500' : 'text-white'}`}>
               {m.team_a?.teams?.name || 'TBD'}
             </span>
-            <span className={`text-3xl font-black tabular-nums tracking-wider ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && aWon ? 'text-white' : 'text-neutral-500')}`}>
+            <span className={`text-3xl font-black tabular-nums tracking-wider leading-none ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && aWon ? 'text-white' : 'text-neutral-500')}`}>
               {m.score_a ?? '-'}
             </span>
           </div>
 
-          {/* Squadra B: Aumentato a text-[18px] */}
           <div className="flex justify-between items-center">
-            <span className={`text-[18px] font-black tracking-wider uppercase truncate pr-2 ${isConclusa && aWon ? 'text-neutral-500' : 'text-white'}`}>
+            <span className={`text-[18px] font-black tracking-wider uppercase truncate pr-2 leading-none ${isConclusa && aWon ? 'text-neutral-500' : 'text-white'}`}>
               {m.team_b?.teams?.name || 'TBD'}
             </span>
-            <span className={`text-3xl font-black tabular-nums tracking-wider ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && bWon ? 'text-white' : 'text-neutral-500')}`}>
+            <span className={`text-3xl font-black tabular-nums tracking-wider leading-none ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && bWon ? 'text-white' : 'text-neutral-500')}`}>
               {m.score_b ?? '-'}
             </span>
           </div>
@@ -428,61 +426,69 @@ useEffect(() => {
                     <div 
                       key={item.id} 
                       onClick={() => isMatch && openMatchDetail(m.id)}
-                      className={`bg-black/60 backdrop-blur-md border ${isLive ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-neutral-800'} ${isMatch ? 'cursor-pointer active:scale-[0.98]' : ''} rounded-2xl p-4 flex gap-4 items-center relative overflow-hidden transition-transform`}
+                      // 1. ALTEZZA FISSA CARD A 140px
+                      className={`h-[140px] bg-black/60 backdrop-blur-md border ${isLive ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-neutral-800'} ${isMatch ? 'cursor-pointer active:scale-[0.98]' : ''} rounded-2xl flex flex-col relative overflow-hidden transition-transform`}
                     >
-                       {isLive && <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"></div>}
+                       {isLive && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-400 z-10"></div>}
 
-                       <div className="flex flex-col items-center justify-center shrink-0 w-[50px] border-r border-neutral-800/80 pr-4">
-                         <span className="text-xl font-black text-white tabular-nums tracking-wider">{item.time?.substring(0,5)}</span>
-                         {isLive && (
-                           <span className="text-[12px] text-red-500 font-black uppercase tracking-widest mt-1 flex items-center gap-1">
-                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>LIVE
+                       {/* FASCETTA SUPERIORE */}
+                       <div className="bg-neutral-900/80 border-b border-neutral-800/80 px-4 py-2.5 flex items-center justify-between shrink-0 relative z-0">
+                         <span className="text-[15px] text-pink-500 font-black uppercase tracking-widest truncate pr-2 leading-none mt-0.5">
+                           {item.events?.name || 'Evento Basketville'} 
+                           {isMatch && 
+                            item.events?.name?.toLowerCase().includes('vero cup') && 
+                            (m.match_type_id === 1 || m.match_types?.name?.toLowerCase().includes('giron')) && 
+                            m?.team_a?.group_name ? ` • Girone ${m.team_a.group_name}` : ''}
+                         </span>
+                         {isMatch && (
+                           <span className="text-[15px] text-neutral-500 font-bold uppercase tracking-widest shrink-0 leading-none mt-0.5">
+                             vedi dettagli ➔
                            </span>
                          )}
-                         {isConclusa && <span className="text-[12px] text-neutral-500 font-bold uppercase tracking-widest mt-1">FINALE</span>}
                        </div>
-                       
-                       <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[12px] text-pink-500 font-bold uppercase tracking-widest truncate drop-shadow-sm">
-                              {item.events?.name || 'Evento Basketville'} 
-                              {/* Mostra il girone solo se è Vero Cup E il tipo match contiene "gironi" o ha ID 1 */}
-                              {isMatch && 
-                               item.events?.name?.toLowerCase().includes('vero cup') && 
-                               (m.match_type_id === 1 || m.match_types?.name?.toLowerCase().includes('giron')) && 
-                               m?.team_a?.group_name ? ` • Girone ${m.team_a.group_name}` : ''}
-                            </span>
-                            {isMatch && (
-                              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest translate-y-[-1px]">
-                                vedi dettagli ➔
-                              </span>
-                            )}
-                          </div>
-                          
-                          {isMatch ? (
-                            <div className="flex flex-col gap-2">
-                              <div className="flex justify-between items-center">
-                                <span className={`font-black uppercase tracking-wider truncate text-[18px] ${isConclusa && bWon ? 'text-neutral-500' : 'text-white'}`}>
-                                  {m.team_a?.teams?.name || 'TBD'}
-                                </span>
-                                <span className={`font-black text-3xl tabular-nums tracking-wider ml-3 ${isLive ? 'text-red-400' : (isConclusa && aWon ? 'text-white' : 'text-neutral-400')}`}>
-                                  {m.score_a ?? '-'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className={`font-black uppercase tracking-wider truncate text-[18px] ${isConclusa && aWon ? 'text-neutral-500' : 'text-white'}`}>
-                                  {m.team_b?.teams?.name || 'TBD'}
-                                </span>
-                                <span className={`font-black text-3xl tabular-nums tracking-wider ml-3 ${isLive ? 'text-red-400' : (isConclusa && bWon ? 'text-white' : 'text-neutral-400')}`}>
-                                  {m.score_b ?? '-'}
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="font-black tracking-wider text-white uppercase truncate text-[18px] mt-2 leading-tight">
-                              {item.description || item.events?.name}
-                            </div>
-                          )}
+
+                       {/* CORPO DELLA CARD: items-center e p-4 garantiscono padding identici sopra e sotto */}
+                       <div className="flex-1 flex p-4 gap-4 items-center">
+                         
+                         {/* Orologio */}
+                         <div className="flex flex-col items-center justify-center shrink-0 w-[50px] border-r border-neutral-800/80 pr-4">
+                           <span className="text-[18px] font-black text-white tabular-nums tracking-wider leading-none">{item.time?.substring(0,5)}</span>
+                           {isLive && (
+                             <span className="text-[15px] text-red-500 font-black uppercase tracking-widest mt-2 flex items-center gap-1 leading-none">
+                               <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>LIVE
+                             </span>
+                           )}
+                           {isConclusa && <span className="text-[15px] text-neutral-500 font-bold uppercase tracking-widest mt-2 leading-none">FINALE</span>}
+                         </div>
+                         
+                         {/* Contenuto (justify-center centra verticalmente le squadre rispetto all'orario) */}
+                         <div className="flex-1 min-w-0 flex flex-col justify-center">
+                           {isMatch ? (
+                             <div className="flex flex-col gap-2">
+                               <div className="flex justify-between items-center">
+                                 <span className={`font-black uppercase tracking-wider truncate text-[18px] leading-none ${isConclusa && bWon ? 'text-neutral-500' : 'text-white'}`}>
+                                   {m.team_a?.teams?.name || 'TBD'}
+                                 </span>
+                                 <span className={`font-black text-3xl tabular-nums tracking-wider leading-none ml-3 ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && aWon ? 'text-white' : 'text-neutral-400')}`}>
+                                   {m.score_a ?? '-'}
+                                 </span>
+                               </div>
+                               <div className="flex justify-between items-center">
+                                 <span className={`font-black uppercase tracking-wider truncate text-[18px] leading-none ${isConclusa && aWon ? 'text-neutral-500' : 'text-white'}`}>
+                                   {m.team_b?.teams?.name || 'TBD'}
+                                 </span>
+                                 <span className={`font-black text-3xl tabular-nums tracking-wider leading-none ml-3 ${isLive ? 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]' : (isConclusa && bWon ? 'text-white' : 'text-neutral-400')}`}>
+                                   {m.score_b ?? '-'}
+                                 </span>
+                               </div>
+                             </div>
+                           ) : (
+                             <div className="font-black tracking-wider text-white uppercase truncate text-[18px] leading-none">
+                               {item.description || item.events?.name}
+                             </div>
+                           )}
+                         </div>
+
                        </div>
                     </div>
                   );
