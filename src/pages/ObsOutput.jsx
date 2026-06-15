@@ -1020,8 +1020,8 @@ function DailyScheduleGraphic({ dateStr, data }) {
   const getEventLogo = (tagName) => {
     const t = (tagName || '').toLowerCase();
     if (t.includes('vero cup')) return '/Basketville_logo26_vero.png'; 
-    if (t.includes('3-point') || t.includes('3 point')) return '/logo_3point.png'; 
-    if (t.includes('slam dunk')) return '/logo_slamdunk.png'; 
+    if (t.includes('3-point') || t.includes('3 point')) return '/autotorino.svg'; 
+    if (t.includes('slam dunk')) return '/pn.svg'; 
     return null; 
   };
 
