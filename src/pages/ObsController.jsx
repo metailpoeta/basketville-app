@@ -308,6 +308,28 @@ export default function ObsController() {
           </div>
         </div>
 
+        {/* ========================================== */}
+        {/* CARD: PROMO APP (VERDE SMERALDO)           */}
+        {/* ========================================== */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
+          <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
+            <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl"><Tv size={24}/></div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-800">Promo App Ufficiale</h3>
+              <p className="text-xs text-neutral-500">Mostra il QR Code per scaricare l'app</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={() => triggerOBS('download_app')}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'download_app' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Tv size={16} /> Lancia Promo App
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

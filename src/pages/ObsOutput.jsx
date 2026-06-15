@@ -474,11 +474,17 @@ export default function ObsOutput() {
 
   // === LOGICA LOGO DINAMICO ===
   let currentLogo = "Basketville_logo26_vero.png"; // Logo di Default
+  let currentLogoHeight = "h-[140px]";            // Altezza di Default
+  let currentLogoPosition = "top-4 left-12";      // Posizione di Default
   
   if (localGraphic.includes('slamdunk')) {
-    currentLogo = "Basketville_logo26_vero.png";
+    currentLogo = "pn.svg";
+    currentLogoHeight = "h-[200px]";
+    currentLogoPosition = "top-16 left-0";        // 👈 Puoi spostarlo se serve!
   } else if (localGraphic.includes('3point')) {
-    currentLogo = "Basketville_logo26_vero.png";
+    currentLogo = "autotorino.svg";
+    currentLogoHeight = "h-[320px]";
+    currentLogoPosition = "top-32 left-12";
   } else if (localGraphic === 'match_full' || localGraphic === 'match_lite' || localGraphic === 'match_timeout') {
     // Peschiamo l'event_id direttamente dalla partita caricata!
     const eventId = matchData?.team_a?.event_id;
@@ -486,16 +492,23 @@ export default function ObsOutput() {
     // Inserisci qui gli ID reali dei tuoi eventi e i loghi corrispondenti
     if (eventId === 1) {
       currentLogo = "Basketville_logo26_vero.png"; // VERO Cup
+      currentLogoHeight = "h-[140px]";
+      currentLogoPosition = "top-4 left-12";
     } else if (eventId === 4) {
-      currentLogo = "Basketville_logo26_vero.png";         // OLD
+      currentLogo = "Renova.svg";                  // OLD
+      currentLogoHeight = "h-[140px]";
+      currentLogoPosition = "top-4 left-12";      // 👈 Esempio: abbassato un po'
     } else if (eventId === 5) {
-      currentLogo = "Basketville_logo26_vero.png";        // WOMEN
+      currentLogo = "Serena Wines.svg";           // WOMEN
+      currentLogoHeight = "h-[100px]";
+      currentLogoPosition = "top-0 left-12";
     } else if (eventId === 6) {
-      currentLogo = "Basketville_logo26_vero.png";        // DR123
+      currentLogo = "Studio Dentistico Franzolini.svg"; // DR123
+      currentLogoHeight = "h-[140px]";
+      currentLogoPosition = "top-4 left-12";      // 👈 Esempio: spostato più a destra
     }
   }
   // ============================
-
 
   return (
     <div className="w-[1920px] h-[1080px] overflow-hidden bg-neutral-950 relative font-dimbo text-white origin-top-left">
@@ -504,11 +517,12 @@ export default function ObsOutput() {
       {/* OVERLAY LOGO SINISTRA UNICO (Z-50) */}
       {/* ========================================= */}
       {localGraphic !== 'daily_schedule' && localGraphic !== 'video_player' && (
-        <div className="absolute top-8 left-12 z-50 transition-all duration-500">
+        // 👈 Qui iniettiamo currentLogoPosition al posto di "top-8 left-12"
+        <div className={`absolute ${currentLogoPosition} z-50 h-[140px] flex items-end transition-all duration-500`}>
           <img 
             src={currentLogo} 
             alt="Sponsor Logo" 
-            className="h-[140px] w-auto" 
+            className={`${currentLogoHeight} w-auto transition-all duration-500 object-contain`} 
           />
         </div>
       )}
@@ -550,6 +564,7 @@ export default function ObsOutput() {
         {/* JOLLY */}
         {localGraphic === 'generic_title' && <GenericTitleGraphic key="generic_title" payload={broadcastState.payload} />}
         {localGraphic === 'mvp_title' && <MvpTitleGraphic key="mvp_title" payload={broadcastState.payload} />}
+        {localGraphic === 'download_app' && renderDownloadApp()}
 
         {/* DRAFT */}
         {localGraphic === 'draft_cronologica' && <DraftCronologicaGraphic key="draft_crono" picks={draftPicks} highlightRound={highlightRound} />}
@@ -3647,7 +3662,7 @@ function SlamDunkGraphic({ payload }) {
             className="absolute inset-x-0 bottom-0 top-0 w-[1900px] mx-auto flex flex-col z-10"
           >
             <div className="absolute top-12 right-2 z-50 flex flex-col items-end text-right">
-              <span className="text-pink-500 font-bold uppercase tracking-wider text-2xl mb-1 drop-shadow-md">VERO Cup 2026</span>
+              <span className="text-pink-500 font-bold uppercase tracking-wider text-2xl mb-1 drop-shadow-md">BASKETVILLE 2026</span>
               <h2 className="text-[60px] font-black uppercase text-white drop-shadow-lg tracking-wider leading-none">
                 Slam Dunk Contest
               </h2>
@@ -4311,3 +4326,59 @@ function VideoPlayerGraphic({ payload }) {
     </div>
   );
 }
+
+// ==========================================
+  // SCHERMATA OBS: DOWNLOAD APP (FULL SCREEN)
+  // ==========================================
+  const renderDownloadApp = () => {
+    return (
+      <div className="absolute inset-0 w-[1920px] h-[1080px] bg-neutral-950 flex flex-col items-center justify-center relative overflow-hidden select-none font-sans tracking-wider">
+        
+        {/* Sfondo fibra di carbonio per continuità stilistica */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay z-0"></div>
+
+        {/* 1. BLOCCO TESTI IN ALTO A DESTRA */}
+        <div className="absolute top-4 right-24 z-50 flex flex-col items-end text-right">
+          <h1 className="text-[112px] leading-none font-black text-pink-500 uppercase tracking-tight drop-shadow-[0_0_30px_rgba(236,72,153,0.6)]">
+            Scarica L'App
+          </h1>
+          <p className="-mt-0 text-[60px] leading-none font-black text-white uppercase tracking-widest drop-shadow-md">
+            E...#OCCHIOALPALO!
+          </p>
+        </div>
+
+        {/* 2. FRECCIA CURVA FISSA (Bloccata in basso verso il QR) */}
+        <div className="absolute top-[320px] right-[220px] z-40">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="400" 
+            height="300" 
+            viewBox="0 0 400 300" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="10" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+          >
+            {/* Parte dall'alto a dx (350, 20), scende giù verso (350, 250) e sterza a sx fino a (20, 250) */}
+            <path d="M 350 20 Q 350 250 20 250" />
+            {/* Punta della freccia posizionata a sinistra */}
+            <polyline points="60 210 20 250 60 290" />
+          </svg>
+        </div>
+
+        {/* 3. QR CODE TITANICO AL CENTRO */}
+        <div className="z-10 flex items-center justify-center w-full h-full translate-x-[-180px] translate-y-[50px]">
+          <div className="bg-white p-10 rounded-[3rem] shadow-[0_0_100px_rgba(236,72,153,0.6)] flex items-center justify-center">
+            <img 
+              src="https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=http://basketville-app.vercel.app/app" 
+              alt="QR Code Basketville App" 
+              className="w-[700px] h-[700px] object-contain"
+            />
+          </div>
+        </div>
+        
+      </div>
+    );
+  };
