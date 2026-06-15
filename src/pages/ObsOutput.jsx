@@ -4339,11 +4339,11 @@ function VideoPlayerGraphic({ payload }) {
 
         {/* 1. BLOCCO TESTI IN ALTO A DESTRA */}
         <div className="absolute top-4 right-24 z-50 flex flex-col items-end text-right">
-          <h1 className="text-[112px] leading-none font-black text-pink-500 uppercase tracking-tight drop-shadow-[0_0_30px_rgba(236,72,153,0.6)]">
+          <h1 className="text-[105px] leading-none font-black text-pink-500 uppercase tracking-wider drop-shadow-[0_0_30px_rgba(236,72,153,0.6)]">
             Scarica L'App
           </h1>
-          <p className="-mt-0 text-[60px] leading-none font-black text-white uppercase tracking-widest drop-shadow-md">
-            E...#OCCHIOALPALO!
+          <p className="-mt-0 text-[70px] leading-none font-black text-white uppercase tracking-wider drop-shadow-md">
+            E... #OCCHIOALPALO!!!
           </p>
         </div>
 
