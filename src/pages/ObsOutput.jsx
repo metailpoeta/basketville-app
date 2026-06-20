@@ -565,6 +565,7 @@ export default function ObsOutput() {
         {localGraphic === 'generic_title' && <GenericTitleGraphic key="generic_title" payload={broadcastState.payload} />}
         {localGraphic === 'mvp_title' && <MvpTitleGraphic key="mvp_title" payload={broadcastState.payload} />}
         {localGraphic === 'download_app' && renderDownloadApp()}
+        {localGraphic === 'champions_title' && <ChampionsTitleGraphic key="champions_title" payload={broadcastState.payload} />}
 
         {/* DRAFT */}
         {localGraphic === 'draft_cronologica' && <DraftCronologicaGraphic key="draft_crono" picks={draftPicks} highlightRound={highlightRound} />}
@@ -4394,3 +4395,142 @@ function VideoPlayerGraphic({ payload }) {
       </div>
     );
   };
+ // ==========================================
+// COMPONENTE: CHAMPIONS TITLE (ESPLOSIVO E VIBRANTE ORO)
+// ==========================================
+function ChampionsTitleGraphic({ payload }) {
+  // Legge correttamente il nome (es. squadra vincitrice) inviato dal Controller
+  const championName = payload?.name || payload?.team_name || payload?.text || '';
+  
+  // Stato per gestire la sequenza: prima vibra CHAMPIONS (false), poi esplode il nome (true)
+  const [showName, setShowName] = useState(false);
+
+  useEffect(() => {
+    // 3.5 secondi di suspense con vibrazione, poi scatta l'esplosione
+    const timer = setTimeout(() => {
+      setShowName(true);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Generatore di coriandoli ORO (calcolato 1 sola volta in memoria per zero lag su OBS)
+  const confetti = React.useMemo(() => {
+    return Array.from({ length: 120 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100, // posizione X random
+      delay: Math.random() * 1.5, // ritardo random
+      duration: Math.random() * 2 + 3, // durata caduta (3-5 secondi)
+      // Palette di colori interamente spostata sull'oro/giallo
+      color: ['bg-yellow-300', 'bg-yellow-400', 'bg-yellow-500', 'bg-white'][Math.floor(Math.random() * 4)],
+      size: Math.random() * 15 + 15, // grandezza random 15-30px
+      isCircle: Math.random() > 0.5,
+      rotation: Math.random() * 360
+    }));
+  }, []);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      transition={{ duration: 0.5 }} 
+      // Sfondo gradient modificato in giallo/oro scuro
+      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-950 via-neutral-950 to-black overflow-hidden"
+    >
+      <div className="absolute top-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-screen pointer-events-none"></div>
+
+      {/* Bagliore Oro di sfondo */}
+      <div className="absolute w-[1200px] h-[1200px] bg-yellow-500/20 blur-[200px] rounded-full pointer-events-none mix-blend-screen z-0"></div>
+
+      <AnimatePresence>
+        {!showName && (
+          <motion.div 
+            key="champions-text"
+            // Animazione di uscita: CHAMPIONS schizza in avanti e sparisce sfocato
+            exit={{ scale: 4, opacity: 0, filter: "blur(20px)" }}
+            transition={{ duration: 0.6, ease: "easeIn" }}
+            className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+          >
+            <motion.div 
+              // Effetto terremoto ignorante
+              animate={{ 
+                x: [-10, 10, -10, 10, -5, 5, 0], 
+                y: [-5, 5, -5, 5, -2, 2, 0] 
+              }} 
+              transition={{ duration: 0.1, repeat: Infinity, ease: "linear" }}
+              className="text-[280px] leading-none font-black text-yellow-500 drop-shadow-[0_0_80px_rgba(234,179,8,0.8)] tracking-wider"
+            >
+              {/* 🎯 WRAPPER PER LO STRETCH VERTICALE (1.8x l'altezza originale) */}
+              <div className="scale-y-[1.8] origin-center">
+                CHAMPIONS
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showName && (
+          <>
+            {/* 🎯 CORIANDOLI ORO CHE CADONO DALL'ALTO */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-15">
+              {confetti.map(c => (
+                <motion.div
+                  key={c.id}
+                  initial={{ top: '-10%', left: `${c.x}%`, rotate: c.rotation, opacity: 0 }}
+                  animate={{ top: '110%', rotate: c.rotation + 360, opacity: 1 }}
+                  transition={{ duration: c.duration, delay: c.delay, repeat: Infinity, ease: "linear" }}
+                  className={`absolute ${c.color} ${c.isCircle ? 'rounded-full' : ''} shadow-[0_0_10px_rgba(234,179,8,0.5)]`}
+                  style={{ width: c.size, height: c.size }}
+                />
+              ))}
+            </div>
+
+            {/* 🎯 "CHAMPIONS" TITANICO IN BACKGROUND */}
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.5 }} 
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none w-[1850px] mx-auto overflow-hidden mix-blend-screen"
+            >
+              {/* 🎯 WRAPPER PER LO STRETCH VERTICALE SULLO SFONDO */}
+              <div className="translate-y-[20px] scale-y-[2.0] origin-center">
+                <span className="text-[450px] font-black text-yellow-500 leading-none tracking-wider select-none drop-shadow-[0_0_100px_rgba(234,179,8,0.8)] block">
+                  CHAMPIONS
+                </span>
+              </div>
+            </motion.div>
+
+            {/* 🎯 NOME DELLA SQUADRA VINCITRICE: Bianco puro */}
+            <motion.div
+              key="champion-name"
+              className="absolute inset-0 flex flex-col items-center justify-center z-20 px-12"
+            >
+              <motion.h1 
+                initial={{ scale: 0, opacity: 0, rotateZ: -15, filter: "blur(20px)" }}
+                animate={{ scale: 1, opacity: 1, rotateZ: 0, filter: "blur(0px)" }}
+                transition={{ type: "spring", stiffness: 100, damping: 12 }}
+                className="text-[250px] leading-[0.85] font-black uppercase tracking-wider text-white drop-shadow-[0_30px_60px_rgba(0,0,0,1)] text-center w-full flex flex-col"
+              >
+                {(() => {
+                  // Trova il primo spazio per dividere Nome (se composto da più parole)
+                  const spaceIndex = championName.indexOf(' ');
+                  const firstPart = spaceIndex !== -1 ? championName.substring(0, spaceIndex) : championName;
+                  const secondPart = spaceIndex !== -1 ? championName.substring(spaceIndex + 1) : '';
+
+                  return (
+                    <>
+                      <span className="block text-yellow-100">{firstPart}</span>
+                      {secondPart && <span className="block">{secondPart}</span>}
+                    </>
+                  );
+                })()}
+              </motion.h1>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+    </motion.div>
+  );
+}

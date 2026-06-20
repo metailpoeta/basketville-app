@@ -6,6 +6,7 @@ export default function ObsController() {
   const [currentGraphic, setCurrentGraphic] = useState('none');
   const [genericTitleText, setGenericTitleText] = useState(''); // STATO PER IL TESTO JOLLY
   const [mvpNameText, setMvpNameText] = useState(''); // STATO PER IL TESTO MVP
+  const [championsNameText, setChampionsNameText] = useState(''); // STATO PER IL TESTO CHAMPIONS
 
   // =================================================================
   // LA MAGIA DI VITE: Scansiona la cartella public/videos in automatico!
@@ -53,6 +54,12 @@ export default function ObsController() {
   const sendMvpTitle = () => {
     if (!mvpNameText.trim()) return alert('Inserisci il nome del giocatore!');
     triggerOBS('mvp_title', { name: mvpNameText.trim() });
+  };
+
+  // Funzione dedicata per CHAMPIONS
+  const sendChampionsTitle = () => {
+    if (!championsNameText.trim()) return alert('Inserisci il nome della squadra!');
+    triggerOBS('champions_title', { name: championsNameText.trim() });
   };
 
   // 🎬 Funzione per lanciare la sequenza video o il video singolo
@@ -251,7 +258,7 @@ export default function ObsController() {
         </div>
 
         {/* ========================================== */}
-        {/* CARD: MVP DEL MATCH (ORO/GIALLO)           */}
+        {/* CARD: MVP DEL MATCH (GIALLO)               */}
         {/* ========================================== */}
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
           <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
@@ -275,6 +282,35 @@ export default function ObsController() {
               className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'mvp_title' ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
             >
               <Tv size={16} /> Lancia Grafica MVP
+            </button>
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* CARD: CHAMPIONS VERO CUP (ORO / AMBER)     */}
+        {/* ========================================== */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-neutral-200">
+          <div className="flex items-center gap-4 mb-6 pb-4 border-b border-neutral-100">
+            <div className="p-3 bg-amber-50 text-amber-500 rounded-xl"><Trophy size={24}/></div>
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-800">Campioni del Torneo</h3>
+              <p className="text-xs text-neutral-500">Incorona la squadra vincitrice</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              placeholder="Es: TEAM BASKETVILLE"
+              value={championsNameText}
+              onChange={(e) => setChampionsNameText(e.target.value)}
+              className="w-full p-4 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-bold text-neutral-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all uppercase tracking-wider"
+            />
+            <button 
+              onClick={sendChampionsTitle}
+              className={`w-full flex items-center justify-center gap-2 p-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${currentGraphic === 'champions_title' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            >
+              <Tv size={16} /> Lancia Grafica Champions
             </button>
           </div>
         </div>
